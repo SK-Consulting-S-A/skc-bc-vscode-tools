@@ -9,7 +9,10 @@ import {
   extensions,
   window,
   workspace,
-  Uri
+  Uri,
+  Range,
+  Selection,
+  TextEditorRevealType
 } from "vscode";
 import { TranslationsProvider, SourceFileItem, TargetLanguageItem, AddLanguageItem } from "./translationsView";
 import { translateFile, createTranslationFile } from "./translationService";
@@ -89,6 +92,38 @@ export async function activate(context: ExtensionContext): Promise<void> {
     }
   );
   context.subscriptions.push(refreshTranslationsCommand);
+
+  // Register Open Translation Unit command
+  const openTransUnitCommand = commands.registerCommand(
+    "skc.openTransUnit",
+    async (fileUri: Uri, unitId: string) => {
+      try {
+        // Open the file
+        const document = await workspace.openTextDocument(fileUri);
+        const editor = await window.showTextDocument(document);
+
+        // Search for the trans-unit with the specified ID
+        const text = document.getText();
+        const searchPattern = new RegExp(`<trans-unit\\s+id="${unitId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+        const match = searchPattern.exec(text);
+
+        if (match) {
+          // Calculate the position and reveal it
+          const position = document.positionAt(match.index);
+          const range = new Range(position, position);
+          
+          // Reveal and select the line
+          editor.selection = new Selection(position, position);
+          editor.revealRange(range, TextEditorRevealType.InCenter);
+        } else {
+          void window.showWarningMessage(`Could not find translation unit with ID: ${unitId}`);
+        }
+      } catch (err) {
+        void window.showErrorMessage(`Failed to open translation unit: ${err}`);
+      }
+    }
+  );
+  context.subscriptions.push(openTransUnitCommand);
 
   // Register Configure Translation URL command
   const configureTranslationUrlCommand = commands.registerCommand(

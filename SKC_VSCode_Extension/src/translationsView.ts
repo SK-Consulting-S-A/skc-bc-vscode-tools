@@ -88,7 +88,7 @@ export class TransUnitItem extends vscode.TreeItem {
         const truncatedTarget = displayTarget.length > 50 ? displayTarget.substring(0, 47) + "..." : displayTarget;
 
         this.description = isTranslated ? truncatedTarget : `⚠️ ${truncatedTarget}`;
-        this.tooltip = `ID: ${unitId}\n\nSource:\n${source}\n\nTarget:\n${target || "(not translated)"}\n\nState: ${state || "unknown"}`;
+        this.tooltip = `ID: ${unitId}\n\nSource:\n${source}\n\nTarget:\n${target || "(not translated)"}\n\nState: ${state || "unknown"}\n\nClick to open and navigate to this unit`;
         this.contextValue = isTranslated ? "transUnitTranslated" : "transUnitPending";
 
         // Icon based on translation state
@@ -99,6 +99,13 @@ export class TransUnitItem extends vscode.TreeItem {
         } else {
             this.iconPath = new vscode.ThemeIcon("circle-slash", new vscode.ThemeColor("charts.red"));
         }
+
+        // Add command to open file and navigate to this trans-unit
+        this.command = {
+            command: "skc.openTransUnit",
+            title: "Open Translation Unit",
+            arguments: [parentFile.resourceUri, unitId]
+        };
     }
 }
 
@@ -360,6 +367,7 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
     /**
      * Parse trans-units from a target XLF file and return as tree items
+     * Only shows units that need attention (not translated or source != target)
      */
     private async getTransUnits(targetFile: TargetLanguageItem): Promise<TranslationTreeItem[]> {
         const items: TranslationTreeItem[] = [];
@@ -372,21 +380,32 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
             let match;
             let count = 0;
+            let skippedCount = 0;
             const totalUnits = targetFile.stats.total;
 
-            while ((match = transUnitRegex.exec(content)) !== null && count < MAX_UNITS_IN_TREE) {
+            while ((match = transUnitRegex.exec(content)) !== null) {
                 const unitId = match[1] || "";
                 const source = match[2] || "";
                 const state = match[3] || "";
                 const target = match[4] || "";
 
-                items.push(new TransUnitItem(unitId, source, target, state, targetFile));
-                count++;
+                // Skip units where source and target match (already correctly translated)
+                if (source === target && target !== "") {
+                    skippedCount++;
+                    continue;
+                }
+
+                // Only add up to MAX_UNITS_IN_TREE
+                if (count < MAX_UNITS_IN_TREE) {
+                    items.push(new TransUnitItem(unitId, source, target, state, targetFile));
+                    count++;
+                }
             }
 
-            // Add "more units" item if there are more
-            if (totalUnits > MAX_UNITS_IN_TREE) {
-                items.push(new MoreUnitsItem(totalUnits - MAX_UNITS_IN_TREE, targetFile));
+            // Calculate remaining units that weren't shown
+            const remainingUnits = (totalUnits - skippedCount) - count;
+            if (remainingUnits > 0) {
+                items.push(new MoreUnitsItem(remainingUnits, targetFile));
             }
 
         } catch (err) {
