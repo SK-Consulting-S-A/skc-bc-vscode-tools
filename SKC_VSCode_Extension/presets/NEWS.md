@@ -1,12 +1,19 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 1.0.2 - Latest Release
+## Version 1.1.2 - Latest Release
 
 Welcome to **SKC VS Tools**! Your all-in-one extension for streamlined Business Central AL development.
 
 ---
 
 ## ✨ What's New in This Version
+
+### 🌍 NEW: XLF Translation Tools
+- **Translations Sidebar** - New SKC Tools panel in the activity bar to manage your `.g.xlf` files
+- **Translation Statistics** - See progress at a glance: `MyFile.g.xlf (45/120)` with color-coded status
+- **Azure AI Translation** - Translate files using Azure OpenAI with one click
+- **app.json Integration** - Target languages are automatically read from your `app.json` file
+- **Quick Setup** - Run "SKC: Configure Translation URL" to connect to your Azure Translation Function
 
 ### 🚀 Core Features
 - **Automatic Preset Application** - All settings, extensions, and MCP servers are automatically configured on startup
@@ -34,6 +41,9 @@ Includes essential AL development extensions:
 ### Commands
 - **SKC: Apply Presets** - Manually apply all presets
 - **SKC: Configure MCP Auth** - Set up GitHub and Context7 credentials
+- **SKC: Configure Translation URL** - Set up Azure Translation Function endpoint
+- **Translate File** - Translate selected XLF file (from sidebar)
+- **Refresh Translations** - Refresh the translations list
 
 ### 🔐 Setting Up MCP Authentication
 

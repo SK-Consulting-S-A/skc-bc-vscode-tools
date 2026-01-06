@@ -11,7 +11,24 @@
 
 ## What It Does
 
-### 1. **Installs AL Development Extensions** (18 extensions)
+### 1. **XLF Translation Tools**
+
+The extension provides a dedicated **Translations** sidebar for managing and translating Business Central XLF files:
+
+#### Features:
+- **Translations View**: Shows all `.g.xlf` files in your `Translations` folder
+- **Translation Statistics**: Displays progress for each file (e.g., `45/120` units translated)
+- **Visual Status**: Color-coded icons (green = complete, yellow = partial, gray = not started)
+- **Azure AI Translation**: Translate files using Azure OpenAI via your Translation Function
+- **app.json Integration**: Reads target languages from `supportedLocales` or `features[].languages`
+
+#### How to Use:
+1. Click the **SKC Tools** icon in the activity bar
+2. Run "SKC: Configure Translation URL" to set your Azure Function endpoint
+3. Click the play button next to any `.g.xlf` file to translate it
+4. Select the target language and the translated file is saved automatically
+
+### 2. **Installs AL Development Extensions** (18 extensions)
 
 The extension automatically installs a comprehensive set of VS Code extensions required for Business Central AL development:
 
@@ -85,10 +102,12 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 - **Skip installed extensions** - Option to skip already-installed extensions
 - **Workspace-aware** - Presets can be customized per workspace
 
-### AL Development Commands
+### Commands
 - **SKC: Apply Presets** - Manually apply all presets
 - **SKC: Configure MCP Auth** - Set up MCP server authentication
-- **SKC: GO!** - Quick command to run AL development workflows
+- **SKC: Configure Translation URL** - Set Azure Translation Function endpoint
+- **Translate File** - Translate selected XLF file (from sidebar)
+- **Refresh Translations** - Refresh the translations list
 
 ## Use Cases
 
@@ -115,7 +134,8 @@ code --install-extension skc-vs-tools-1.0.0.vsix
    - GitHub Personal Access Token (for GitHub MCP)
    - Context7 API Key (for Context7 MCP)
 3. **Apply Presets** - Run "SKC: Apply Presets" (or wait for auto-run)
-4. **Start developing** - Your AL development environment is ready!
+4. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
+5. **Start developing** - Your AL development environment is ready!
 
 ## Technical Details
 
@@ -128,13 +148,14 @@ code --install-extension skc-vs-tools-1.0.0.vsix
 
 All settings are prefixed with `skc.*`:
 
-- `skc.applyOnStartup` - Auto-apply on activation (default: true)
 - `skc.skipInstalledExtensions` - Skip already installed extensions (default: true)
 - `skc.presetFilePath` - Custom settings preset path
 - `skc.mcpFilePath` - Custom MCP servers configuration path
 - `skc.extensionsFilePath` - Custom extensions list path
-- `skc.alGoCommand` - Command to run for "SKC: GO!" (default: "al-go")
-- `skc.alGoRunInTerminal` - Run command in terminal vs. VS Code command (default: false)
+- `skc.azureFunctionUrl` - Azure Translation Function endpoint URL
+- `skc.showNewsOnStartup` - Show news notification on startup (default: true)
+- `skc.autoOpenNewsPage` - Auto-open news page instead of notification (default: false)
+- `skc.newsFilePath` - Path to news markdown file
 
 ---
 

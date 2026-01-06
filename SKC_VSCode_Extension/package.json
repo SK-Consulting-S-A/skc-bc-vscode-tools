@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Applies the SKC preset: user settings (incl. MCP servers) and required extensions.",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -23,11 +23,36 @@
   "activationEvents": [
     "onLanguage:al",
     "onCommand:skc.applyPresets",
-    "onCommand:skc.configureMcpAuth"
+    "onCommand:skc.configureMcpAuth",
+    "onView:skc.translationsView"
   ],
   "main": "./out/extension.js",
   "icon": "assets/Small_Logo.png",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "skc-tools",
+          "title": "SKC Tools",
+          "icon": "assets/skc-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "skc-tools": [
+        {
+          "id": "skc.translationsView",
+          "name": "Translations",
+          "contextualTitle": "SKC Translations"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "skc.translationsView",
+        "contents": "No translation files found.\n\nMake sure your workspace has a **Translations** folder with **.g.xlf** files.\n\n[Refresh](command:skc.refreshTranslations)"
+      }
+    ],
     "commands": [
       {
         "command": "skc.applyPresets",
@@ -36,8 +61,54 @@
       {
         "command": "skc.configureMcpAuth",
         "title": "SKC: Configure MCP Auth"
+      },
+      {
+        "command": "skc.translateFile",
+        "title": "Translate File",
+        "icon": "$(play)"
+      },
+      {
+        "command": "skc.refreshTranslations",
+        "title": "Refresh Translations",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "skc.configureTranslationUrl",
+        "title": "SKC: Configure Translation URL",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "skc.createTranslationFile",
+        "title": "Create Translation File",
+        "icon": "$(add)"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "skc.refreshTranslations",
+          "when": "view == skc.translationsView",
+          "group": "navigation"
+        },
+        {
+          "command": "skc.configureTranslationUrl",
+          "when": "view == skc.translationsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "skc.translateFile",
+          "when": "view == skc.translationsView && viewItem == xlfFile",
+          "group": "inline"
+        },
+        {
+          "command": "skc.translateFile",
+          "when": "view == skc.translationsView && viewItem == sourceFile",
+          "group": "inline"
+        }
+      ]
+    },
     "configuration": {
       "title": "SKC Presets",
       "properties": {
@@ -75,6 +146,11 @@
           "type": "string",
           "default": "presets/NEWS.md",
           "description": "Path to a markdown file containing news/updates. Shown on startup when enabled. Relative paths resolve from the extension folder or workspace."
+        },
+        "skc.azureFunctionUrl": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the Azure Translation Function endpoint (e.g., https://your-function.azurewebsites.net/api/github-webhook?mode=direct)."
         }
       }
     },

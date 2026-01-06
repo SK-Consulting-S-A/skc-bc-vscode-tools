@@ -11,6 +11,8 @@ import {
   workspace,
   Uri
 } from "vscode";
+import { TranslationsProvider, SourceFileItem, TargetLanguageItem, AddLanguageItem } from "./translationsView";
+import { translateFile, createTranslationFile } from "./translationService";
 
 const OUTPUT_CHANNEL_NAME = "SKC Presets";
 const STATE_KEY = "skc.presetsApplied";
@@ -38,6 +40,88 @@ export async function activate(context: ExtensionContext): Promise<void> {
     void window.showInformationMessage(message);
   });
   context.subscriptions.push(configureAuthCommand);
+
+  // Register Translations View
+  const translationsProvider = new TranslationsProvider();
+  const translationsView = window.createTreeView("skc.translationsView", {
+    treeDataProvider: translationsProvider,
+    showCollapseAll: false
+  });
+  context.subscriptions.push(translationsView);
+  context.subscriptions.push({ dispose: () => translationsProvider.dispose() });
+
+  // Register Translate File command
+  const translateFileCommand = commands.registerCommand(
+    "skc.translateFile",
+    async (item?: SourceFileItem | TargetLanguageItem) => {
+      if (item instanceof SourceFileItem) {
+        // Translate source file - will prompt for target language
+        await translateFile(item.resourceUri, channel, item.workspaceFolder);
+        translationsProvider.refresh();
+      } else if (item instanceof TargetLanguageItem) {
+        // Translate specific target file
+        await translateFile(item.sourceFile.resourceUri, channel, item.sourceFile.workspaceFolder, item.language);
+        translationsProvider.refresh();
+      } else {
+        void window.showWarningMessage("Please select a file from the Translations view.");
+      }
+    }
+  );
+  context.subscriptions.push(translateFileCommand);
+
+  // Register Create Translation File command
+  const createTranslationFileCommand = commands.registerCommand(
+    "skc.createTranslationFile",
+    async (sourceFile?: SourceFileItem, language?: string) => {
+      if (sourceFile && language) {
+        await createTranslationFile(sourceFile.resourceUri, language, channel);
+        translationsProvider.refresh();
+      }
+    }
+  );
+  context.subscriptions.push(createTranslationFileCommand);
+
+  // Register Refresh Translations command
+  const refreshTranslationsCommand = commands.registerCommand(
+    "skc.refreshTranslations",
+    () => {
+      translationsProvider.refresh();
+    }
+  );
+  context.subscriptions.push(refreshTranslationsCommand);
+
+  // Register Configure Translation URL command
+  const configureTranslationUrlCommand = commands.registerCommand(
+    "skc.configureTranslationUrl",
+    async () => {
+      const cfg = workspace.getConfiguration("skc");
+      const currentUrl = cfg.get<string>("azureFunctionUrl", "");
+      
+      const url = await window.showInputBox({
+        prompt: "Enter the Azure Translation Function URL",
+        placeHolder: "https://your-function.azurewebsites.net/api/github-webhook",
+        value: currentUrl,
+        ignoreFocusOut: true,
+        validateInput: (value) => {
+          if (!value.trim()) {
+            return "URL cannot be empty";
+          }
+          try {
+            new URL(value);
+            return null;
+          } catch {
+            return "Please enter a valid URL";
+          }
+        }
+      });
+      
+      if (url !== undefined) {
+        await cfg.update("azureFunctionUrl", url.trim(), true);
+        void window.showInformationMessage("Azure Translation Function URL saved.");
+      }
+    }
+  );
+  context.subscriptions.push(configureTranslationUrlCommand);
 
   // Always apply presets on startup (forced to true)
   const autoApply = true;
@@ -574,8 +658,9 @@ async function showNewsIfNeeded(
 
     // Auto-open news page if configured
     if (autoOpenNews) {
-      await commands.executeCommand("markdown.showPreview", newsUri);
-      channel.appendLine(`[SKC] Auto-opened news file in full preview mode.`);
+      // Open markdown preview in a new tab at the top
+      await commands.executeCommand("markdown.showPreviewToSide", newsUri);
+      channel.appendLine(`[SKC] Auto-opened news file in preview mode (new tab).`);
       // Mark as shown
       if (currentVersion) {
         await context.globalState.update(STATE_NEWS_SHOWN_KEY, currentVersion);
@@ -591,9 +676,9 @@ async function showNewsIfNeeded(
     );
 
     if (action === "View News") {
-      // Open the markdown file in preview mode
-      await commands.executeCommand("markdown.showPreview", newsUri);
-      channel.appendLine(`[SKC] Opened news file in preview mode.`);
+      // Open markdown preview in a new tab
+      await commands.executeCommand("markdown.showPreviewToSide", newsUri);
+      channel.appendLine(`[SKC] Opened news file in preview mode (new tab).`);
     }
 
     // Mark news as shown for this version
