@@ -125,6 +125,30 @@ export async function activate(context: ExtensionContext): Promise<void> {
   );
   context.subscriptions.push(openTransUnitCommand);
 
+  // Register Filter Untranslated command - opens file and triggers Find with search pattern
+  const filterUntranslatedCommand = commands.registerCommand(
+    "skc.filterUntranslated",
+    async (item: TargetLanguageItem) => {
+      try {
+        // Open the file
+        const document = await workspace.openTextDocument(item.resourceUri);
+        await window.showTextDocument(document);
+
+        // Trigger Find with search for untranslated units
+        // Use state="needs-translation" pattern
+        await commands.executeCommand("editor.actions.findWithArgs", {
+          searchString: 'state="needs-translation"',
+          isRegex: false,
+          matchWholeWord: false,
+          isCaseSensitive: false
+        });
+      } catch (err) {
+        void window.showErrorMessage(`Failed to filter untranslated units: ${err}`);
+      }
+    }
+  );
+  context.subscriptions.push(filterUntranslatedCommand);
+
   // Register Configure Translation URL command
   const configureTranslationUrlCommand = commands.registerCommand(
     "skc.configureTranslationUrl",

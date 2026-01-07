@@ -51,16 +51,21 @@ export class TargetLanguageItem extends vscode.TreeItem {
         // Make collapsible if there are units to show
         super(language, stats.total > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 
-        const percentage = stats.total > 0 ? Math.round((stats.translated / stats.total) * 100) : 0;
+        // Only show 100% when truly complete, otherwise use floor to avoid false 100%
+        const isComplete = stats.translated === stats.total;
+        const percentage = stats.total > 0
+            ? (isComplete ? 100 : Math.floor((stats.translated / stats.total) * 100))
+            : 0;
 
         this.description = `${stats.translated}/${stats.total} (${percentage}%)`;
-        this.tooltip = `${language}\nTranslated: ${stats.translated} of ${stats.total} units (${percentage}%)\nClick ▶ to view individual units`;
+        const pending = stats.total - stats.translated;
+        this.tooltip = `${language}\nTranslated: ${stats.translated} of ${stats.total} units (${percentage}%)\nPending: ${pending} units\nClick ▶ to view untranslated units`;
         this.contextValue = "xlfFile";
 
-        // Set icon based on completion status
-        if (percentage === 100) {
+        // Set icon based on actual completion status (not rounded percentage)
+        if (isComplete) {
             this.iconPath = new vscode.ThemeIcon("check", new vscode.ThemeColor("charts.green"));
-        } else if (percentage > 0) {
+        } else if (stats.translated > 0) {
             this.iconPath = new vscode.ThemeIcon("circle-outline", new vscode.ThemeColor("charts.yellow"));
         } else {
             this.iconPath = new vscode.ThemeIcon("circle-outline", new vscode.ThemeColor("charts.red"));
@@ -117,10 +122,10 @@ export class MoreUnitsItem extends vscode.TreeItem {
         public readonly remainingCount: number,
         public readonly parentFile: TargetLanguageItem
     ) {
-        super(`... and ${remainingCount} more units`, vscode.TreeItemCollapsibleState.None);
+        super(`... and ${remainingCount} more untranslated`, vscode.TreeItemCollapsibleState.None);
 
         this.description = "Open file to see all";
-        this.tooltip = `${remainingCount} more translation units not shown.\nOpen the file to see all units.`;
+        this.tooltip = `${remainingCount} more untranslated units not shown.\nOpen the file to see all units.`;
         this.contextValue = "moreUnits";
         this.iconPath = new vscode.ThemeIcon("ellipsis");
 
@@ -375,8 +380,8 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
         try {
             const content = await fs.readFile(targetFile.resourceUri.fsPath, "utf8");
 
-            // Parse trans-units using regex
-            const transUnitRegex = /<trans-unit\s+id="([^"]+)"[^>]*>[\s\S]*?<source>([^<]*)<\/source>[\s\S]*?(?:<target[^>]*(?:\sstate\s*=\s*["']([^"']+)["'])?[^>]*>([^<]*)<\/target>)?[\s\S]*?<\/trans-unit>/g;
+            // Parse trans-units - capture the whole trans-unit block first
+            const transUnitRegex = /<trans-unit\s+id="([^"]+)"[^>]*>([\s\S]*?)<\/trans-unit>/g;
 
             let match;
             let count = 0;
@@ -385,12 +390,41 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
             while ((match = transUnitRegex.exec(content)) !== null) {
                 const unitId = match[1] || "";
-                const source = match[2] || "";
-                const state = match[3] || "";
-                const target = match[4] || "";
+                const unitContent = match[2] || "";
 
-                // Skip units where source and target match (already correctly translated)
-                if (source === target && target !== "") {
+                // Extract source content
+                const sourceMatch = unitContent.match(/<source>([\s\S]*?)<\/source>/);
+                const source = sourceMatch ? sourceMatch[1].trim() : "";
+
+                // Extract target content and state - handle both self-closing and regular tags
+                let target = "";
+                let state = "";
+                
+                // First try to match a regular target tag with content
+                const targetMatch = unitContent.match(/<target([^>]*)>([\s\S]*?)<\/target>/);
+                if (targetMatch) {
+                    const targetAttrs = targetMatch[1] || "";
+                    target = targetMatch[2].trim();
+                    
+                    // Extract state from attributes
+                    const stateMatch = targetAttrs.match(/state\s*=\s*["']([^"']+)["']/);
+                    state = stateMatch ? stateMatch[1] : "";
+                } else {
+                    // Check for empty/self-closing target
+                    const emptyTargetMatch = unitContent.match(/<target([^>]*)\/>/);
+                    if (emptyTargetMatch) {
+                        const targetAttrs = emptyTargetMatch[1] || "";
+                        const stateMatch = targetAttrs.match(/state\s*=\s*["']([^"']+)["']/);
+                        state = stateMatch ? stateMatch[1] : "";
+                    }
+                }
+
+                // Only show units that need translation:
+                // - state is NOT "translated"
+                // - OR target is empty
+                const isTranslated = state === "translated" && target !== "";
+                
+                if (isTranslated) {
                     skippedCount++;
                     continue;
                 }

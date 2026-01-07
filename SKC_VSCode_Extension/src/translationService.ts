@@ -7,27 +7,14 @@ import * as http from "http";
 export interface TranslationResult {
     translatedContent: string;
     translatedCount: number;
+    syncInfo?: {
+        added: number;
+        removed: number;
+    };
 }
 
-// Chunk configuration - balance between request size and number of requests
-const TRANS_UNITS_PER_CHUNK = 500; // Number of trans-units per chunk (optimized for Azure gateway)
-const CHUNK_TIMEOUT_MS = 300000;   // 5 minutes per chunk (Azure gateway limit ~230s)
-
-/**
- * Format seconds into human-readable time (e.g., "2h 15m 30s" or "5m 20s" or "45s")
- */
-function formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.round(seconds % 60);
-
-    const parts: string[] = [];
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-
-    return parts.join(" ");
-}
+// Request timeout - Azure Function handles batching internally, may take time for large files
+const REQUEST_TIMEOUT_MS = 600000; // 10 minutes timeout for large files
 
 interface AppJson {
     supportedLocales?: string[];
@@ -132,26 +119,31 @@ export async function translateFile(
     channel.show(true);
 
     try {
-        // Read the XLF file content
-        const content = await fs.readFile(filePath, "utf8");
-        channel.appendLine(`[SKC] Read file: ${content.length} characters`);
+        // Read the source XLF file content (*.g.xlf)
+        const sourceContent = await fs.readFile(filePath, "utf8");
+        channel.appendLine(`[SKC] Read source file: ${sourceContent.length} characters`);
 
-        // Count trans-units to determine if chunking is needed
-        const transUnitCount = (content.match(/<trans-unit/g) || []).length;
-        const useChunking = transUnitCount > TRANS_UNITS_PER_CHUNK;
+        // Count trans-units for logging
+        const transUnitCount = (sourceContent.match(/<trans-unit/g) || []).length;
+        channel.appendLine(`[SKC] Source file has ${transUnitCount} trans-units`);
 
-        channel.appendLine(`[SKC] Found ${transUnitCount} trans-units`);
-
-        if (useChunking) {
-            const totalChunks = Math.ceil(transUnitCount / TRANS_UNITS_PER_CHUNK);
-            channel.appendLine(`[SKC] Large file detected. Using chunked processing (${totalChunks} chunks)`);
-        }
-
-        // Determine output filename and path upfront
+        // Determine output filename and path
         const outputFileName = fileName.replace(".g.xlf", `.${targetLanguage}.xlf`);
         const outputPath = path.join(path.dirname(filePath), outputFileName);
 
-        channel.appendLine(`[SKC] Starting translation process...`);
+        // Read existing target file if it exists (for sync)
+        let targetContent: string | undefined;
+        try {
+            targetContent = await fs.readFile(outputPath, "utf8");
+            channel.appendLine(`[SKC] Found existing target file: ${targetContent.length} characters`);
+            channel.appendLine(`[SKC] Will perform full sync (add/remove units) + translate`);
+        } catch {
+            channel.appendLine(`[SKC] No existing target file - will create new file from source`);
+            // Use source as base for new target file
+            targetContent = sourceContent;
+        }
+
+        channel.appendLine(`[SKC] Sending to Azure Function with sync enabled (same as GitHub flow)`);
         channel.appendLine(`[SKC] Azure Function URL: ${azureFunctionUrl}`);
         channel.appendLine(`[SKC] Output file: ${outputPath}`);
 
@@ -163,18 +155,17 @@ export async function translateFile(
                 cancellable: false
             },
             async (progress) => {
-                let result: TranslationResult | null;
+                progress.report({ increment: 10, message: "Sending to Azure Function..." });
 
-                if (useChunking) {
-                    // Use chunked processing for large files (saves after each chunk)
-                    channel.appendLine(`[SKC] Entering chunked translation mode...`);
-                    progress.report({ increment: 5, message: "Starting chunked translation..." });
-                    result = await translateInChunks(azureFunctionUrl, content, targetLanguage!, outputPath, channel, progress);
-                } else {
-                    // Direct translation for smaller files
-                    progress.report({ increment: 10, message: "Sending to Azure..." });
-                    result = await callAzureFunctionSingle(azureFunctionUrl, content, targetLanguage!, channel);
-                }
+                // Send source + target to Azure Function for full sync (same as GitHub webhook)
+                // Azure Function will: add missing units, remove obsolete units, translate
+                const result = await callAzureFunctionWithSync(
+                    azureFunctionUrl,
+                    sourceContent,
+                    targetContent!,
+                    targetLanguage!,
+                    channel
+                );
 
                 if (!result || !result.translatedContent) {
                     channel.appendLine(`[SKC] ERROR: No translated content received from Azure Function`);
@@ -182,20 +173,25 @@ export async function translateFile(
                     return false;
                 }
 
-                progress.report({ increment: useChunking ? 20 : 60, message: "Saving translated file..." });
+                progress.report({ increment: 60, message: "Saving translated file..." });
 
-                // For non-chunked mode, write the file (chunked mode already saves incrementally)
-                if (!useChunking) {
-                    await fs.writeFile(outputPath, result.translatedContent, "utf8");
+                // Save the translated file
+                await fs.writeFile(outputPath, result.translatedContent, "utf8");
+
+                progress.report({ increment: 25, message: "Done!" });
+
+                // Build summary message
+                const syncInfo = result.syncInfo || { added: 0, removed: 0 };
+                let summary = `Translated: ${result.translatedCount}`;
+                if (syncInfo.added > 0 || syncInfo.removed > 0) {
+                    summary += ` | Synced: +${syncInfo.added} added, -${syncInfo.removed} removed`;
                 }
 
-                progress.report({ increment: 5, message: "Done!" });
-
-                channel.appendLine(`[SKC] Successfully translated ${result.translatedCount} units`);
+                channel.appendLine(`[SKC] ✅ ${summary}`);
                 channel.appendLine(`[SKC] Saved to: ${outputPath}`);
 
                 void vscode.window.showInformationMessage(
-                    `Translation complete! ${result.translatedCount} units translated. Saved to ${outputFileName}`
+                    `Translation complete! ${summary}. Saved to ${outputFileName}`
                 );
 
                 return true;
@@ -269,240 +265,14 @@ export async function createTranslationFile(
 }
 
 /**
- * Extract trans-unit elements from XLF content
+ * Call the Azure Translation Function with sync support
+ * Sends both source content (for schema) and target content (to update)
+ * Azure Function will: add missing units, remove obsolete units, translate
  */
-function extractTransUnits(content: string): { units: string[]; header: string; footer: string } {
-    // Match all trans-unit elements (including nested content)
-    const transUnitRegex = /<trans-unit[\s\S]*?<\/trans-unit>/g;
-    const units: string[] = [];
-    let match;
-
-    while ((match = transUnitRegex.exec(content)) !== null) {
-        units.push(match[0]);
-    }
-
-    // Extract header (everything before first trans-unit)
-    const firstUnitIndex = content.indexOf("<trans-unit");
-    const header = firstUnitIndex > 0 ? content.substring(0, firstUnitIndex) : "";
-
-    // Extract footer (everything after last trans-unit)
-    const lastUnitEnd = content.lastIndexOf("</trans-unit>") + "</trans-unit>".length;
-    const footer = lastUnitEnd > 0 ? content.substring(lastUnitEnd) : "";
-
-    return { units, header, footer };
-}
-
-/**
- * Build a minimal XLF wrapper for a chunk of trans-units
- */
-function buildChunkXlf(
-    units: string[],
-    originalContent: string,
-    targetLanguage: string
-): string {
-    // Extract the xliff and file element attributes from original
-    const xliffMatch = originalContent.match(/<xliff[^>]*>/);
-    const fileMatch = originalContent.match(/<file[^>]*>/);
-
-    const xliffOpen = xliffMatch ? xliffMatch[0] : '<?xml version="1.0" encoding="utf-8"?><xliff version="1.2">';
-    let fileOpen = fileMatch ? fileMatch[0] : '<file datatype="xml" source-language="en-US">';
-
-    // Update target-language in file element
-    fileOpen = fileOpen.replace(/target-language="[^"]*"/, `target-language="${targetLanguage}"`);
-    if (!fileOpen.includes("target-language=")) {
-        fileOpen = fileOpen.replace(/>$/, ` target-language="${targetLanguage}">`);
-    }
-
-    return `<?xml version="1.0" encoding="utf-8"?>
-${xliffOpen}
-  ${fileOpen}
-    <body>
-      <group id="body">
-        ${units.join("\n        ")}
-      </group>
-    </body>
-  </file>
-</xliff>`;
-}
-
-/**
- * Extract translated trans-units from response content
- */
-function extractTranslatedUnits(responseContent: string): Map<string, string> {
-    const unitMap = new Map<string, string>();
-    const transUnitRegex = /<trans-unit\s+id="([^"]+)"[\s\S]*?<\/trans-unit>/g;
-    let match;
-
-    while ((match = transUnitRegex.exec(responseContent)) !== null) {
-        const id = match[1];
-        const fullUnit = match[0];
-        unitMap.set(id, fullUnit);
-    }
-
-    return unitMap;
-}
-
-/**
- * Translate large files in chunks with incremental saving
- */
-async function translateInChunks(
+async function callAzureFunctionWithSync(
     url: string,
-    content: string,
-    targetLanguage: string,
-    outputPath: string,
-    channel: vscode.OutputChannel,
-    progress: vscode.Progress<{ increment?: number; message?: string }>
-): Promise<TranslationResult | null> {
-    channel.appendLine(`[SKC] translateInChunks() called`);
-    channel.appendLine(`[SKC] URL: ${url}`);
-    channel.appendLine(`[SKC] Content length: ${content.length} chars`);
-    channel.appendLine(`[SKC] Target language: ${targetLanguage}`);
-    channel.appendLine(`[SKC] Output file: ${outputPath}`);
-
-    channel.appendLine(`[SKC] Extracting trans-units from content...`);
-    const { units } = extractTransUnits(content);
-
-    if (units.length === 0) {
-        channel.appendLine("[SKC] No trans-units found in file");
-        return { translatedContent: content, translatedCount: 0 };
-    }
-
-    channel.appendLine(`[SKC] Extracted ${units.length} trans-units, processing in chunks of ${TRANS_UNITS_PER_CHUNK}`);
-
-    const totalChunks = Math.ceil(units.length / TRANS_UNITS_PER_CHUNK);
-    const translatedUnits = new Map<string, string>();
-    let totalTranslated = 0;
-    const progressIncrement = 70 / totalChunks; // Reserve 70% progress for chunked translation
-
-    // Initialize working content with target language updated
-    let workingContent = content.replace(
-        /target-language="[^"]*"/,
-        `target-language="${targetLanguage}"`
-    );
-    // If no target-language attribute exists, try to add it
-    if (!workingContent.includes(`target-language="${targetLanguage}"`)) {
-        workingContent = workingContent.replace(
-            /<file([^>]*)>/,
-            `<file$1 target-language="${targetLanguage}">`
-        );
-    }
-
-    const startTime = Date.now();
-    channel.appendLine(`[SKC] ════════════════════════════════════════════════════════════════`);
-    channel.appendLine(`[SKC] Starting chunked translation: ${units.length} units in ${totalChunks} chunks`);
-    channel.appendLine(`[SKC] Target language: ${targetLanguage}`);
-    channel.appendLine(`[SKC] 💾 Progress will be saved after each chunk`);
-    channel.appendLine(`[SKC] ════════════════════════════════════════════════════════════════`);
-
-    for (let i = 0; i < units.length; i += TRANS_UNITS_PER_CHUNK) {
-        const chunkIndex = Math.floor(i / TRANS_UNITS_PER_CHUNK) + 1;
-        const chunkUnits = units.slice(i, i + TRANS_UNITS_PER_CHUNK);
-        const percentComplete = Math.round((chunkIndex / totalChunks) * 100);
-        const elapsedTime = (Date.now() - startTime) / 1000;
-
-        channel.appendLine(`[SKC] ────────────────────────────────────────────────────────────────`);
-        channel.appendLine(`[SKC] 📦 CHUNK ${chunkIndex}/${totalChunks} (${percentComplete}% complete)`);
-        channel.appendLine(`[SKC]    Units in this chunk: ${chunkUnits.length}`);
-        channel.appendLine(`[SKC]    Running total translated: ${totalTranslated}`);
-        channel.appendLine(`[SKC]    Elapsed time: ${formatDuration(elapsedTime)}`);
-
-        progress.report({
-            increment: progressIncrement,
-            message: `Chunk ${chunkIndex}/${totalChunks} (${percentComplete}%)`
-        });
-
-        // Build chunk XLF
-        const chunkXlf = buildChunkXlf(chunkUnits, content, targetLanguage);
-        const chunkStartTime = Date.now();
-
-        try {
-            // Send chunk to Azure Function
-            const result = await callAzureFunctionSingle(url, chunkXlf, targetLanguage, channel);
-            const chunkDuration = (Date.now() - chunkStartTime) / 1000;
-
-            if (result?.translatedContent) {
-                // Extract translated units from response
-                const responseUnits = extractTranslatedUnits(result.translatedContent);
-
-                // Apply translations to working content immediately
-                responseUnits.forEach((translatedUnit, id) => {
-                    translatedUnits.set(id, translatedUnit);
-
-                    // Update working content with this translation
-                    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                    const originalUnitRegex = new RegExp(
-                        `<trans-unit\\s+id="${escapedId}"[\\s\\S]*?<\\/trans-unit>`,
-                        "g"
-                    );
-                    workingContent = workingContent.replace(originalUnitRegex, translatedUnit);
-                });
-
-                totalTranslated += result.translatedCount;
-                channel.appendLine(`[SKC] ✅ Chunk ${chunkIndex} complete: ${result.translatedCount} units translated in ${formatDuration(chunkDuration)}`);
-
-                // Save progress to file after each chunk
-                await fs.writeFile(outputPath, workingContent, "utf8");
-                channel.appendLine(`[SKC] 💾 Progress saved to file (${totalTranslated} units so far)`);
-
-                // Estimate remaining time
-                const avgTimePerChunk = (Date.now() - startTime) / chunkIndex / 1000;
-                const remainingChunks = totalChunks - chunkIndex;
-                const estimatedRemaining = avgTimePerChunk * remainingChunks;
-                if (remainingChunks > 0) {
-                    channel.appendLine(`[SKC]    ⏱️ Estimated time remaining: ~${formatDuration(estimatedRemaining)} (${remainingChunks} chunks left)`);
-                }
-            } else {
-                channel.appendLine(`[SKC] ⚠️ WARNING: Chunk ${chunkIndex} returned no translated content (${formatDuration(chunkDuration)})`);
-            }
-        } catch (error) {
-            const chunkDuration = (Date.now() - chunkStartTime) / 1000;
-            const message = error instanceof Error ? error.message : String(error);
-            channel.appendLine(`[SKC] ❌ ERROR in chunk ${chunkIndex} after ${formatDuration(chunkDuration)}: ${message}`);
-
-            // Save current progress before asking about continuing
-            if (translatedUnits.size > 0) {
-                await fs.writeFile(outputPath, workingContent, "utf8");
-                channel.appendLine(`[SKC] 💾 Progress saved (${totalTranslated} units preserved)`);
-            }
-
-            // Ask user if they want to continue or abort
-            const action = await vscode.window.showWarningMessage(
-                `Chunk ${chunkIndex}/${totalChunks} failed: ${message}. Progress saved (${totalTranslated} units). Continue with remaining chunks?`,
-                "Continue",
-                "Abort"
-            );
-
-            if (action === "Abort") {
-                channel.appendLine(`[SKC] Translation aborted. ${totalTranslated} units were saved.`);
-                return {
-                    translatedContent: workingContent,
-                    translatedCount: totalTranslated
-                };
-            }
-            channel.appendLine(`[SKC]    User chose to continue...`);
-        }
-    }
-
-    const totalDuration = (Date.now() - startTime) / 1000;
-    channel.appendLine(`[SKC] ════════════════════════════════════════════════════════════════`);
-    channel.appendLine(`[SKC] ✅ CHUNKED TRANSLATION COMPLETE`);
-    channel.appendLine(`[SKC]    Total units translated: ${totalTranslated}`);
-    channel.appendLine(`[SKC]    Total time: ${formatDuration(totalDuration)}`);
-    channel.appendLine(`[SKC]    Average per chunk: ${formatDuration(totalDuration / totalChunks)}`);
-    channel.appendLine(`[SKC] ════════════════════════════════════════════════════════════════`);
-
-    return {
-        translatedContent: workingContent,
-        translatedCount: totalTranslated
-    };
-}
-
-/**
- * Call the Azure Translation Function (single request)
- */
-async function callAzureFunctionSingle(
-    url: string,
-    content: string,
+    sourceContent: string,
+    targetContent: string,
     targetLanguage: string,
     channel: vscode.OutputChannel
 ): Promise<TranslationResult | null> {
@@ -516,10 +286,14 @@ async function callAzureFunctionSingle(
         const finalUrl = urlObj.toString();
         channel.appendLine(`[SKC] Calling Azure Function: ${urlObj.hostname}`);
 
+        // Send both source (for sync schema) and target (to update)
         const payload = JSON.stringify({
-            content,
+            content: targetContent,       // Target file to update
+            sourceContent: sourceContent, // Source file for sync schema
             targetLanguage
         });
+
+        channel.appendLine(`[SKC] Payload size: ${(Buffer.byteLength(payload) / 1024).toFixed(1)} KB`);
 
         const isHttps = finalUrl.startsWith("https");
         const httpModule = isHttps ? https : http;
@@ -531,7 +305,7 @@ async function callAzureFunctionSingle(
                 "Content-Length": Buffer.byteLength(payload),
                 "x-translation-mode": "direct"
             },
-            timeout: CHUNK_TIMEOUT_MS
+            timeout: REQUEST_TIMEOUT_MS
         };
 
         const req = httpModule.request(finalUrl, options, (res) => {

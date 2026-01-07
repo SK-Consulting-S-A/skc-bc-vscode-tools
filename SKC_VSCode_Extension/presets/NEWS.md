@@ -1,6 +1,6 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 1.1.2 - Latest Release
+## Version 1.5.0 - Latest Release
 
 Welcome to **SKC VS Tools**! Your all-in-one extension for streamlined Business Central AL development.
 
@@ -8,8 +8,15 @@ Welcome to **SKC VS Tools**! Your all-in-one extension for streamlined Business 
 
 ## ✨ What's New in This Version
 
-### 🌍 NEW: XLF Translation Tools
-- **Translations Sidebar** - New SKC Tools panel in the activity bar to manage your `.g.xlf` files
+### 🔄 NEW: Full XLF Sync (Same as GitHub Flow!)
+- **Automatic Sync** - Adding new units and removing obsolete ones now works exactly like the GitHub webhook
+- **Schema Sync** - When you translate, the extension compares source `.g.xlf` with your target file
+- **Add Missing Units** - New trans-units from source are automatically added to target
+- **Remove Obsolete Units** - Trans-units deleted from source are removed from target
+- **Sync Summary** - See exactly what changed: `Translated: 15 | Synced: +3 added, -1 removed`
+
+### 🌍 XLF Translation Tools
+- **Translations Sidebar** - SKC Tools panel in the activity bar to manage your `.g.xlf` files
 - **Translation Statistics** - See progress at a glance: `MyFile.g.xlf (45/120)` with color-coded status
 - **Azure AI Translation** - Translate files using Azure OpenAI with one click
 - **app.json Integration** - Target languages are automatically read from your `app.json` file

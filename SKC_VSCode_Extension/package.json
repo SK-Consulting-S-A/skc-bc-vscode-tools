@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Applies the SKC preset: user settings (incl. MCP servers) and required extensions.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -81,6 +81,11 @@
         "command": "skc.createTranslationFile",
         "title": "Create Translation File",
         "icon": "$(add)"
+      },
+      {
+        "command": "skc.filterUntranslated",
+        "title": "Find Untranslated Units",
+        "icon": "$(search)"
       }
     ],
     "menus": {
@@ -97,6 +102,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "skc.filterUntranslated",
+          "when": "view == skc.translationsView && viewItem == xlfFile",
+          "group": "inline"
+        },
         {
           "command": "skc.translateFile",
           "when": "view == skc.translationsView && viewItem == xlfFile",
