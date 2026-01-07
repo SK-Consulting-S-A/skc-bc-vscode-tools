@@ -10,6 +10,7 @@ export interface TranslationResult {
     syncInfo?: {
         added: number;
         removed: number;
+        sourceChanged?: number;
     };
 }
 
@@ -181,10 +182,14 @@ export async function translateFile(
                 progress.report({ increment: 25, message: "Done!" });
 
                 // Build summary message
-                const syncInfo = result.syncInfo || { added: 0, removed: 0 };
+                const syncInfo = result.syncInfo || { added: 0, removed: 0, sourceChanged: 0 };
                 let summary = `Translated: ${result.translatedCount}`;
-                if (syncInfo.added > 0 || syncInfo.removed > 0) {
-                    summary += ` | Synced: +${syncInfo.added} added, -${syncInfo.removed} removed`;
+                const syncParts = [];
+                if (syncInfo.added > 0) syncParts.push(`+${syncInfo.added} added`);
+                if (syncInfo.removed > 0) syncParts.push(`-${syncInfo.removed} removed`);
+                if (syncInfo.sourceChanged && syncInfo.sourceChanged > 0) syncParts.push(`${syncInfo.sourceChanged} source-changed`);
+                if (syncParts.length > 0) {
+                    summary += ` | Synced: ${syncParts.join(', ')}`;
                 }
 
                 channel.appendLine(`[SKC] ✅ ${summary}`);
