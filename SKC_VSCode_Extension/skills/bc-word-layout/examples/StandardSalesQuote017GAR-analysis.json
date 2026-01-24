@@ -1,0 +1,1178 @@
+{
+  "report_id": 61600,
+  "report_name": "StandardSalesQuote017GAR",
+  "caption": "Sales - Quote",
+  "word_layout": "src/ReportLayout/StandardSalesQuote017GAR.docx",
+  "word_merge_dataitem": "Header",
+  "total_columns": 219,
+  "dataitems": [
+    {
+      "name": "Header",
+      "source_table": "Sales Header",
+      "column_count": 130,
+      "is_temporary": true,
+      "columns": [
+        {
+          "name": "CompanyAddress1",
+          "expression": "CompanyAddr[1]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress2",
+          "expression": "CompanyAddr[2]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress3",
+          "expression": "CompanyAddr[3]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress4",
+          "expression": "CompanyAddr[4]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress5",
+          "expression": "CompanyAddr[5]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress6",
+          "expression": "CompanyAddr[6]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress7",
+          "expression": "CompanyAddr[7]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyAddress8",
+          "expression": "CompanyAddr[8]",
+          "is_label": false
+        },
+        {
+          "name": "CompanyHomePage",
+          "expression": "CompanyInfo.\"Home Page",
+          "is_label": false
+        },
+        {
+          "name": "CompanyEMail",
+          "expression": "CompanyInfo.\"E-Mail",
+          "is_label": false
+        },
+        {
+          "name": "CompanyPicture",
+          "expression": "DummyCompanyInfo.Picture",
+          "is_label": false
+        },
+        {
+          "name": "CompanyPhoneNo",
+          "expression": "CompanyInfo.\"Phone No.",
+          "is_label": false
+        },
+        {
+          "name": "CompanyPhoneNo_Lbl",
+          "expression": "CompanyInfoPhoneNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "CompanyGiroNo",
+          "expression": "CompanyInfo.\"Giro No.",
+          "is_label": false
+        },
+        {
+          "name": "CompanyGiroNo_Lbl",
+          "expression": "CompanyInfoGiroNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "CompanyBankName",
+          "expression": "CompanyInfo.\"Bank Name",
+          "is_label": false
+        },
+        {
+          "name": "CompanyBankName_Lbl",
+          "expression": "CompanyInfoBankNameLbl",
+          "is_label": true
+        },
+        {
+          "name": "BankAccountLbl",
+          "expression": "BankAccountLbl",
+          "is_label": true
+        },
+        {
+          "name": "CompanyBankBranchNo",
+          "expression": "CompanyInfo.\"Bank Branch No.",
+          "is_label": false
+        },
+        {
+          "name": "CompanyBankBranchNo_Lbl",
+          "expression": "CompanyInfo.FieldCaption(\"Bank Branch No.",
+          "is_label": true
+        },
+        {
+          "name": "CompanyBankAccountNo",
+          "expression": "CompanyInfo.\"Bank Account No.",
+          "is_label": false
+        },
+        {
+          "name": "CompanyBankAccountNo_Lbl",
+          "expression": "CompanyInfoBankAccNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "CompanyIBAN",
+          "expression": "CompanyInfo.IBAN",
+          "is_label": false
+        },
+        {
+          "name": "CompanyIBAN_Lbl",
+          "expression": "CompanyInfo.FieldCaption(IBAN",
+          "is_label": true
+        },
+        {
+          "name": "CompanySWIFT",
+          "expression": "CompanyInfo.\"SWIFT Code",
+          "is_label": false
+        },
+        {
+          "name": "CompanySWIFT_Lbl",
+          "expression": "CompanyInfo.FieldCaption(\"SWIFT Code",
+          "is_label": true
+        },
+        {
+          "name": "CompanyLogoPosition",
+          "expression": "CompanyLogoPosition",
+          "is_label": false
+        },
+        {
+          "name": "CompanyRegistrationNumber",
+          "expression": "CompanyInfo.GetRegistrationNumber(",
+          "is_label": false
+        },
+        {
+          "name": "CompanyRegistrationNumber_Lbl",
+          "expression": "CompanyInfo.GetRegistrationNumberLbl(",
+          "is_label": true
+        },
+        {
+          "name": "CompanyVATRegNo",
+          "expression": "CompanyInfo.GetVATRegistrationNumber(",
+          "is_label": false
+        },
+        {
+          "name": "CompanyVATRegNo_Lbl",
+          "expression": "CompanyInfo.GetVATRegistrationNumberLbl(",
+          "is_label": true
+        },
+        {
+          "name": "CompanyVATRegistrationNo",
+          "expression": "CompanyInfo.GetVATRegistrationNumber(",
+          "is_label": false
+        },
+        {
+          "name": "CompanyVATRegistrationNo_Lbl",
+          "expression": "CompanyInfo.GetVATRegistrationNumberLbl(",
+          "is_label": true
+        },
+        {
+          "name": "CompanyLegalStatement",
+          "expression": "GetLegalStatement(",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress1",
+          "expression": "CustAddr[1]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress2",
+          "expression": "CustAddr[2]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress3",
+          "expression": "CustAddr[3]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress4",
+          "expression": "CustAddr[4]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress5",
+          "expression": "CustAddr[5]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress6",
+          "expression": "CustAddr[6]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress7",
+          "expression": "CustAddr[7]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerAddress8",
+          "expression": "CustAddr[8]",
+          "is_label": false
+        },
+        {
+          "name": "CustomerPostalBarCode",
+          "expression": "FormatAddr.PostalBarCode(1",
+          "is_label": false
+        },
+        {
+          "name": "ExternalDocumentNo",
+          "expression": "External Document No.",
+          "is_label": false
+        },
+        {
+          "name": "ExternalDocumentNoLbl",
+          "expression": "FieldCaption(\"External Document No.",
+          "is_label": true
+        },
+        {
+          "name": "YourReference",
+          "expression": "Your Reference",
+          "is_label": false
+        },
+        {
+          "name": "YourReference__Lbl",
+          "expression": "FieldCaption(\"Your Reference",
+          "is_label": true
+        },
+        {
+          "name": "ShipmentMethodDescription",
+          "expression": "ShipmentMethod.Description",
+          "is_label": false
+        },
+        {
+          "name": "ShipmentMethodDescription_Lbl",
+          "expression": "ShptMethodDescLbl",
+          "is_label": true
+        },
+        {
+          "name": "Shipment_Lbl",
+          "expression": "ShipmentLbl",
+          "is_label": true
+        },
+        {
+          "name": "ShowShippingAddress",
+          "expression": "ShowShippingAddr",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress_Lbl",
+          "expression": "ShiptoAddrLbl",
+          "is_label": true
+        },
+        {
+          "name": "ShipToAddress1",
+          "expression": "ShipToAddr[1]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress2",
+          "expression": "ShipToAddr[2]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress3",
+          "expression": "ShipToAddr[3]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress4",
+          "expression": "ShipToAddr[4]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress5",
+          "expression": "ShipToAddr[5]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress6",
+          "expression": "ShipToAddr[6]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress7",
+          "expression": "ShipToAddr[7]",
+          "is_label": false
+        },
+        {
+          "name": "ShipToAddress8",
+          "expression": "ShipToAddr[8]",
+          "is_label": false
+        },
+        {
+          "name": "SellToContactPhoneNoLbl",
+          "expression": "SellToContactPhoneNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "SellToContactMobilePhoneNoLbl",
+          "expression": "SellToContactMobilePhoneNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "SellToContactEmailLbl",
+          "expression": "SellToContactEmailLbl",
+          "is_label": true
+        },
+        {
+          "name": "BillToContactPhoneNoLbl",
+          "expression": "BillToContactPhoneNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "BillToContactMobilePhoneNoLbl",
+          "expression": "BillToContactMobilePhoneNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "BillToContactEmailLbl",
+          "expression": "BillToContactEmailLbl",
+          "is_label": true
+        },
+        {
+          "name": "SellToContactPhoneNo",
+          "expression": "SellToContact.\"Phone No.",
+          "is_label": false
+        },
+        {
+          "name": "SellToContactMobilePhoneNo",
+          "expression": "SellToContact.\"Mobile Phone No.",
+          "is_label": false
+        },
+        {
+          "name": "SellToContactEmail",
+          "expression": "SellToContact.\"E-Mail",
+          "is_label": false
+        },
+        {
+          "name": "BillToContactPhoneNo",
+          "expression": "BillToContact.\"Phone No.",
+          "is_label": false
+        },
+        {
+          "name": "BillToContactMobilePhoneNo",
+          "expression": "BillToContact.\"Mobile Phone No.",
+          "is_label": false
+        },
+        {
+          "name": "BillToContactEmail",
+          "expression": "BillToContact.\"E-Mail",
+          "is_label": false
+        },
+        {
+          "name": "PaymentTermsDescription",
+          "expression": "PaymentTerms.Description",
+          "is_label": false
+        },
+        {
+          "name": "PaymentTermsDescription_Lbl",
+          "expression": "PaymentTermsDescLbl",
+          "is_label": true
+        },
+        {
+          "name": "PaymentMethodDescription",
+          "expression": "PaymentMethod.Description",
+          "is_label": false
+        },
+        {
+          "name": "PaymentMethodDescription_Lbl",
+          "expression": "PaymentMethodDescLbl",
+          "is_label": true
+        },
+        {
+          "name": "DocumentCopyText",
+          "expression": "StrSubstNo(DocumentCaption(",
+          "is_label": false
+        },
+        {
+          "name": "BilltoCustumerNo",
+          "expression": "Bill-to Customer No.",
+          "is_label": false
+        },
+        {
+          "name": "BilltoCustomerNo_Lbl",
+          "expression": "FieldCaption(\"Bill-to Customer No.",
+          "is_label": true
+        },
+        {
+          "name": "DocumentDate",
+          "expression": "FormatDate(\"Document Date",
+          "is_label": false
+        },
+        {
+          "name": "DocumentDate_Lbl",
+          "expression": "FieldCaption(\"Document Date",
+          "is_label": true
+        },
+        {
+          "name": "DueDate",
+          "expression": "FormatDate(\"Due Date",
+          "is_label": false
+        },
+        {
+          "name": "DueDate_Lbl",
+          "expression": "FieldCaption(\"Due Date",
+          "is_label": true
+        },
+        {
+          "name": "QuoteValidToDate",
+          "expression": "FormatDate(\"Quote Valid Until Date",
+          "is_label": false
+        },
+        {
+          "name": "QuoteValidToDate_Lbl",
+          "expression": "QuoteValidToDateLbl",
+          "is_label": true
+        },
+        {
+          "name": "DocumentNo",
+          "expression": "No.",
+          "is_label": false
+        },
+        {
+          "name": "DocumentNo_Lbl",
+          "expression": "InvNoLbl",
+          "is_label": true
+        },
+        {
+          "name": "PricesIncludingVAT",
+          "expression": "Prices Including VAT",
+          "is_label": false
+        },
+        {
+          "name": "PricesIncludingVAT_Lbl",
+          "expression": "FieldCaption(\"Prices Including VAT",
+          "is_label": true
+        },
+        {
+          "name": "PricesIncludingVATYesNo",
+          "expression": "Format(\"Prices Including VAT",
+          "is_label": false
+        },
+        {
+          "name": "SalesPerson_Lbl",
+          "expression": "SalespersonLbl",
+          "is_label": true
+        },
+        {
+          "name": "SalesPersonBlank_Lbl",
+          "expression": "SalesPersonText",
+          "is_label": true
+        },
+        {
+          "name": "SalesPersonName",
+          "expression": "SalespersonPurchaser.Name",
+          "is_label": false
+        },
+        {
+          "name": "SelltoCustomerNo",
+          "expression": "Sell-to Customer No.",
+          "is_label": false
+        },
+        {
+          "name": "SelltoCustomerNo_Lbl",
+          "expression": "FieldCaption(\"Sell-to Customer No.",
+          "is_label": true
+        },
+        {
+          "name": "VATRegistrationNo",
+          "expression": "GetCustomerVATRegistrationNumber(",
+          "is_label": false
+        },
+        {
+          "name": "VATRegistrationNo_Lbl",
+          "expression": "GetCustomerVATRegistrationNumberLbl(",
+          "is_label": true
+        },
+        {
+          "name": "GlobalLocationNumber",
+          "expression": "GetCustomerGlobalLocationNumber(",
+          "is_label": false
+        },
+        {
+          "name": "GlobalLocationNumber_Lbl",
+          "expression": "GetCustomerGlobalLocationNumberLbl(",
+          "is_label": true
+        },
+        {
+          "name": "LegalEntityType",
+          "expression": "Cust.GetLegalEntityType(",
+          "is_label": false
+        },
+        {
+          "name": "LegalEntityType_Lbl",
+          "expression": "Cust.GetLegalEntityTypeLbl(",
+          "is_label": true
+        },
+        {
+          "name": "Copy_Lbl",
+          "expression": "CopyLbl",
+          "is_label": true
+        },
+        {
+          "name": "EMail_Lbl",
+          "expression": "EMailLbl",
+          "is_label": true
+        },
+        {
+          "name": "Estimate_Lbl",
+          "expression": "EstimateLbl",
+          "is_label": true
+        },
+        {
+          "name": "YourEstimate_Lbl",
+          "expression": "YourEstimateLbl",
+          "is_label": true
+        },
+        {
+          "name": "EstimateBody_Lbl",
+          "expression": "EstimateBodyLbl",
+          "is_label": true
+        },
+        {
+          "name": "From_Lbl",
+          "expression": "FromLbl",
+          "is_label": true
+        },
+        {
+          "name": "EstimateFor_Lbl",
+          "expression": "EstimateForLbl",
+          "is_label": true
+        },
+        {
+          "name": "Questions_Lbl",
+          "expression": "QuestionsLbl",
+          "is_label": true
+        },
+        {
+          "name": "Contact_Lbl",
+          "expression": "CompanyInfo.GetContactUsText(",
+          "is_label": true
+        },
+        {
+          "name": "Thanks_Lbl",
+          "expression": "ThanksLbl",
+          "is_label": true
+        },
+        {
+          "name": "HomePage_Lbl",
+          "expression": "HomePageLbl",
+          "is_label": true
+        },
+        {
+          "name": "InvoiceDiscountBaseAmount_Lbl",
+          "expression": "InvDiscBaseAmtLbl",
+          "is_label": true
+        },
+        {
+          "name": "InvoiceDiscountAmount_Lbl",
+          "expression": "InvDiscountAmtLbl",
+          "is_label": true
+        },
+        {
+          "name": "LineAmountAfterInvoiceDiscount_Lbl",
+          "expression": "LineAmtAfterInvDiscLbl",
+          "is_label": true
+        },
+        {
+          "name": "LocalCurrency_Lbl",
+          "expression": "LocalCurrencyLbl",
+          "is_label": true
+        },
+        {
+          "name": "ExchangeRateAsText",
+          "expression": "ExchangeRateText",
+          "is_label": false
+        },
+        {
+          "name": "Page_Lbl",
+          "expression": "PageLbl",
+          "is_label": true
+        },
+        {
+          "name": "SalesInvoiceLineDiscount_Lbl",
+          "expression": "SalesInvLineDiscLbl",
+          "is_label": true
+        },
+        {
+          "name": "DocumentTitle_Lbl",
+          "expression": "SalesConfirmationLbl",
+          "is_label": true
+        },
+        {
+          "name": "ShowWorkDescription",
+          "expression": "ShowWorkDescription",
+          "is_label": false
+        },
+        {
+          "name": "Subtotal_Lbl",
+          "expression": "SubtotalLbl",
+          "is_label": true
+        },
+        {
+          "name": "Total_Lbl",
+          "expression": "TotalLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATAmount_Lbl",
+          "expression": "VATAmtLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATBase_Lbl",
+          "expression": "VATBaseLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATAmountSpecification_Lbl",
+          "expression": "VATAmtSpecificationLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATClauses_Lbl",
+          "expression": "VATClausesLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATIdentifier_Lbl",
+          "expression": "VATIdentifierLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATPercentage_Lbl",
+          "expression": "VATPercentageLbl",
+          "is_label": true
+        },
+        {
+          "name": "VATClause_Lbl",
+          "expression": "VATClause.TableCaption",
+          "is_label": true
+        }
+      ],
+      "children": [
+        {
+          "name": "Line",
+          "source_table": "Sales Line",
+          "column_count": 34,
+          "is_temporary": true,
+          "columns": [
+            {
+              "name": "LineNo_Line",
+              "expression": "Line No.",
+              "is_label": false
+            },
+            {
+              "name": "AmountExcludingVAT_Line",
+              "expression": "Amount",
+              "is_label": false
+            },
+            {
+              "name": "AmountExcludingVAT_Line_Lbl",
+              "expression": "FieldCaption(Amount",
+              "is_label": true
+            },
+            {
+              "name": "AmountIncludingVAT_Line",
+              "expression": "Amount Including VAT",
+              "is_label": false
+            },
+            {
+              "name": "AmountIncludingVAT_Line_Lbl",
+              "expression": "FieldCaption(\"Amount Including VAT",
+              "is_label": true
+            },
+            {
+              "name": "Description_Line",
+              "expression": "DescriptionTxt",
+              "is_label": false
+            },
+            {
+              "name": "Description_Line_Lbl",
+              "expression": "FieldCaption(Description",
+              "is_label": true
+            },
+            {
+              "name": "LineDiscountPercent_Line",
+              "expression": "Line Discount %",
+              "is_label": false
+            },
+            {
+              "name": "LineDiscountPercentText_Line",
+              "expression": "LineDiscountPctText",
+              "is_label": false
+            },
+            {
+              "name": "LineAmount_Line",
+              "expression": "FormattedLineAmount",
+              "is_label": false
+            },
+            {
+              "name": "LineAmountIncVAT_Line",
+              "expression": "FormatAmount(\"Amount Including VAT\", Header.\"Currency Code\", Line.Type = Line.Type::\" ",
+              "is_label": false
+            },
+            {
+              "name": "LineAmount_Line_Lbl",
+              "expression": "FieldCaption(\"Line Amount",
+              "is_label": true
+            },
+            {
+              "name": "ItemNo_Line",
+              "expression": "No.",
+              "is_label": false
+            },
+            {
+              "name": "ItemNo_Line_Lbl",
+              "expression": "FieldCaption(\"No.",
+              "is_label": true
+            },
+            {
+              "name": "ItemReferenceNo_Line",
+              "expression": "Item Reference No.",
+              "is_label": false
+            },
+            {
+              "name": "ItemReferenceNo_Line_Lbl",
+              "expression": "FieldCaption(\"Item Reference No.",
+              "is_label": true
+            },
+            {
+              "name": "ShipmentDate_Line",
+              "expression": "Format(\"Shipment Date",
+              "is_label": false
+            },
+            {
+              "name": "ShipmentDate_Lbl",
+              "expression": "PostedShipmentDateLbl",
+              "is_label": true
+            },
+            {
+              "name": "Quantity_Line",
+              "expression": "FormattedQuantity",
+              "is_label": false
+            },
+            {
+              "name": "Quantity_Line_Lbl",
+              "expression": "FieldCaption(Quantity",
+              "is_label": true
+            },
+            {
+              "name": "Type_Line",
+              "expression": "Format(Type",
+              "is_label": false
+            },
+            {
+              "name": "UnitPrice",
+              "expression": "FormattedUnitPrice",
+              "is_label": false
+            },
+            {
+              "name": "UnitPrice_Lbl",
+              "expression": "FieldCaption(\"Unit Price",
+              "is_label": true
+            },
+            {
+              "name": "UnitOfMeasure",
+              "expression": "Unit of Measure",
+              "is_label": false
+            },
+            {
+              "name": "UnitOfMeasure_Lbl",
+              "expression": "FieldCaption(\"Unit of Measure",
+              "is_label": true
+            },
+            {
+              "name": "VATIdentifier_Line",
+              "expression": "VAT Identifier",
+              "is_label": false
+            },
+            {
+              "name": "VATIdentifier_Line_Lbl",
+              "expression": "FieldCaption(\"VAT Identifier",
+              "is_label": true
+            },
+            {
+              "name": "VATPct_Line",
+              "expression": "FormattedVATPct",
+              "is_label": false
+            },
+            {
+              "name": "VATPct_Line_Lbl",
+              "expression": "FieldCaption(\"VAT %",
+              "is_label": true
+            },
+            {
+              "name": "TransHeaderAmount",
+              "expression": "TransHeaderAmount",
+              "is_label": false
+            },
+            {
+              "name": "Unit_Lbl",
+              "expression": "UnitLbl",
+              "is_label": true
+            },
+            {
+              "name": "Qty_Lbl",
+              "expression": "QtyLbl",
+              "is_label": true
+            },
+            {
+              "name": "Price_Lbl",
+              "expression": "PriceLbl",
+              "is_label": true
+            },
+            {
+              "name": "PricePer_Lbl",
+              "expression": "PricePerLbl",
+              "is_label": true
+            }
+          ],
+          "children": []
+        },
+        {
+          "name": "WorkDescriptionLines",
+          "source_table": "Integer",
+          "column_count": 2,
+          "is_temporary": false,
+          "columns": [
+            {
+              "name": "WorkDescriptionLineNumber",
+              "expression": "Number",
+              "is_label": false
+            },
+            {
+              "name": "WorkDescriptionLine",
+              "expression": "WorkDescriptionLine",
+              "is_label": false
+            }
+          ],
+          "children": []
+        },
+        {
+          "name": "VATAmountLine",
+          "source_table": "VAT Amount Line",
+          "column_count": 19,
+          "is_temporary": true,
+          "columns": [
+            {
+              "name": "InvoiceDiscountAmount_VATAmountLine",
+              "expression": "Invoice Discount Amount",
+              "is_label": false
+            },
+            {
+              "name": "InvoiceDiscountAmount_VATAmountLine_Lbl",
+              "expression": "FieldCaption(\"Invoice Discount Amount",
+              "is_label": true
+            },
+            {
+              "name": "InvoiceDiscountBaseAmount_VATAmountLine",
+              "expression": "Inv. Disc. Base Amount",
+              "is_label": false
+            },
+            {
+              "name": "InvoiceDiscountBaseAmount_VATAmountLine_Lbl",
+              "expression": "FieldCaption(\"Inv. Disc. Base Amount",
+              "is_label": true
+            },
+            {
+              "name": "LineAmount_VatAmountLine",
+              "expression": "Line Amount",
+              "is_label": false
+            },
+            {
+              "name": "LineAmount_VatAmountLine_Lbl",
+              "expression": "FieldCaption(\"Line Amount",
+              "is_label": true
+            },
+            {
+              "name": "VATAmount_VatAmountLine",
+              "expression": "VAT Amount",
+              "is_label": false
+            },
+            {
+              "name": "VATAmount_VatAmountLine_Lbl",
+              "expression": "FieldCaption(\"VAT Amount",
+              "is_label": true
+            },
+            {
+              "name": "VATAmountLCY_VATAmountLine",
+              "expression": "VATAmountLCY",
+              "is_label": false
+            },
+            {
+              "name": "VATAmountLCY_VATAmountLine_Lbl",
+              "expression": "VATAmountLCYLbl",
+              "is_label": true
+            },
+            {
+              "name": "VATBase_VatAmountLine",
+              "expression": "VAT Base",
+              "is_label": false
+            },
+            {
+              "name": "VATBase_VatAmountLine_Lbl",
+              "expression": "FieldCaption(\"VAT Base",
+              "is_label": true
+            },
+            {
+              "name": "VATBaseLCY_VATAmountLine",
+              "expression": "VATBaseLCY",
+              "is_label": false
+            },
+            {
+              "name": "VATBaseLCY_VATAmountLine_Lbl",
+              "expression": "VATBaseLCYLbl",
+              "is_label": true
+            },
+            {
+              "name": "VATIdentifier_VatAmountLine",
+              "expression": "VAT Identifier",
+              "is_label": false
+            },
+            {
+              "name": "VATIdentifier_VatAmountLine_Lbl",
+              "expression": "FieldCaption(\"VAT Identifier",
+              "is_label": true
+            },
+            {
+              "name": "VATPct_VatAmountLine",
+              "expression": "VAT %",
+              "is_label": false
+            },
+            {
+              "name": "VATPct_VatAmountLine_Lbl",
+              "expression": "FieldCaption(\"VAT %",
+              "is_label": true
+            },
+            {
+              "name": "NoOfVATIdentifiers",
+              "expression": "Count",
+              "is_label": false
+            }
+          ],
+          "children": []
+        },
+        {
+          "name": "ReportTotalsLine",
+          "source_table": "Report Totals Buffer",
+          "column_count": 5,
+          "is_temporary": true,
+          "columns": [
+            {
+              "name": "Description_ReportTotalsLine",
+              "expression": "Description",
+              "is_label": false
+            },
+            {
+              "name": "Amount_ReportTotalsLine",
+              "expression": "Amount",
+              "is_label": false
+            },
+            {
+              "name": "AmountFormatted_ReportTotalsLine",
+              "expression": "Amount Formatted",
+              "is_label": false
+            },
+            {
+              "name": "FontBold_ReportTotalsLine",
+              "expression": "Font Bold",
+              "is_label": false
+            },
+            {
+              "name": "FontUnderline_ReportTotalsLine",
+              "expression": "Font Underline",
+              "is_label": false
+            }
+          ],
+          "children": []
+        },
+        {
+          "name": "LetterText",
+          "source_table": "Integer",
+          "column_count": 4,
+          "is_temporary": false,
+          "columns": [
+            {
+              "name": "GreetingText",
+              "expression": "GreetingLbl",
+              "is_label": false
+            },
+            {
+              "name": "BodyText",
+              "expression": "BodyLbl",
+              "is_label": false
+            },
+            {
+              "name": "ClosingText",
+              "expression": "ClosingLbl",
+              "is_label": false
+            },
+            {
+              "name": "PmtDiscText",
+              "expression": "PmtDiscText",
+              "is_label": false
+            }
+          ],
+          "children": []
+        },
+        {
+          "name": "Totals",
+          "source_table": "Integer",
+          "column_count": 13,
+          "is_temporary": false,
+          "columns": [
+            {
+              "name": "TotalNetAmount",
+              "expression": "TotalAmount",
+              "is_label": false
+            },
+            {
+              "name": "TotalVATBaseLCY",
+              "expression": "TotalVATBaseLCY",
+              "is_label": false
+            },
+            {
+              "name": "TotalAmountIncludingVAT",
+              "expression": "GetTotalAmountText(TotalAmountInclVAT",
+              "is_label": false
+            },
+            {
+              "name": "TotalVATAmount",
+              "expression": "TotalAmountVAT",
+              "is_label": false
+            },
+            {
+              "name": "TotalVATAmountLCY",
+              "expression": "TotalVATAmountLCY",
+              "is_label": false
+            },
+            {
+              "name": "TotalInvoiceDiscountAmount",
+              "expression": "TotalInvDiscAmount",
+              "is_label": false
+            },
+            {
+              "name": "TotalPaymentDiscountOnVAT",
+              "expression": "TotalPaymentDiscOnVAT",
+              "is_label": false
+            },
+            {
+              "name": "TotalVATAmountText",
+              "expression": "VATAmountLine.VATAmountText(",
+              "is_label": false
+            },
+            {
+              "name": "TotalExcludingVATText",
+              "expression": "TotalExclVATText",
+              "is_label": false
+            },
+            {
+              "name": "TotalIncludingVATText",
+              "expression": "TotalInclVATText",
+              "is_label": false
+            },
+            {
+              "name": "TotalSubTotal",
+              "expression": "TotalSubTotal",
+              "is_label": false
+            },
+            {
+              "name": "TotalSubTotalMinusInvoiceDiscount",
+              "expression": "TotalSubTotal + TotalInvDiscAmount",
+              "is_label": false
+            },
+            {
+              "name": "TotalText",
+              "expression": "TotalText",
+              "is_label": false
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "Footer",
+      "source_table": "Integer",
+      "column_count": 12,
+      "is_temporary": false,
+      "columns": [
+        {
+          "name": "Footer_Text_Bank",
+          "expression": "BankLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Bank",
+          "expression": "CompanyInfo.\"Bank Name",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Text_IBAN",
+          "expression": "IBANLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_IBAN",
+          "expression": "CompanyInfo.IBAN",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Text_SWIFTCode",
+          "expression": "SWIFTCodeLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_SWIFTCode",
+          "expression": "CompanyInfo.\"SWIFT Code",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Text_BusinessPermit",
+          "expression": "BusinessPermitLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_BusinessPermit",
+          "expression": "CompanyInfo.\"Business Permit 002SKC",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Text_CommerceReg",
+          "expression": "CommerceRegLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_CommerceReg",
+          "expression": "CompanyInfo.\"Commerce Reg. 002SKC",
+          "is_label": false
+        },
+        {
+          "name": "Footer_Text_VATRegistrationNumber",
+          "expression": "VATNoLbl",
+          "is_label": false
+        },
+        {
+          "name": "Footer_VATRegistrationNumber",
+          "expression": "CompanyInfo.GetVATRegistrationNumber(",
+          "is_label": false
+        }
+      ],
+      "children": []
+    }
+  ]
+}

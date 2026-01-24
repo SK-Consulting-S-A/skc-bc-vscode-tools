@@ -59,6 +59,10 @@
         "title": "SKC: Apply Presets"
       },
       {
+        "command": "skc.installSkills",
+        "title": "SKC: Install Cursor Skills"
+      },
+      {
         "command": "skc.configureMcpAuth",
         "title": "SKC: Configure MCP Auth"
       },
@@ -141,6 +145,11 @@
           "type": "string",
           "default": "presets/extensions.json",
           "description": "Optional path to a JSON file that defines additional extensions to install. Unioned with the built-in list. Relative paths resolve from the first workspace folder."
+        },
+        "skc.installSkillsOnApplyPresets": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically install Cursor skills when applying presets."
         },
         "skc.showNewsOnStartup": {
           "type": "boolean",

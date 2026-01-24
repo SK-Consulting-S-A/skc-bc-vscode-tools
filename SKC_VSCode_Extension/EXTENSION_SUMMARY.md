@@ -11,6 +11,10 @@
 
 ## What It Does
 
+### 0. **Bundles Cursor AI Skills**
+
+Ships with the full Anthropic curated skills set plus the SKC `bc-word-layout` skill. Skills are installed to `~/.cursor/skills/` on extension updates (via Apply Presets), and can be installed manually via command.
+
 ### 1. **XLF Translation Tools**
 
 The extension provides a dedicated **Translations** sidebar for managing and translating Business Central XLF files:
@@ -104,6 +108,7 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 
 ### Commands
 - **SKC: Apply Presets** - Manually apply all presets
+- **SKC: Install Cursor Skills** - Install bundled Cursor skills to `~/.cursor/skills/`
 - **SKC: Configure MCP Auth** - Set up MCP server authentication
 - **SKC: Configure Translation URL** - Set Azure Translation Function endpoint
 - **Translate File** - Translate selected XLF file (from sidebar)
@@ -152,6 +157,7 @@ All settings are prefixed with `skc.*`:
 - `skc.presetFilePath` - Custom settings preset path
 - `skc.mcpFilePath` - Custom MCP servers configuration path
 - `skc.extensionsFilePath` - Custom extensions list path
+- `skc.installSkillsOnApplyPresets` - Auto-install bundled Cursor skills on Apply Presets (default: true)
 - `skc.azureFunctionUrl` - Azure Translation Function endpoint URL
 - `skc.showNewsOnStartup` - Show news notification on startup (default: true)
 - `skc.autoOpenNewsPage` - Auto-open news page instead of notification (default: false)

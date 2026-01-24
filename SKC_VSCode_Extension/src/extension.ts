@@ -35,6 +35,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(applyCommand);
 
+  const installSkillsCommand = commands.registerCommand("skc.installSkills", async () => {
+    await installSkills(context, channel);
+    void window.showInformationMessage("SKC Cursor skills installed.");
+  });
+  context.subscriptions.push(installSkillsCommand);
+
   const configureAuthCommand = commands.registerCommand("skc.configureMcpAuth", async () => {
     const saved = await promptAndSaveMcpSecrets(context);
     const message = saved
@@ -204,6 +210,7 @@ async function applyPresets(
   const presetPath = cfg.get<string>("presetFilePath", "").trim();
   const mcpPath = cfg.get<string>("mcpFilePath", "").trim();
   const extensionsPath = cfg.get<string>("extensionsFilePath", "").trim();
+  const installSkillsOnApply = cfg.get<boolean>("installSkillsOnApplyPresets", true);
 
   channel.appendLine(`[SKC] Applying presets...`);
   channel.appendLine(`[SKC] Preset path: ${presetPath || "(empty)"}`);
@@ -230,6 +237,9 @@ async function applyPresets(
 
   await ensureExtensions(channel, skipInstalled, extensionsToInstall);
   await applySettings(channel, settingsToApply);
+  if (installSkillsOnApply) {
+    await installSkills(context, channel);
+  }
 
   await context.globalState.update(STATE_KEY, true);
   const currentVersion = (context.extension?.packageJSON?.version as string | undefined) ?? undefined;
@@ -318,6 +328,59 @@ async function applySettings(
       }
     }
     channel.appendLine(`[SKC] Note: Settings file location: %APPDATA%\\Code\\User\\settings.json (Windows)`);
+  }
+}
+
+async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+  const sourceRoot = path.join(context.extensionPath, "skills");
+  const targetRoot = path.join(os.homedir(), ".cursor", "skills");
+
+  if (!(await pathExists(sourceRoot))) {
+    channel.appendLine(`[SKC] Skills folder not found at ${sourceRoot}; skipping skill install.`);
+    return;
+  }
+
+  await fs.mkdir(targetRoot, { recursive: true });
+  const entries = await fs.readdir(sourceRoot, { withFileTypes: true });
+  const skillDirs = entries.filter((entry) => entry.isDirectory());
+
+  if (skillDirs.length === 0) {
+    channel.appendLine(`[SKC] No skills found in ${sourceRoot}; skipping skill install.`);
+    return;
+  }
+
+  channel.appendLine(`[SKC] Installing ${skillDirs.length} skill bundle(s) to ${targetRoot}...`);
+  for (const dir of skillDirs) {
+    const src = path.join(sourceRoot, dir.name);
+    const dest = path.join(targetRoot, dir.name);
+    await copyDirectory(src, dest);
+    channel.appendLine(`[SKC] Installed skills from ${dir.name}.`);
+  }
+}
+
+async function copyDirectory(source: string, target: string): Promise<void> {
+  await fs.mkdir(target, { recursive: true });
+  const entries = await fs.readdir(source, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (entry.name === "__pycache__" || entry.name === ".git") {
+      continue;
+    }
+
+    const srcPath = path.join(source, entry.name);
+    const destPath = path.join(target, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyDirectory(srcPath, destPath);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      if (entry.name.endsWith(".pyc")) {
+        continue;
+      }
+      await fs.copyFile(srcPath, destPath);
+    }
   }
 }
 

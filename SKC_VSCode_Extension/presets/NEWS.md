@@ -1,6 +1,17 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 1.5.0 - Latest Release
+## Version 1.5.3 - Latest Release
+
+### 🧠 NEW: Cursor Skills Auto-Install
+- **All Anthropic Curated Skills + SKC BC Word Layout** are now bundled with the extension
+- **Auto-install on update** when presets are applied (default on)
+- **Manual install command**: `SKC: Install Cursor Skills`
+- **Config setting**: `skc.installSkillsOnApplyPresets` (set to `false` to disable auto-install)
+- Skills are installed to `~/.cursor/skills/` for immediate use
+
+---
+
+## Version 1.5.0
 
 Welcome to **SKC VS Tools**! Your all-in-one extension for streamlined Business Central AL development.
 
