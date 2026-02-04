@@ -24,6 +24,7 @@ const OUTPUT_CHANNEL_NAME = "SKC Presets";
 const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
+const STATE_LAST_EXTENSION_IDS_KEY = "skc.lastAppliedExtensionIds";
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const channel = window.createOutputChannel(OUTPUT_CHANNEL_NAME);
@@ -236,9 +237,11 @@ async function applyPresets(
 
   const settingsToApply = settings ? { ...settings } : {};
   channel.appendLine(`[SKC] Loaded ${Object.keys(settingsToApply).length} settings from preset file.`);
-  if (Array.isArray(mcpServers) && mcpServers.length > 0) {
-    settingsToApply["mcp.servers"] = mcpServers;
-    channel.appendLine(`[SKC] Added ${mcpServers.length} MCP server(s) to settings.`);
+  const removeMcpsNotInPreset = cfg.get<boolean>("removeMcpsNotInPreset", true);
+  const mcpServersToApply = resolveMcpServersToApply(mcpServers, removeMcpsNotInPreset, channel);
+  if (mcpServersToApply !== undefined) {
+    settingsToApply["mcp.servers"] = mcpServersToApply;
+    channel.appendLine(`[SKC] Set mcp.servers to ${mcpServersToApply.length} server(s) (preset only: ${removeMcpsNotInPreset}).`);
   }
   const extensionsToInstall = Array.from(
     new Set([
@@ -247,7 +250,12 @@ async function applyPresets(
     ])
   );
 
+  const uninstallRemoved = cfg.get<boolean>("uninstallExtensionsRemovedFromPreset", false);
+  await uninstallExtensionsRemovedFromPreset(context, channel, extensionsToInstall, uninstallRemoved);
+
   await ensureExtensions(channel, skipInstalled, extensionsToInstall);
+  await context.globalState.update(STATE_LAST_EXTENSION_IDS_KEY, extensionsToInstall);
+
   await applySettings(channel, settingsToApply);
   if (installSkillsOnApply) {
     await installSkills(context, channel);
@@ -262,6 +270,39 @@ async function applyPresets(
   if (!silent) {
     void window.showInformationMessage("SKC presets applied.");
   }
+}
+
+/**
+ * Returns the mcp.servers value to apply: preset only (optionally removing others), or preset merged with existing.
+ */
+function resolveMcpServersToApply(
+  presetMcpServers: unknown[] | undefined,
+  removeOthers: boolean,
+  channel: OutputChannel
+): unknown[] | undefined {
+  if (!Array.isArray(presetMcpServers)) {
+    return undefined;
+  }
+  if (removeOthers) {
+    return presetMcpServers;
+  }
+  const config = workspace.getConfiguration();
+  const current = config.get<unknown[]>("mcp.servers");
+  const currentList = Array.isArray(current) ? current : [];
+  const presetIds = new Set(
+    presetMcpServers.map((s) => (s && typeof s === "object" && "id" in s ? (s as { id: string }).id : undefined)).filter(Boolean)
+  );
+  const merged = [...presetMcpServers];
+  for (const entry of currentList) {
+    if (entry && typeof entry === "object" && "id" in entry) {
+      const id = (entry as { id: string }).id;
+      if (id && !presetIds.has(id)) {
+        merged.push(entry);
+      }
+    }
+  }
+  channel.appendLine(`[SKC] Merged MCP: ${presetMcpServers.length} from preset + ${merged.length - presetMcpServers.length} existing kept.`);
+  return merged;
 }
 
 async function applySettings(
@@ -403,6 +444,35 @@ async function copyDirectory(source: string, target: string): Promise<void> {
         continue;
       }
       await fs.copyFile(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * If enabled, uninstalls any installed extension that is not in the current preset list.
+ * The preset list is the single source of truth; only SKC VS Tools is always kept.
+ */
+async function uninstallExtensionsRemovedFromPreset(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  extensionsToInstall: string[],
+  enabled: boolean
+): Promise<void> {
+  if (!enabled) {
+    return;
+  }
+  const allowedSet = new Set(extensionsToInstall);
+  const myId = context.extension?.id;
+  for (const ext of extensions.all) {
+    if (ext.id === myId || allowedSet.has(ext.id)) {
+      continue;
+    }
+    channel.appendLine(`[SKC] Uninstalling ${ext.id} (not in preset list)...`);
+    try {
+      await commands.executeCommand("workbench.extensions.uninstallExtension", ext);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      channel.appendLine(`[SKC] Failed to uninstall ${ext.id}: ${msg}`);
     }
   }
 }
