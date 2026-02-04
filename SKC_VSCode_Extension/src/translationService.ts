@@ -14,6 +14,13 @@ export interface TranslationResult {
     };
 }
 
+export interface TranslateFileHeadlessResult {
+    success: boolean;
+    message: string;
+    translatedCount?: number;
+    syncInfo?: { added: number; removed: number };
+}
+
 // Request timeout - Azure Function handles batching internally, may take time for large files
 const REQUEST_TIMEOUT_MS = 600000; // 10 minutes timeout for large files
 
@@ -145,7 +152,7 @@ export async function translateFile(
         }
 
         channel.appendLine(`[SKC] Sending to Azure Function with sync enabled (same as GitHub flow)`);
-        channel.appendLine(`[SKC] Azure Function URL: ${azureFunctionUrl}`);
+        channel.appendLine(`[SKC] Azure Function URL: (configured)`);
         channel.appendLine(`[SKC] Output file: ${outputPath}`);
 
         // Show progress
@@ -267,6 +274,154 @@ export async function createTranslationFile(
         void vscode.window.showErrorMessage(`Failed to create translation file: ${message}`);
         return false;
     }
+}
+
+/**
+ * Get translation stats for an XLF file (total units, translated count).
+ */
+export async function getTranslationStats(filePath: string): Promise<{ total: number; translated: number }> {
+    const content = await fs.readFile(filePath, "utf8");
+    const transUnitMatches = content.match(/<trans-unit/g);
+    const total = transUnitMatches ? transUnitMatches.length : 0;
+    const translatedMatches = content.match(/<target[^>]*\sstate\s*=\s*["']translated["'][^>]*>/g);
+    const translated = translatedMatches ? translatedMatches.length : 0;
+    return { total, translated };
+}
+
+/**
+ * Headless translate: no UI prompts. Requires Azure URL configured and valid file path + target language.
+ * Returns a result object suitable for LLM tool response.
+ */
+export async function translateFileHeadless(
+    fileUri: vscode.Uri,
+    targetLanguage: string,
+    channel: vscode.OutputChannel
+): Promise<TranslateFileHeadlessResult> {
+    const cfg = vscode.workspace.getConfiguration("skc");
+    const azureFunctionUrl = cfg.get<string>("azureFunctionUrl", "").trim();
+
+    if (!azureFunctionUrl) {
+        return { success: false, message: "Azure Function URL not configured. Set skc.azureFunctionUrl in settings." };
+    }
+
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
+    if (!workspaceFolder) {
+        return { success: false, message: "Could not determine workspace folder for this file." };
+    }
+
+    const filePath = fileUri.fsPath;
+    const fileName = path.basename(filePath);
+    if (!fileName.endsWith(".g.xlf")) {
+        return { success: false, message: "File must be a source XLF file (*.g.xlf)." };
+    }
+
+    try {
+        const sourceContent = await fs.readFile(filePath, "utf8");
+        const outputFileName = fileName.replace(".g.xlf", `.${targetLanguage}.xlf`);
+        const outputPath = path.join(path.dirname(filePath), outputFileName);
+
+        let targetContent: string;
+        try {
+            targetContent = await fs.readFile(outputPath, "utf8");
+        } catch {
+            targetContent = sourceContent;
+        }
+
+        const result = await callAzureFunctionWithSync(
+            azureFunctionUrl,
+            sourceContent,
+            targetContent,
+            targetLanguage,
+            channel
+        );
+
+        if (!result || !result.translatedContent) {
+            return { success: false, message: "No translated content received from Azure Function." };
+        }
+
+        await fs.writeFile(outputPath, result.translatedContent, "utf8");
+
+        const syncInfo = result.syncInfo || { added: 0, removed: 0 };
+        let summary = `Translated: ${result.translatedCount}`;
+        const parts: string[] = [];
+        if (syncInfo.added > 0) parts.push(`+${syncInfo.added} added`);
+        if (syncInfo.removed > 0) parts.push(`-${syncInfo.removed} removed`);
+        if (parts.length > 0) summary += ` | Synced: ${parts.join(", ")}`;
+        summary += `. Saved to ${outputFileName}`;
+
+        return {
+            success: true,
+            message: summary,
+            translatedCount: result.translatedCount,
+            syncInfo: { added: syncInfo.added, removed: syncInfo.removed }
+        };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        return { success: false, message: `Translation failed: ${message}` };
+    }
+}
+
+/**
+ * Build a text summary of translation files and status in the workspace (for LLM tools).
+ */
+export async function getTranslationStatusSummary(workspaceFolderUri?: vscode.Uri): Promise<string> {
+    const folders = workspaceFolderUri
+        ? [workspaceFolderUri]
+        : (vscode.workspace.workspaceFolders?.map((f) => f.uri) ?? []);
+
+    if (folders.length === 0) {
+        return "No workspace folder open.";
+    }
+
+    const lines: string[] = [];
+
+    for (const folder of folders) {
+        const translationsPath = path.join(folder.fsPath, "Translations");
+        try {
+            await fs.access(translationsPath);
+        } catch {
+            lines.push(`Folder ${folder.fsPath}: No Translations folder.`);
+            continue;
+        }
+
+        const files = await fs.readdir(translationsPath);
+        const sourceXlfFiles = files.filter((f) => f.endsWith(".g.xlf"));
+        if (sourceXlfFiles.length === 0) {
+            lines.push(`Folder ${folder.fsPath}: Translations folder has no .g.xlf files.`);
+            continue;
+        }
+
+        lines.push(`Workspace: ${folder.fsPath}`);
+        for (const file of sourceXlfFiles) {
+            const sourcePath = path.join(translationsPath, file);
+            const sourceBaseName = file.replace(".g.xlf", "");
+            let sourceStats: { total: number; translated: number };
+            try {
+                sourceStats = await getTranslationStats(sourcePath);
+            } catch {
+                sourceStats = { total: 0, translated: 0 };
+            }
+            lines.push(`- ${file}: ${sourceStats.total} units`);
+
+            const targetPattern = new RegExp(`^${sourceBaseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.([a-z]{2}-[A-Z]{2})\\.xlf$`, "i");
+            for (const f of files) {
+                const match = f.match(targetPattern);
+                if (match) {
+                    const lang = match[1];
+                    const targetPath = path.join(translationsPath, f);
+                    try {
+                        const stats = await getTranslationStats(targetPath);
+                        const pct = stats.total > 0 ? Math.floor((stats.translated / stats.total) * 100) : 0;
+                        lines.push(`  - ${lang}: ${stats.translated}/${stats.total} (${pct}%)`);
+                    } catch {
+                        lines.push(`  - ${lang}: (error reading)`);
+                    }
+                }
+            }
+        }
+    }
+
+    return lines.length > 0 ? lines.join("\n") : "No translation files found.";
 }
 
 /**

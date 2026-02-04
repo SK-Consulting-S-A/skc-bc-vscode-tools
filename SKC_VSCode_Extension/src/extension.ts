@@ -4,6 +4,7 @@ import * as path from "path";
 import {
   commands,
   ConfigurationTarget,
+  env,
   ExtensionContext,
   OutputChannel,
   extensions,
@@ -14,8 +15,10 @@ import {
   Selection,
   TextEditorRevealType
 } from "vscode";
-import { TranslationsProvider, SourceFileItem, TargetLanguageItem, AddLanguageItem } from "./translationsView";
+import { TranslationsProvider, SourceFileItem, TargetLanguageItem } from "./translationsView";
 import { translateFile, createTranslationFile } from "./translationService";
+import { startLmBridge } from "./lmBridge";
+import { registerTranslationTools } from "./translationTools";
 
 const OUTPUT_CHANNEL_NAME = "SKC Presets";
 const STATE_KEY = "skc.presetsApplied";
@@ -117,7 +120,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
           // Calculate the position and reveal it
           const position = document.positionAt(match.index);
           const range = new Range(position, position);
-          
+
           // Reveal and select the line
           editor.selection = new Selection(position, position);
           editor.revealRange(range, TextEditorRevealType.InCenter);
@@ -161,7 +164,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     async () => {
       const cfg = workspace.getConfiguration("skc");
       const currentUrl = cfg.get<string>("azureFunctionUrl", "");
-      
+
       const url = await window.showInputBox({
         prompt: "Enter the Azure Translation Function URL",
         placeHolder: "https://your-function.azurewebsites.net/api/github-webhook",
@@ -179,7 +182,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
           }
         }
       });
-      
+
       if (url !== undefined) {
         await cfg.update("azureFunctionUrl", url.trim(), true);
         void window.showInformationMessage("Azure Translation Function URL saved.");
@@ -198,6 +201,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   // Show news notification on startup (especially for new versions)
   await showNewsIfNeeded(context, channel, currentVersion, isNewVersion);
+
+  // Start LM Bridge only in Cursor (exposes vscode.lm tools to Cursor AI via MCP SSE; not needed in VS Code)
+  const isCursor = env.appName.includes("Cursor");
+  if (isCursor) {
+    startLmBridge(context, channel);
+  }
+
+  // Register LLM tools for translation (VS Code 1.108+ / Cursor); also exposed via LM Bridge in Cursor
+  registerTranslationTools(context, channel);
 }
 
 async function applyPresets(
@@ -289,7 +301,12 @@ async function applySettings(
       continue;
     }
 
-    channel.appendLine(`[SKC] Updating ${key} from ${JSON.stringify(current)} to ${JSON.stringify(value)}.`);
+    const isSensitive = key === "mcp.servers";
+    if (!isSensitive) {
+      channel.appendLine(`[SKC] Updating ${key} from ${JSON.stringify(current)} to ${JSON.stringify(value)}.`);
+    } else {
+      channel.appendLine(`[SKC] Updating ${key} (secrets applied, not logged).`);
+    }
     try {
       await config.update(key, value, ConfigurationTarget.Global);
 
@@ -300,8 +317,11 @@ async function applySettings(
       if (matches) {
         channel.appendLine(`[SKC] Successfully updated ${key}.`);
         updatedCount++;
-      } else {
+      } else if (!isSensitive) {
         channel.appendLine(`[SKC] WARNING: ${key} was updated but verification failed. Expected: ${JSON.stringify(value)}, Got: ${JSON.stringify(verifyValue)}`);
+        errorCount++;
+      } else {
+        channel.appendLine(`[SKC] WARNING: ${key} was updated but verification failed (value not logged).`);
         errorCount++;
       }
     } catch (error: unknown) {
@@ -321,8 +341,11 @@ async function applySettings(
       const finalValue = config.get(key, undefined);
       const expectedValue = settings[key];
       const matches = JSON.stringify(finalValue) === JSON.stringify(expectedValue);
+      const sensitive = key === "mcp.servers";
       if (matches) {
         channel.appendLine(`[SKC] ✓ Verified: ${key} is set correctly`);
+      } else if (sensitive) {
+        channel.appendLine(`[SKC] ✗ Warning: ${key} verification failed (value not logged).`);
       } else {
         channel.appendLine(`[SKC] ✗ Warning: ${key} verification failed. Expected: ${JSON.stringify(expectedValue)}, Got: ${JSON.stringify(finalValue)}`);
       }

@@ -1,0 +1,73 @@
+# Publish SKC VS Tools extension to VS Code Marketplace
+# Uses the VSCE_PAT repository secret for authentication.
+#
+# Setup: In the repo go to Settings → Secrets and variables → Actions,
+# add a secret named VSCE_PAT with your Azure DevOps Personal Access Token
+# (Marketplace → Manage scope).
+# Create PAT: https://dev.azure.com → User settings → Personal access tokens
+# Scope: Marketplace (Manage).
+
+name: Publish Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump (leave empty to publish current version)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - patch
+          - minor
+          - major
+      pre_release:
+        description: 'Publish as pre-release'
+        required: false
+        default: false
+        type: boolean
+  release:
+    types: [published]
+
+env:
+  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # If the extension lives in a subfolder (e.g. SKC_VSCode_Extension), set default to that path
+    # default:
+    #   run: ...
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Publish to Marketplace
+        run: |
+          if [ -z "${{ secrets.VSCE_PAT }}" ]; then
+            echo "::error::VSCE_PAT secret is not set. Add it in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          ARGS=""
+          if [ -n "${{ github.event.inputs.version_bump }}" ]; then
+            ARGS="$ARGS ${{ github.event.inputs.version_bump }}"
+          fi
+          if [ "${{ github.event.inputs.pre_release }}" = 'true' ]; then
+            ARGS="$ARGS --pre-release"
+          fi
+          node scripts/publish.js $ARGS
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}

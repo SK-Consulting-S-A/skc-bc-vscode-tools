@@ -26,19 +26,18 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-// Read token from .publish-token file
+// Read token from .publish-token file or from environment (e.g. GitHub Actions secret VSCE_PAT)
 const tokenPath = path.join(__dirname, '..', '.publish-token');
+let token = process.env.VSCE_PAT || process.env.VSCODE_MARKETPLACE_TOKEN || '';
 
-if (!fs.existsSync(tokenPath)) {
-    console.error('Error: .publish-token file not found!');
-    console.error('Please create a .publish-token file in the project root with your Personal Access Token.');
-    process.exit(1);
+if (!token && fs.existsSync(tokenPath)) {
+    token = fs.readFileSync(tokenPath, 'utf8').trim();
 }
 
-const token = fs.readFileSync(tokenPath, 'utf8').trim();
-
 if (!token) {
-    console.error('Error: .publish-token file is empty!');
+    console.error('Error: No publish token found.');
+    console.error('  Local: create a .publish-token file in the project root with your Personal Access Token.');
+    console.error('  CI (e.g. GitHub Actions): add the token as a repository secret named VSCE_PAT.');
     process.exit(1);
 }
 

@@ -52,4 +52,5 @@ If you already manage MCP servers in Cursor's global file (`%USERPROFILE%\.curso
 - Install deps: `npm install`
 - Build: `npm run compile`
 - Package VSIX: `npx vsce package`
+- Publish and extension visibility (private/public): see [PUBLISHING.md](PUBLISHING.md)
 

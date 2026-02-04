@@ -1,6 +1,10 @@
 {
   "servers": [
     {
+      "id": "LM-Bridge",
+      "url": "http://localhost:3000/sse"
+    },
+    {
       "id": "playwright",
       "command": "npx",
       "args": [

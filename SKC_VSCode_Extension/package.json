@@ -1,8 +1,8 @@
 {
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
-  "description": "Applies the SKC preset: user settings (incl. MCP servers) and required extensions.",
-  "version": "1.6.1",
+  "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
+  "version": "1.7.0",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onLanguage:al",
     "onCommand:skc.applyPresets",
     "onCommand:skc.configureMcpAuth",
@@ -123,6 +124,52 @@
         }
       ]
     },
+    "languageModelTools": [
+      {
+        "name": "skc_translate_xlf",
+        "displayName": "Translate XLF File",
+        "modelDescription": "Translates a Business Central XLF source file (*.g.xlf) to a target language using the configured Azure Translation Function. Use when the user wants to translate an XLF file to a specific locale (e.g. fr-FR, de-DE). Requires skc.azureFunctionUrl to be set. Returns a summary of translated count and sync info (added/removed units).",
+        "userDescription": "Translate an XLF file to a target language via Azure.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "translateXlf",
+        "icon": "$(globe)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sourceFilePath": {
+              "type": "string",
+              "description": "Absolute path to the source XLF file (e.g. .../Translations/MyApp.g.xlf)."
+            },
+            "targetLanguage": {
+              "type": "string",
+              "description": "Target language code (e.g. fr-FR, de-DE, es-ES)."
+            }
+          },
+          "required": [
+            "sourceFilePath",
+            "targetLanguage"
+          ]
+        }
+      },
+      {
+        "name": "skc_list_translation_files",
+        "displayName": "List Translation Files and Status",
+        "modelDescription": "Lists all XLF translation files in the workspace and their translation status. For each source file (*.g.xlf) in a Translations folder, shows total units and for each target language file shows translated count and percentage. Use when the user asks about translation progress, which files need translation, or status of XLF files.",
+        "userDescription": "List XLF files and translation progress.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "listTranslations",
+        "icon": "$(list-unordered)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "workspacePath": {
+              "type": "string",
+              "description": "Optional. Absolute path to a workspace folder to limit the listing. If omitted, all workspace folders are listed."
+            }
+          }
+        }
+      }
+    ],
     "configuration": {
       "title": "SKC Presets",
       "properties": {
@@ -170,6 +217,16 @@
           "type": "string",
           "default": "",
           "description": "URL of the Azure Translation Function endpoint (e.g., https://your-function.azurewebsites.net/api/github-webhook?mode=direct)."
+        },
+        "skc.enableLmBridge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Expose VS Code Language Model tools (e.g. AL extension tools) to Cursor AI via an MCP SSE server (LM-Bridge). Cursor can connect to the URL shown in the SKC Presets output when the bridge is running."
+        },
+        "skc.lmBridgePort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port for the LM Bridge MCP SSE server. Change if 3000 is already in use."
         }
       }
     },
@@ -234,7 +291,12 @@
     "lint": "eslint src --ext ts",
     "test": "npm run compile"
   },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "express": "^5.2.1"
+  },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^20.11.30",
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
