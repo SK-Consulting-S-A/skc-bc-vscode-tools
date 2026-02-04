@@ -108,13 +108,8 @@ command += ` --pat ${token}`;
         console.log('   To share or make public, visit the management page:');
         console.log(`   ${manageUrl}`);
         console.log('   Reference: https://code.visualstudio.com/api/working-with-extensions/publishing-extension');
-
-        // Attempt to verify/ensure privacy setting (may not be supported by API)
-        try {
-            await setExtensionPrivate(publisher, extensionName, token);
-        } catch (error) {
-            // Silently continue - privacy is default behavior per official docs
-        }
+        // Privacy is set via the web UI only; the marketplace API does not support
+        // programmatic privacy updates (PUT returns HTTP 500 ArgumentNullException).
 
         // Get and display extension details (with retry since marketplace needs time to index)
         console.log('\n📦 Fetching extension details...');
@@ -156,121 +151,6 @@ command += ` --pat ${token}`;
         process.exit(1);
     }
 })();
-
-/**
- * Attempts to verify/ensure extension privacy using Azure DevOps REST API
- * 
- * NOTE: According to official VS Code documentation:
- * https://code.visualstudio.com/api/working-with-extensions/publishing-extension
- * Extensions are private by default when published. This function attempts to
- * verify the privacy setting, but the API may not support programmatic changes.
- * 
- * To manage visibility, use the web UI:
- * https://marketplace.visualstudio.com/manage/publishers
- */
-function setExtensionPrivate(publisherId, extensionId, pat) {
-    return new Promise((resolve) => {
-        const auth = Buffer.from(`:${pat}`).toString('base64');
-
-        // Get current extension details first
-        const getOptions = {
-            hostname: 'marketplace.visualstudio.com',
-            path: `/_apis/gallery/publishers/${publisherId}/extensions/${extensionId}?api-version=7.1-preview`,
-            method: 'GET',
-            headers: {
-                'Authorization': `Basic ${auth}`,
-                'Accept': 'application/json'
-            }
-        };
-
-        const getReq = https.request(getOptions, (getRes) => {
-            let data = '';
-            getRes.on('data', (chunk) => { data += chunk; });
-            getRes.on('end', () => {
-                try {
-                    if (getRes.statusCode < 200 || getRes.statusCode >= 300) {
-                        console.log(`⚠️  Failed to fetch extension details (HTTP ${getRes.statusCode})`);
-                        console.log(`   Response: ${data.substring(0, 200)}`);
-                        console.log(`   Please manually set privacy in: https://marketplace.visualstudio.com/manage/publishers/${publisherId}/extensions/${extensionId}/hub`);
-                        resolve(); // Don't fail the publish process
-                        return;
-                    }
-
-                    const extension = JSON.parse(data);
-
-                    // Check current flags
-                    const currentFlags = extension.flags || '';
-                    const isAlreadyPrivate = currentFlags === 'Private' ||
-                        (typeof currentFlags === 'string' && currentFlags.includes('Private')) ||
-                        (typeof currentFlags === 'number' && (currentFlags & 1) === 1); // Bit 0 = Private
-
-                    if (isAlreadyPrivate) {
-                        console.log('✅ Extension is already set to private.');
-                        resolve();
-                        return;
-                    }
-
-                    // Set flags to make it private
-                    // Flags can be a string "Private" or a bitmask number (1 = Private)
-                    extension.flags = 'Private';
-
-                    // Update extension
-                    const putOptions = {
-                        hostname: 'marketplace.visualstudio.com',
-                        path: `/_apis/gallery/publishers/${publisherId}/extensions/${extensionId}?api-version=7.1-preview`,
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Basic ${auth}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        }
-                    };
-
-                    const putReq = https.request(putOptions, (putRes) => {
-                        let putData = '';
-                        putRes.on('data', (chunk) => { putData += chunk; });
-                        putRes.on('end', () => {
-                            if (putRes.statusCode >= 200 && putRes.statusCode < 300) {
-                                console.log('✅ Successfully set extension to private via API.');
-                                resolve();
-                            } else {
-                                console.log(`⚠️  Failed to set extension to private (HTTP ${putRes.statusCode})`);
-                                console.log(`   Response: ${putData.substring(0, 200)}`);
-                                console.log(`   Please manually set privacy in: https://marketplace.visualstudio.com/manage/publishers/${publisherId}/extensions/${extensionId}/hub`);
-                                console.log(`   Go to the extension page → Details tab → Change "Public" to "Private"`);
-                                resolve(); // Don't fail the publish process
-                            }
-                        });
-                    });
-
-                    putReq.on('error', (err) => {
-                        console.log(`⚠️  Error setting extension to private: ${err.message}`);
-                        console.log(`   Please manually set privacy in: https://marketplace.visualstudio.com/manage/publishers/${publisherId}/extensions/${extensionId}/hub`);
-                        console.log(`   Go to the extension page → Details tab → Change "Public" to "Private"`);
-                        resolve(); // Don't fail the publish process
-                    });
-
-                    putReq.write(JSON.stringify(extension));
-                    putReq.end();
-                } catch (err) {
-                    console.log(`⚠️  Error parsing extension data: ${err.message}`);
-                    console.log(`   Please manually set privacy in: https://marketplace.visualstudio.com/manage/publishers/${publisherId}/extensions/${extensionId}/hub`);
-                    console.log(`   Go to the extension page → Details tab → Change "Public" to "Private"`);
-                    resolve(); // Don't fail the publish process
-                }
-            });
-        });
-
-        getReq.on('error', (err) => {
-            console.log(`⚠️  Error fetching extension details: ${err.message}`);
-            console.log(`   Please manually set privacy in: https://marketplace.visualstudio.com/manage/publishers/${publisherId}/extensions/${extensionId}/hub`);
-            console.log(`   Go to the extension page → Details tab → Change "Public" to "Private"`);
-            resolve(); // Don't fail the publish process
-        });
-
-        getReq.end();
-    });
-}
 
 /**
  * Gets extension details with retry logic (marketplace needs time to index)
