@@ -6,6 +6,8 @@
 # (Marketplace → Manage scope).
 # Create PAT: https://dev.azure.com → User settings → Personal access tokens
 # Scope: Marketplace (Manage).
+#
+# Repo root is SKC_Tools; extension lives in SKC_VSCode_Extension/.
 
 name: Publish Extension
 
@@ -36,9 +38,9 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # If the extension lives in a subfolder (e.g. SKC_VSCode_Extension), set default to that path
-    # default:
-    #   run: ...
+    defaults:
+      run:
+        working-directory: SKC_VSCode_Extension
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,6 +50,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: SKC_VSCode_Extension/package-lock.json
 
       - name: Install dependencies
         run: npm ci
