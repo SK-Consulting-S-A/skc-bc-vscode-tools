@@ -56,7 +56,8 @@ const isPreRelease = args.includes('--pre-release');
 
 // Build the vsce publish command according to official documentation
 // Reference: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
-let command = 'vsce publish';
+// Use npx so vsce is found from node_modules (CI and local).
+let command = 'npx vsce publish';
 if (versionType) {
     command += ` ${versionType}`;
 }
