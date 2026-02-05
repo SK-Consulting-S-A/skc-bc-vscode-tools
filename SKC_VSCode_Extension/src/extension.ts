@@ -54,18 +54,22 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(configureAuthCommand);
 
   // Defer view, LM Bridge, and startup tasks so activate() returns immediately (avoids long "Activating...").
-  // Heavy modules are loaded here (not at top level) so extension host can finish activation quickly.
+  // Start LM Bridge first (so Cursor's MCP client can connect to localhost:7878 without ECONNREFUSED).
   setImmediate(() => {
     void (async () => {
+      const isCursor = env.appName.includes("Cursor");
+      if (isCursor) {
+        const { startLmBridge } = await import("./lmBridge");
+        startLmBridge(context, channel);
+      }
+
       const [
         { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass },
         { translateFile, createTranslationFile },
-        { startLmBridge },
         { registerTranslationTools }
       ] = await Promise.all([
         import("./translationsView"),
         import("./translationService"),
-        import("./lmBridge"),
         import("./translationTools")
       ]);
 
@@ -167,10 +171,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
         }
       ));
 
-      const isCursor = env.appName.includes("Cursor");
-      if (isCursor) {
-        startLmBridge(context, channel);
-      }
       registerTranslationTools(context, channel);
 
       const autoApply = true;
