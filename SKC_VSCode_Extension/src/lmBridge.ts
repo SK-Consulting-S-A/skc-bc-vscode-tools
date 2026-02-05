@@ -17,11 +17,10 @@ export function startLmBridge(
     return;
   }
 
-  // Use require() so Node resolves package exports (server, server/sse, types) at runtime.
-  // Top-level imports would be emitted as require(".../server/index.js") which is not in the package.
-  const { Server } = require("@modelcontextprotocol/sdk/server");
-  const { SSEServerTransport } = require("@modelcontextprotocol/sdk/server/sse");
-  const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types");
+  // Use require() with .js extensions for proper module resolution with bundlers
+  const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
+  const { SSEServerTransport } = require("@modelcontextprotocol/sdk/server/sse.js");
+  const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 
   const log = (msg: string, ...args: unknown[]) => {
     const line =

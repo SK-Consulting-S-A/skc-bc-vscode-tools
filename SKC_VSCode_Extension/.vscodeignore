@@ -9,5 +9,6 @@ tsconfig.json
 **/.vscode-test/**
 .publish-token
 scripts/publish.js
+scripts/build.js
 !skills/**
 

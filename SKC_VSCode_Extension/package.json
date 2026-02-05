@@ -289,16 +289,17 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run sync:extensions && tsc -p ./",
+    "vscode:prepublish": "npm run sync:extensions && npm run build",
     "sync:extensions": "node scripts/sync-extensions.js",
-    "compile": "npm run sync:extensions && tsc -p ./",
-    "package": "npm run sync:extensions && tsc -p ./ && vsce package",
+    "build": "node scripts/build.js --production",
+    "compile": "npm run sync:extensions && node scripts/build.js",
+    "package": "npm run sync:extensions && npm run build && vsce package",
     "publish": "npm run compile && node scripts/publish.js",
     "publish:patch": "npm run compile && node scripts/publish.js patch",
     "publish:minor": "npm run compile && node scripts/publish.js minor",
     "publish:major": "npm run compile && node scripts/publish.js major",
     "publish:prerelease": "npm run compile && node scripts/publish.js --pre-release",
-    "watch": "tsc -watch -p ./",
+    "watch": "node scripts/build.js --watch",
     "lint": "eslint src --ext ts",
     "test": "npm run compile"
   },
@@ -313,6 +314,7 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
     "typescript": "^5.3.3"
   }
