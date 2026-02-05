@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "1.8.11",
+  "version": "1.8.12",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
