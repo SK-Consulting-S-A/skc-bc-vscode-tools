@@ -19,7 +19,7 @@ import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
 // Heavy modules (translationsView, translationService, lmBridge, translationTools) are loaded lazily in setImmediate
 // so activation returns quickly and "Activating..." does not hang.
 
-const OUTPUT_CHANNEL_NAME = "SKC Presets";
+const OUTPUT_CHANNEL_NAME = "SKC Tools";
 const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
@@ -29,7 +29,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const channel = window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   context.subscriptions.push(channel);
 
-  const currentVersion = (context.extension?.packageJSON?.version as string | undefined) ?? undefined;
+  const currentVersion = (context.extension?.packageJSON?.version as string | undefined) ?? "unknown";
+  channel.appendLine("=".repeat(60));
+  channel.appendLine(`SKC Tools v${currentVersion} - Business Central Development Toolkit`);
+  channel.appendLine("=".repeat(60));
+  channel.appendLine(`[SKC] Extension activated in ${env.appName}`);
+  channel.appendLine(`[SKC] Workspace: ${workspace.workspaceFolders?.[0]?.uri.fsPath ?? "No workspace"}`);
+  channel.appendLine("");
+
   const storedVersion = context.globalState.get<string>(STATE_VERSION_KEY);
   const isNewVersion = Boolean(currentVersion && storedVersion !== currentVersion);
 
@@ -377,6 +384,9 @@ async function applySettings(
 }
 
 async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+  const cfg = workspace.getConfiguration("skc");
+  const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
+
   const sourceRoot = path.join(context.extensionPath, "skills");
   const targetRoot = path.join(os.homedir(), ".cursor", "skills");
 
@@ -395,12 +405,26 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
   }
 
   channel.appendLine(`[SKC] Installing ${skillDirs.length} skill bundle(s) to ${targetRoot}...`);
+  let installedCount = 0;
+  let skippedCount = 0;
+
   for (const dir of skillDirs) {
     const src = path.join(sourceRoot, dir.name);
     const dest = path.join(targetRoot, dir.name);
+
+    const destExists = await pathExists(dest);
+    if (destExists && !overwriteExisting) {
+      channel.appendLine(`[SKC] Skill '${dir.name}' already exists; skipping (set skc.overwriteExistingSkills to overwrite).`);
+      skippedCount++;
+      continue;
+    }
+
     await copyDirectory(src, dest);
-    channel.appendLine(`[SKC] Installed skills from ${dir.name}.`);
+    channel.appendLine(`[SKC] ${destExists ? "Updated" : "Installed"} skills from ${dir.name}.`);
+    installedCount++;
   }
+
+  channel.appendLine(`[SKC] Skills summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 }
 
 async function copyDirectory(source: string, target: string): Promise<void> {

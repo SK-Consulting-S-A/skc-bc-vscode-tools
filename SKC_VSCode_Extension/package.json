@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -208,6 +208,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically install Cursor skills when applying presets."
+        },
+        "skc.overwriteExistingSkills": {
+          "type": "boolean",
+          "default": true,
+          "description": "Overwrite existing Cursor skills when installing. If false, existing skills are skipped to preserve user modifications."
         },
         "skc.showNewsOnStartup": {
           "type": "boolean",
