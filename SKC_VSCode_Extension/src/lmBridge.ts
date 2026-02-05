@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import * as http from "http";
+import * as fs from "fs";
+import * as path from "path";
 import type { OutputChannel } from "vscode";
 
 const DEFAULT_PORT = 7878;
@@ -161,15 +163,138 @@ export function startLmBridge(
     return response;
   });
 
+  // Helper function to find AL project folders (containing app.json)
+  function findAlProjectFolders(): vscode.WorkspaceFolder[] {
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    const alFolders: vscode.WorkspaceFolder[] = [];
+
+    log(`Scanning ${folders.length} workspace folder(s) for AL projects...`);
+    for (const folder of folders) {
+      const appJsonPath = path.join(folder.uri.fsPath, "app.json");
+      const hasAppJson = fs.existsSync(appJsonPath);
+      log(`  - ${folder.name}: ${folder.uri.fsPath} ${hasAppJson ? "[AL PROJECT ✓]" : "[not AL project]"}`);
+
+      if (hasAppJson) {
+        alFolders.push(folder);
+      }
+    }
+
+    return alFolders;
+  }
+
+  // Helper function to get the best workspace folder for AL tools
+  function getBestAlWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
+    const alFolders = findAlProjectFolders();
+
+    if (alFolders.length === 0) {
+      // No AL projects found, return first workspace folder
+      log("No AL project folders found (no app.json), using first workspace folder");
+      return vscode.workspace.workspaceFolders?.[0];
+    }
+
+    if (alFolders.length === 1) {
+      return alFolders[0];
+    }
+
+    // Multiple AL projects - prefer the active editor's folder, or first non-.AL-Go folder
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+      const editorFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
+      if (editorFolder && alFolders.includes(editorFolder)) {
+        log(`Using active editor's AL project folder: ${editorFolder.name}`);
+        return editorFolder;
+      }
+    }
+
+    // Prefer folders that don't contain ".AL-Go" in the name
+    const nonAlGoFolders = alFolders.filter(f => !f.name.includes(".AL-Go") && !f.uri.fsPath.includes(".AL-Go"));
+    if (nonAlGoFolders.length > 0) {
+      log(`Using non-.AL-Go AL project folder: ${nonAlGoFolders[0].name}`);
+      return nonAlGoFolders[0];
+    }
+
+    // Fallback to first AL folder
+    log(`Using first AL project folder: ${alFolders[0].name}`);
+    return alFolders[0];
+  }
+
   mcpServer.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
     const toolName = request.params.name;
-    log("CallTool:", toolName);
+    let toolArgs = request.params.arguments ?? {};
+
+    log("CallTool:", toolName, "args:", JSON.stringify(toolArgs));
+
+    // For al_build tool, ensure we use the correct workspace context
+    if (toolName === "al_build" || toolName.includes("build")) {
+      log("=== AL Build Tool - Workspace Detection ===");
+      const allFolders = vscode.workspace.workspaceFolders ?? [];
+      log(`Total workspace folders: ${allFolders.length}`);
+      allFolders.forEach((f, i) => {
+        log(`  [${i}] ${f.name}: ${f.uri.fsPath}`);
+      });
+
+      const alFolder = getBestAlWorkspaceFolder();
+
+      if (alFolder) {
+        log(`✓ Selected AL project: ${alFolder.name} at ${alFolder.uri.fsPath}`);
+
+        // If scope is not provided, default to 'current' for the detected AL project
+        if (!toolArgs.scope && !toolArgs.workspaceFolder && !toolArgs.workspaceFolderUri) {
+          toolArgs = { ...toolArgs, scope: "current" };
+          log(`Setting scope='current' for AL project: ${alFolder.name}`);
+
+          // Try to pass workspace folder URI if the tool supports it
+          // Some tools may accept workspaceFolderUri or workspaceFolder parameter
+          toolArgs = {
+            ...toolArgs,
+            workspaceFolderUri: alFolder.uri.toString(),
+            workspaceFolder: alFolder.uri.fsPath
+          };
+          log(`Also setting workspaceFolderUri: ${alFolder.uri.toString()}`);
+        } else {
+          log(`Using provided scope/workspaceFolder: ${JSON.stringify({ scope: toolArgs.scope, workspaceFolder: toolArgs.workspaceFolder, workspaceFolderUri: toolArgs.workspaceFolderUri })}`);
+        }
+
+        // Note: VS Code's vscode.lm.invokeTool() uses the workspace context at invocation time.
+        // The AL extension may still use the first workspace folder or active folder.
+        // If the wrong folder is used, try:
+        // 1. Ensure ManagedDataService_Admin is the first workspace folder in your .code-workspace file
+        // 2. Or open a file from ManagedDataService_Admin before invoking the build
+        // 3. The tool may accept workspaceFolderUri or workspaceFolder parameter (we're trying both)
+        if (allFolders[0]?.name !== alFolder.name) {
+          log(`⚠ Warning: First workspace folder (${allFolders[0]?.name}) differs from selected AL project (${alFolder.name})`);
+          log(`  The AL extension might still use ${allFolders[0]?.name}. Consider reordering workspace folders.`);
+        }
+      } else {
+        log("⚠ Warning: Could not determine AL project folder. Tool may use wrong workspace.");
+        log("  Available folders:", allFolders.map(f => f.name).join(", "));
+      }
+      log("===========================================");
+    }
+
+    // IMPORTANT: VS Code shows a confirmation dialog for ALL Language Model Tools from extensions.
+    // This is a security feature documented at: https://code.visualstudio.com/api/extension-guides/ai/tools
+    // 
+    // Per the official docs: "A generic confirmation dialog will always be shown for tools from extensions,
+    // but the tool can customize the confirmation message." The dialog cannot be bypassed programmatically.
+    //
+    // When invoking tools via vscode.lm.invokeTool(), VS Code will:
+    // 1. Call the tool's prepareInvocation() method (if implemented by the tool's extension)
+    // 2. Show a confirmation dialog with the tool's custom message (or generic message)
+    // 3. If user clicks "Always Allow", future invocations of this tool won't prompt
+    // 4. Only after approval, call the tool's invoke() method
+    //
+    // Since we're invoking tools from OTHER extensions (e.g., al_build from ms-dynamics-smb.al),
+    // we cannot customize their confirmation messages - only the tool's own extension can do that.
+
     try {
       const lm = (vscode as unknown as { lm?: { invokeTool: (name: string, args: object) => Promise<unknown> } }).lm;
       if (!lm?.invokeTool) {
-        throw new Error("vscode.lm.invokeTool is not available.");
+        throw new Error("vscode.lm.invokeTool is not available. Ensure VS Code version 1.90.0 or later.");
       }
-      const result = await lm.invokeTool(toolName, request.params.arguments ?? {});
+
+      log(`Invoking tool with args: ${JSON.stringify(toolArgs)} (VS Code will show confirmation dialog - click 'Always allow' to reduce future prompts)...`);
+      const result = await lm.invokeTool(toolName, toolArgs);
       log("CallTool OK:", toolName);
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result) }]
@@ -177,6 +302,18 @@ export function startLmBridge(
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       log("CallTool ERROR:", toolName, message);
+
+      // Provide helpful error message if user cancelled the confirmation
+      if (message.includes("cancel") || message.includes("denied") || message.includes("rejected") || message.includes("dismissed")) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: `Tool invocation cancelled: The confirmation dialog was dismissed. To avoid future prompts for this tool, click "Always allow" in the confirmation dialog when it appears. This is a VS Code security feature that cannot be disabled. See: https://code.visualstudio.com/api/extension-guides/ai/tools`
+          }],
+          isError: true
+        };
+      }
+
       return {
         content: [{ type: "text" as const, text: `Error calling ${toolName}: ${message}` }],
         isError: true

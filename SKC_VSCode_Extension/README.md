@@ -48,6 +48,17 @@ If you already manage MCP servers in Cursor's global file (`%USERPROFILE%\.curso
 | `Translate File` | Translate selected XLF file (from sidebar) |
 | `Refresh Translations` | Refresh the translations list |
 
+## LM Bridge - Language Model Tools via MCP
+
+The extension exposes VS Code Language Model Tools (e.g., `al_build` from the AL extension) to Cursor AI via an MCP SSE server. When Cursor invokes these tools, VS Code shows a confirmation dialog ("Run 'Build AL Project'") as a security measure.
+
+**Note:** This confirmation dialog cannot be disabled - it's a VS Code security feature. However:
+- The dialog should include an "Always allow" option - use it to reduce future prompts
+- This affects all tools exposed through the LM Bridge, not just AL build
+- The dialog appears once per tool per VS Code session (or until you click "Always allow")
+
+This is a limitation of VS Code's Language Model Tools API (`vscode.lm.invokeTool`) and cannot be bypassed programmatically.
+
 ## Build & package
 - Install deps: `npm install`
 - Build: `npm run compile`

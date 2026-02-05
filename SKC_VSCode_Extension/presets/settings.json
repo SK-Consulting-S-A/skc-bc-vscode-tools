@@ -108,6 +108,7 @@
       "cursor.privacy.mode": "strict",
       "cursor.telemetry": false,
       "cursor.aiProxy": "none" // or your self-hosted proxy
-    }
+    },
+    "_comment_lm_tools": "Note: VS Code shows a confirmation dialog for all Language Model Tools invoked via MCP (e.g., al_build). This is a security feature and cannot be disabled. The dialog should have an 'Always allow' option - use it to reduce future prompts. This affects all tools exposed through the LM Bridge."
   }
 }
