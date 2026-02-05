@@ -78,8 +78,9 @@ command += ` --pat ${token}`;
     try {
         execSync(command, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
 
-        // Get the published version from package.json
-        const publishedVersion = packageJson.version;
+        // Reload package.json to get the updated version after vsce publish
+        const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const publishedVersion = updatedPackageJson.version;
         const manageUrl = `https://marketplace.visualstudio.com/manage/publishers/${publisher}/extensions/${extensionName}/hub`;
         const publisherUrl = `https://marketplace.visualstudio.com/manage/publishers/${publisher}`;
         // Note: Public marketplace URL won't work for private extensions
