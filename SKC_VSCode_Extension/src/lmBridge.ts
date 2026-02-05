@@ -1,10 +1,4 @@
 import * as vscode from "vscode";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema
-} from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 import type { OutputChannel } from "vscode";
 
@@ -23,6 +17,12 @@ export function startLmBridge(
     return;
   }
 
+  // Use require() so Node resolves package exports (server, server/sse, types) at runtime.
+  // Top-level imports would be emitted as require(".../server/index.js") which is not in the package.
+  const { Server } = require("@modelcontextprotocol/sdk/server");
+  const { SSEServerTransport } = require("@modelcontextprotocol/sdk/server/sse");
+  const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types");
+
   const log = (msg: string, ...args: unknown[]) => {
     const line =
       args.length
@@ -32,7 +32,7 @@ export function startLmBridge(
   };
 
   const app = express();
-  let transport: InstanceType<typeof SSEServerTransport> | null = null;
+  let transport: { handlePostMessage(req: unknown, res: unknown): Promise<void> } | null = null;
 
   const server = new Server(
     { name: "skc-lm-bridge", version: "1.0.0" },
@@ -57,7 +57,7 @@ export function startLmBridge(
     return { tools };
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
     const toolName = request.params.name;
     log("CallTool:", toolName);
     try {
