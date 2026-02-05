@@ -8,7 +8,7 @@ import {
 import express from "express";
 import type { OutputChannel } from "vscode";
 
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 7878;
 
 export function startLmBridge(
   context: vscode.ExtensionContext,

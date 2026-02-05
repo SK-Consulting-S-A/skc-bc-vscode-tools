@@ -15,10 +15,9 @@ import {
   Selection,
   TextEditorRevealType
 } from "vscode";
-import { TranslationsProvider, SourceFileItem, TargetLanguageItem } from "./translationsView";
-import { translateFile, createTranslationFile } from "./translationService";
-import { startLmBridge } from "./lmBridge";
-import { registerTranslationTools } from "./translationTools";
+import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
+// Heavy modules (translationsView, translationService, lmBridge, translationTools) are loaded lazily in setImmediate
+// so activation returns quickly and "Activating..." does not hang.
 
 const OUTPUT_CHANNEL_NAME = "SKC Presets";
 const STATE_KEY = "skc.presetsApplied";
@@ -54,163 +53,140 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(configureAuthCommand);
 
-  // Register Translations View
-  const translationsProvider = new TranslationsProvider();
-  const translationsView = window.createTreeView("skc.translationsView", {
-    treeDataProvider: translationsProvider,
-    showCollapseAll: false
-  });
-  context.subscriptions.push(translationsView);
-  context.subscriptions.push({ dispose: () => translationsProvider.dispose() });
+  // Defer view, LM Bridge, and startup tasks so activate() returns immediately (avoids long "Activating...").
+  // Heavy modules are loaded here (not at top level) so extension host can finish activation quickly.
+  setImmediate(() => {
+    void (async () => {
+      const [
+        { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass },
+        { translateFile, createTranslationFile },
+        { startLmBridge },
+        { registerTranslationTools }
+      ] = await Promise.all([
+        import("./translationsView"),
+        import("./translationService"),
+        import("./lmBridge"),
+        import("./translationTools")
+      ]);
 
-  // Register Translate File command
-  const translateFileCommand = commands.registerCommand(
-    "skc.translateFile",
-    async (item?: SourceFileItem | TargetLanguageItem) => {
-      if (item instanceof SourceFileItem) {
-        // Translate source file - will prompt for target language
-        await translateFile(item.resourceUri, channel, item.workspaceFolder);
-        translationsProvider.refresh();
-      } else if (item instanceof TargetLanguageItem) {
-        // Translate specific target file
-        await translateFile(item.sourceFile.resourceUri, channel, item.sourceFile.workspaceFolder, item.language);
-        translationsProvider.refresh();
-      } else {
-        void window.showWarningMessage("Please select a file from the Translations view.");
-      }
-    }
-  );
-  context.subscriptions.push(translateFileCommand);
-
-  // Register Create Translation File command
-  const createTranslationFileCommand = commands.registerCommand(
-    "skc.createTranslationFile",
-    async (sourceFile?: SourceFileItem, language?: string) => {
-      if (sourceFile && language) {
-        await createTranslationFile(sourceFile.resourceUri, language, channel);
-        translationsProvider.refresh();
-      }
-    }
-  );
-  context.subscriptions.push(createTranslationFileCommand);
-
-  // Register Refresh Translations command
-  const refreshTranslationsCommand = commands.registerCommand(
-    "skc.refreshTranslations",
-    () => {
-      translationsProvider.refresh();
-    }
-  );
-  context.subscriptions.push(refreshTranslationsCommand);
-
-  // Register Open Translation Unit command
-  const openTransUnitCommand = commands.registerCommand(
-    "skc.openTransUnit",
-    async (fileUri: Uri, unitId: string) => {
-      try {
-        // Open the file
-        const document = await workspace.openTextDocument(fileUri);
-        const editor = await window.showTextDocument(document);
-
-        // Search for the trans-unit with the specified ID
-        const text = document.getText();
-        const searchPattern = new RegExp(`<trans-unit\\s+id="${unitId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
-        const match = searchPattern.exec(text);
-
-        if (match) {
-          // Calculate the position and reveal it
-          const position = document.positionAt(match.index);
-          const range = new Range(position, position);
-
-          // Reveal and select the line
-          editor.selection = new Selection(position, position);
-          editor.revealRange(range, TextEditorRevealType.InCenter);
-        } else {
-          void window.showWarningMessage(`Could not find translation unit with ID: ${unitId}`);
-        }
-      } catch (err) {
-        void window.showErrorMessage(`Failed to open translation unit: ${err}`);
-      }
-    }
-  );
-  context.subscriptions.push(openTransUnitCommand);
-
-  // Register Filter Untranslated command - opens file and triggers Find with search pattern
-  const filterUntranslatedCommand = commands.registerCommand(
-    "skc.filterUntranslated",
-    async (item: TargetLanguageItem) => {
-      try {
-        // Open the file
-        const document = await workspace.openTextDocument(item.resourceUri);
-        await window.showTextDocument(document);
-
-        // Trigger Find with search for untranslated units
-        // Use state="needs-translation" pattern
-        await commands.executeCommand("editor.actions.findWithArgs", {
-          searchString: 'state="needs-translation"',
-          isRegex: false,
-          matchWholeWord: false,
-          isCaseSensitive: false
-        });
-      } catch (err) {
-        void window.showErrorMessage(`Failed to filter untranslated units: ${err}`);
-      }
-    }
-  );
-  context.subscriptions.push(filterUntranslatedCommand);
-
-  // Register Configure Translation URL command
-  const configureTranslationUrlCommand = commands.registerCommand(
-    "skc.configureTranslationUrl",
-    async () => {
-      const cfg = workspace.getConfiguration("skc");
-      const currentUrl = cfg.get<string>("azureFunctionUrl", "");
-
-      const url = await window.showInputBox({
-        prompt: "Enter the Azure Translation Function URL",
-        placeHolder: "https://your-function.azurewebsites.net/api/github-webhook",
-        value: currentUrl,
-        ignoreFocusOut: true,
-        validateInput: (value) => {
-          if (!value.trim()) {
-            return "URL cannot be empty";
-          }
-          try {
-            new URL(value);
-            return null;
-          } catch {
-            return "Please enter a valid URL";
-          }
-        }
+      const translationsProvider = new TranslationsProvider();
+      const translationsView = window.createTreeView("skc.translationsView", {
+        treeDataProvider: translationsProvider,
+        showCollapseAll: false
       });
+      context.subscriptions.push(translationsView);
+      context.subscriptions.push({ dispose: () => translationsProvider.dispose() });
 
-      if (url !== undefined) {
-        await cfg.update("azureFunctionUrl", url.trim(), true);
-        void window.showInformationMessage("Azure Translation Function URL saved.");
+      context.subscriptions.push(commands.registerCommand(
+        "skc.translateFile",
+        async (item?: SourceFileItem | TargetLanguageItem) => {
+          if (item instanceof SourceFileItemClass) {
+            await translateFile(item.resourceUri, channel, item.workspaceFolder);
+            translationsProvider.refresh();
+          } else if (item instanceof TargetLanguageItemClass) {
+            await translateFile(item.sourceFile.resourceUri, channel, item.sourceFile.workspaceFolder, item.language);
+            translationsProvider.refresh();
+          } else {
+            void window.showWarningMessage("Please select a file from the Translations view.");
+          }
+        }
+      ));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.createTranslationFile",
+        async (sourceFile?: SourceFileItem, language?: string) => {
+          if (sourceFile && language) {
+            await createTranslationFile(sourceFile.resourceUri, language, channel);
+            translationsProvider.refresh();
+          }
+        }
+      ));
+      context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => translationsProvider.refresh()));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.openTransUnit",
+        async (fileUri: Uri, unitId: string) => {
+          try {
+            const document = await workspace.openTextDocument(fileUri);
+            const editor = await window.showTextDocument(document);
+            const text = document.getText();
+            const searchPattern = new RegExp(`<trans-unit\\s+id="${unitId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i');
+            const match = searchPattern.exec(text);
+            if (match) {
+              const position = document.positionAt(match.index);
+              const range = new Range(position, position);
+              editor.selection = new Selection(position, position);
+              editor.revealRange(range, TextEditorRevealType.InCenter);
+            } else {
+              void window.showWarningMessage(`Could not find translation unit with ID: ${unitId}`);
+            }
+          } catch (err) {
+            void window.showErrorMessage(`Failed to open translation unit: ${err}`);
+          }
+        }
+      ));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.filterUntranslated",
+        async (item: TargetLanguageItem) => {
+          try {
+            const document = await workspace.openTextDocument(item.resourceUri);
+            await window.showTextDocument(document);
+            await commands.executeCommand("editor.actions.findWithArgs", {
+              searchString: 'state="needs-translation"',
+              isRegex: false,
+              matchWholeWord: false,
+              isCaseSensitive: false
+            });
+          } catch (err) {
+            void window.showErrorMessage(`Failed to filter untranslated units: ${err}`);
+          }
+        }
+      ));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.configureTranslationUrl",
+        async () => {
+          const cfg = workspace.getConfiguration("skc");
+          const currentUrl = cfg.get<string>("azureFunctionUrl", "");
+          const url = await window.showInputBox({
+            prompt: "Enter the Azure Translation Function URL",
+            placeHolder: "https://your-function.azurewebsites.net/api/github-webhook",
+            value: currentUrl,
+            ignoreFocusOut: true,
+            validateInput: (value) => {
+              if (!value.trim()) return "URL cannot be empty";
+              try {
+                new URL(value);
+                return null;
+              } catch {
+                return "Please enter a valid URL";
+              }
+            }
+          });
+          if (url !== undefined) {
+            await cfg.update("azureFunctionUrl", url.trim(), true);
+            void window.showInformationMessage("Azure Translation Function URL saved.");
+          }
+        }
+      ));
+
+      const isCursor = env.appName.includes("Cursor");
+      if (isCursor) {
+        startLmBridge(context, channel);
       }
-    }
-  );
-  context.subscriptions.push(configureTranslationUrlCommand);
+      registerTranslationTools(context, channel);
 
-  // Always apply presets on startup (forced to true)
-  const autoApply = true;
-  const alreadyApplied = context.globalState.get<boolean>(STATE_KEY, false);
-
-  if (autoApply && (!alreadyApplied || isNewVersion)) {
-    await applyPresets(context, channel, true);
-  }
-
-  // Show news notification on startup (especially for new versions)
-  await showNewsIfNeeded(context, channel, currentVersion, isNewVersion);
-
-  // Start LM Bridge only in Cursor (exposes vscode.lm tools to Cursor AI via MCP SSE; not needed in VS Code)
-  const isCursor = env.appName.includes("Cursor");
-  if (isCursor) {
-    startLmBridge(context, channel);
-  }
-
-  // Register LLM tools for translation (VS Code 1.108+ / Cursor); also exposed via LM Bridge in Cursor
-  registerTranslationTools(context, channel);
+      const autoApply = true;
+      const alreadyApplied = context.globalState.get<boolean>(STATE_KEY, false);
+      if (autoApply && (!alreadyApplied || isNewVersion)) {
+        void applyPresets(context, channel, true).catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          channel.appendLine(`[SKC] Startup preset apply failed: ${msg}`);
+        });
+      }
+      void showNewsIfNeeded(context, channel, currentVersion, isNewVersion).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        channel.appendLine(`[SKC] News notification failed: ${msg}`);
+      });
+    })();
+  });
 }
 
 async function applyPresets(
@@ -257,6 +233,11 @@ async function applyPresets(
   await context.globalState.update(STATE_LAST_EXTENSION_IDS_KEY, extensionsToInstall);
 
   await applySettings(channel, settingsToApply);
+  const writeCursorMcpFile = cfg.get<boolean>("writeCursorMcpFile", true);
+  // Write Cursor mcp.json whenever we have a resolved list (including empty), so removals and version updates stay in sync.
+  if (writeCursorMcpFile && mcpServersToApply !== undefined) {
+    await writeCursorMcpFileIfNeeded(channel, mcpServersToApply);
+  }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
   }
@@ -451,6 +432,7 @@ async function copyDirectory(source: string, target: string): Promise<void> {
 /**
  * If enabled, uninstalls any installed extension that is not in the current preset list.
  * The preset list is the single source of truth; only SKC VS Tools is always kept.
+ * Built-in extensions are skipped (they cannot be uninstalled).
  */
 async function uninstallExtensionsRemovedFromPreset(
   context: ExtensionContext,
@@ -463,8 +445,15 @@ async function uninstallExtensionsRemovedFromPreset(
   }
   const allowedSet = new Set(extensionsToInstall);
   const myId = context.extension?.id;
-  for (const ext of extensions.all) {
+  // Snapshot list so we don't iterate over a changing array (e.g. if uninstall triggers updates)
+  const allExtensions = [...extensions.all];
+  for (const ext of allExtensions) {
     if (ext.id === myId || allowedSet.has(ext.id)) {
+      continue;
+    }
+    // Skip built-in extensions (they cannot be uninstalled; path typically under app's resources/extensions)
+    const extPath = ext.extensionPath ?? "";
+    if (extPath.includes(`${path.sep}resources${path.sep}`) || extPath.includes(`${path.sep}app${path.sep}extensions${path.sep}`)) {
       continue;
     }
     channel.appendLine(`[SKC] Uninstalling ${ext.id} (not in preset list)...`);
@@ -472,7 +461,11 @@ async function uninstallExtensionsRemovedFromPreset(
       await commands.executeCommand("workbench.extensions.uninstallExtension", ext);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      channel.appendLine(`[SKC] Failed to uninstall ${ext.id}: ${msg}`);
+      if (/built-in|Built-in|cannot be uninstalled/i.test(msg)) {
+        channel.appendLine(`[SKC] Skipping built-in extension ${ext.id} (cannot be uninstalled).`);
+      } else {
+        channel.appendLine(`[SKC] Failed to uninstall ${ext.id}: ${msg}`);
+      }
     }
   }
 }
@@ -661,6 +654,45 @@ async function readExtensionsFile(
     const message = error instanceof Error ? error.message : String(error);
     channel.appendLine(`[SKC] Failed to read extensions file at ${resolvedPath}: ${message}`);
     return undefined;
+  }
+}
+
+/**
+ * Writes MCP servers to the Cursor user path (e.g. %USERPROFILE%\.cursor\mcp.json on Windows)
+ * in Cursor's expected format ({ "mcpServers": { "id": { ...config } } }).
+ * Uses the same list as settings (preset-only or merged per removeMcpsNotInPreset), so removals
+ * and version updates stay in sync: if an MCP is removed from the preset, it is removed here too.
+ */
+async function writeCursorMcpFileIfNeeded(
+  channel: OutputChannel,
+  mcpServers: unknown[]
+): Promise<void> {
+  const cursorDir = path.join(os.homedir(), ".cursor");
+  const mcpFilePath = path.join(cursorDir, "mcp.json");
+
+  const mcpServersObj: Record<string, unknown> = {};
+  for (const entry of mcpServers) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const server = entry as Record<string, unknown>;
+    const id = typeof server.id === "string" ? server.id : undefined;
+    if (!id) {
+      channel.appendLine(`[SKC] Skipping MCP server without id when writing ${mcpFilePath}.`);
+      continue;
+    }
+    mcpServersObj[id] = server;
+  }
+
+  try {
+    await fs.mkdir(cursorDir, { recursive: true });
+    const content = JSON.stringify({ mcpServers: mcpServersObj }, null, 2);
+    await fs.writeFile(mcpFilePath, content, "utf8");
+    const count = Object.keys(mcpServersObj).length;
+    channel.appendLine(`[SKC] Wrote ${count} MCP server(s) to ${mcpFilePath}.`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    channel.appendLine(`[SKC] Failed to write ${mcpFilePath}: ${message}`);
   }
 }
 

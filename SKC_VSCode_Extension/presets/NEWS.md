@@ -10,9 +10,9 @@
 
 ### 🌉 LM Bridge – VS Code tools in Cursor
 - **Expose VS Code Language Model tools to Cursor** via an MCP SSE server
-- **LM-Bridge** runs locally (default: `http://localhost:3000/sse`) and forwards tool calls from Cursor to VS Code’s built-in LM tools (e.g. from the AL extension)
+- **LM-Bridge** runs locally (default: `http://localhost:7878/sse`) and forwards tool calls from Cursor to VS Code’s built-in LM tools (e.g. from the AL extension)
 - **Included in MCP preset** – Apply Presets adds the LM-Bridge server so Cursor can connect automatically
-- **Config**: `skc.enableLmBridge` (default: true), `skc.lmBridgePort` (default: 3000)
+- **Config**: `skc.enableLmBridge` (default: true), `skc.lmBridgePort` (default: 7878)
 - Check the **SKC Presets** output channel for the bridge URL when it’s running
 
 ### 🧠 Cursor Skills Auto-Install

@@ -3,7 +3,7 @@
   "servers": [
     {
       "id": "LM-Bridge",
-      "url": "http://localhost:3000/sse",
+      "url": "http://localhost:7878/sse",
       "description": "SKC LM Bridge: exposes VS Code Language Model tools (e.g. from AL extension) to MCP clients. Requires SKC VS Tools extension with LM Bridge enabled."
     },
     {
@@ -52,4 +52,3 @@
     }
   ]
 }
-

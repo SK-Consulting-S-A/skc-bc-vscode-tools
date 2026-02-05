@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "1.7.0",
+  "version": "1.8.5",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -194,6 +194,11 @@
           "default": true,
           "description": "When applying presets, set mcp.servers to exactly the preset list (any MCP server not in the preset is removed). If false, preset servers are merged with existing ones (existing servers not in the preset are kept)."
         },
+        "skc.writeCursorMcpFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "When applying presets, also write MCP servers to the Cursor user path (e.g. %USERPROFILE%\\.cursor\\mcp.json on Windows, ~/.cursor/mcp.json elsewhere). Disable if you manage that file yourself."
+        },
         "skc.extensionsFilePath": {
           "type": "string",
           "default": "presets/extensions.json",
@@ -231,8 +236,8 @@
         },
         "skc.lmBridgePort": {
           "type": "number",
-          "default": 3000,
-          "description": "Port for the LM Bridge MCP SSE server. Change if 3000 is already in use."
+          "default": 7878,
+          "description": "Port for the LM Bridge MCP SSE server. Change if 7878 is already in use."
         }
       }
     },
