@@ -2,13 +2,47 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build Extension",
+      "type": "shell",
+      "command": "npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Watch Extension",
+      "type": "shell",
+      "command": "npm run watch",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Package Extension",
+      "type": "shell",
+      "command": "npm run package",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Publish Extension (Current Version)",
-      "type": "npm",
-      "script": "publish",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
+      "type": "shell",
+      "command": "npm run publish",
+      "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -18,13 +52,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Publish Extension (Patch: 0.0.3 → 0.0.4)",
-      "type": "npm",
-      "script": "publish:patch",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
+      "label": "Publish Extension (Patch)",
+      "type": "shell",
+      "command": "npm run publish:patch",
+      "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -34,13 +65,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Publish Extension (Minor: 0.0.3 → 0.1.0)",
-      "type": "npm",
-      "script": "publish:minor",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
+      "label": "Publish Extension (Minor)",
+      "type": "shell",
+      "command": "npm run publish:minor",
+      "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -50,13 +78,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Publish Extension (Major: 0.0.3 → 1.0.0)",
-      "type": "npm",
-      "script": "publish:major",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
+      "label": "Publish Extension (Major)",
+      "type": "shell",
+      "command": "npm run publish:major",
+      "group": "build",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",

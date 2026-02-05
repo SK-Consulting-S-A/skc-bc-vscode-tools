@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "1.8.7",
+  "version": "1.8.11",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -254,43 +254,53 @@
     },
     "extensionDependencies": [
       "ms-dynamics-smb.al",
-      "waldo.al-extension-pack",
+      "davidfeldhoff.al-codeactions",
       "usernamehw.errorlens",
+      "eg2.vscode-npm-script",
       "GitHub.vscode-pull-request-github",
-      "vstirbu.vscode-mermaid-preview",
-      "idered.npm",
       "rasmus.al-var-helper",
       "BartPermentier.al-toolbox",
+      "andrzejzwierzchowski.al-code-outline",
       "ms-azuretools.vscode-azurefunctions",
       "ms-azuretools.vscode-azureappservice",
+      "ms-azuretools.vscode-azureresourcegroups",
       "ms-vscode.azure-account",
       "ms-vscode.vscode-typescript-next",
-      "nabsolutions.nab-al-tools",
-      "andrzejzwierzchowski.al-code-outline",
+      "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",
-      "365businessdevelopment.365businessdev-alget"
+      "365businessdevelopment.365businessdev-alget",
+      "vscode-icons-team.vscode-icons",
+      "waldo.crs-al-language-extension",
+      "ms-python.python",
+      "ms-python.debugpy",
+      "vjeko.vjeko-al-objid"
     ],
     "extensionPack": [
       "ms-dynamics-smb.al",
-      "waldo.al-extension-pack",
+      "davidfeldhoff.al-codeactions",
       "usernamehw.errorlens",
+      "eg2.vscode-npm-script",
       "GitHub.vscode-pull-request-github",
-      "vstirbu.vscode-mermaid-preview",
-      "idered.npm",
       "rasmus.al-var-helper",
       "BartPermentier.al-toolbox",
+      "andrzejzwierzchowski.al-code-outline",
       "ms-azuretools.vscode-azurefunctions",
       "ms-azuretools.vscode-azureappservice",
+      "ms-azuretools.vscode-azureresourcegroups",
       "ms-vscode.azure-account",
       "ms-vscode.vscode-typescript-next",
-      "nabsolutions.nab-al-tools",
-      "andrzejzwierzchowski.al-code-outline",
+      "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",
-      "365businessdevelopment.365businessdev-alget"
+      "365businessdevelopment.365businessdev-alget",
+      "vscode-icons-team.vscode-icons",
+      "waldo.crs-al-language-extension",
+      "ms-python.python",
+      "ms-python.debugpy",
+      "vjeko.vjeko-al-objid"
     ]
   },
   "scripts": {
@@ -309,11 +319,9 @@
     "test": "npm run compile"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "express": "^5.2.1"
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.6",
     "@types/node": "^20.11.30",
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",

@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import express from "express";
+import * as http from "http";
 import type { OutputChannel } from "vscode";
 
 const DEFAULT_PORT = 7878;
@@ -37,15 +37,81 @@ export function startLmBridge(
     channel.appendLine(`[SKC LM Bridge] ${line}`);
   };
 
-  const app = express();
   let transport: { handlePostMessage(req: unknown, res: unknown): Promise<void> } | null = null;
 
-  const server = new Server(
+  const mcpServer = new Server(
     { name: "skc-lm-bridge", version: "1.0.0" },
-    { capabilities: { tools: {} } }
+    {
+      capabilities: {
+        tools: {
+          listChanged: true
+        }
+      }
+    }
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const server = http.createServer(async (req, res) => {
+    // Enable CORS
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    const url = req.url || "";
+    log(`Incoming ${req.method} request to: ${url}`);
+
+    if (req.method === "GET" && url.startsWith("/sse")) {
+      log("SSE client connected from " + (req.headers['user-agent'] || 'unknown'));
+      try {
+        transport = new SSEServerTransport("/messages", res);
+        log("SSE transport created, connecting server...");
+        await mcpServer.connect(transport);
+        log("Server connected to SSE transport");
+      } catch (err: any) {
+        log("Error setting up SSE connection:", err.message);
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.startsWith("/messages")) {
+      log("Received POST to /messages, content-type:", req.headers['content-type'] || 'none');
+      if (!transport) {
+        log("ERROR: No transport available - SSE connection not established yet");
+        res.writeHead(503);
+        res.end(JSON.stringify({ error: "No SSE connection established" }));
+        return;
+      }
+
+      try {
+        log("Passing request to SSE transport...");
+        await transport.handlePostMessage(req, res);
+        log("Message handled successfully");
+      } catch (err: any) {
+        log("ERROR handling message:", err.message, err.stack);
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      }
+      return;
+    }
+
+    // 404 for unknown routes
+    log(`404 Not Found: ${req.method} ${url}`);
+    res.writeHead(404);
+    res.end("Not Found");
+  });
+
+  mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
     const tools: { name: string; description: string; inputSchema: object }[] = [];
     const toolsByExtension: Record<string, string[]> = {};
 
@@ -53,12 +119,29 @@ export function startLmBridge(
       const lmTools = ext.packageJSON?.contributes?.languageModelTools;
       if (lmTools && Array.isArray(lmTools)) {
         const extToolNames: string[] = [];
-        for (const t of lmTools as { name?: string; description?: string }[]) {
+        for (const t of lmTools as any[]) {
           const toolName = t.name ?? "unknown";
+
+          // Use modelDescription (preferred by AI) or fallback to description
+          const description = t.modelDescription || t.description || t.displayName || `Tool from ${ext.id}`;
+
+          // Try with the actual schema - validate it's proper JSON Schema
+          let inputSchema = { type: "object", properties: {} };
+          if (t.inputSchema && typeof t.inputSchema === "object") {
+            try {
+              // Ensure it has the minimum required structure
+              if (t.inputSchema.type && t.inputSchema.properties) {
+                inputSchema = t.inputSchema;
+              }
+            } catch (e) {
+              log(`Warning: Invalid schema for tool ${toolName}, using empty schema`);
+            }
+          }
+
           tools.push({
             name: toolName,
-            description: t.description ?? `Tool from ${ext.id}`,
-            inputSchema: { type: "object", properties: {} }
+            description: description,
+            inputSchema: inputSchema
           });
           extToolNames.push(toolName);
         }
@@ -73,10 +156,12 @@ export function startLmBridge(
       log(`  - ${extId}: ${toolNames.join(", ")}`);
     }
 
-    return { tools };
+    const response = { tools };
+    log(`Returning ${tools.length} tools to MCP client`);
+    return response;
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
+  mcpServer.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
     const toolName = request.params.name;
     log("CallTool:", toolName);
     try {
@@ -100,31 +185,26 @@ export function startLmBridge(
   });
 
   // Discover tools on startup
-  const initialTools: { name: string; extensionId: string }[] = [];
+  const initialTools: { name: string; extensionId: string; description: string; hasSchema: boolean }[] = [];
   vscode.extensions.all.forEach((ext) => {
     const lmTools = ext.packageJSON?.contributes?.languageModelTools;
     if (lmTools && Array.isArray(lmTools)) {
-      for (const t of lmTools as { name?: string }[]) {
+      for (const t of lmTools as any[]) {
         if (t.name) {
-          initialTools.push({ name: t.name, extensionId: ext.id });
+          const description = t.modelDescription || t.displayName || t.description || "(no description)";
+          const hasSchema = Boolean(t.inputSchema && typeof t.inputSchema === "object");
+          initialTools.push({
+            name: t.name,
+            extensionId: ext.id,
+            description: description,
+            hasSchema: hasSchema
+          });
         }
       }
     }
   });
 
-  app.get("/sse", async (_req, res) => {
-    log("SSE client connected");
-    transport = new SSEServerTransport("/messages", res);
-    await server.connect(transport);
-  });
-
-  app.post("/messages", async (req, res) => {
-    if (transport) {
-      await transport.handlePostMessage(req, res);
-    }
-  });
-
-  const listener = app.listen(port, () => {
+  server.listen(port, () => {
     channel.appendLine(`[SKC] ✓ LM Bridge server started successfully!`);
     channel.appendLine(`[SKC] Connection URL: http://localhost:${port}/sse`);
     channel.appendLine("");
@@ -132,16 +212,22 @@ export function startLmBridge(
     // Show discovered tools
     if (initialTools.length > 0) {
       channel.appendLine(`[SKC] 🔧 Discovered ${initialTools.length} Language Model Tool(s):`);
-      const toolsByExt: Record<string, string[]> = {};
-      initialTools.forEach(({ name, extensionId }) => {
-        if (!toolsByExt[extensionId]) {
-          toolsByExt[extensionId] = [];
+      const toolsByExt: Record<string, typeof initialTools> = {};
+      initialTools.forEach((tool) => {
+        if (!toolsByExt[tool.extensionId]) {
+          toolsByExt[tool.extensionId] = [];
         }
-        toolsByExt[extensionId].push(name);
+        toolsByExt[tool.extensionId].push(tool);
       });
       for (const [extId, tools] of Object.entries(toolsByExt)) {
         channel.appendLine(`[SKC]    • ${extId}:`);
-        tools.forEach(tool => channel.appendLine(`[SKC]      - ${tool}`));
+        tools.forEach(tool => {
+          const schemaStatus = tool.hasSchema ? "✓" : "⚠️ no schema";
+          channel.appendLine(`[SKC]      - ${tool.name} [${schemaStatus}]`);
+          if (tool.description && tool.description !== "(no description)") {
+            channel.appendLine(`[SKC]        ${tool.description.substring(0, 80)}${tool.description.length > 80 ? "..." : ""}`);
+          }
+        });
       }
       channel.appendLine("");
     } else {
@@ -165,7 +251,7 @@ export function startLmBridge(
     channel.appendLine("");
   });
 
-  listener.on("error", (err: Error) => {
+  server.on("error", (err: Error) => {
     channel.appendLine("");
     channel.appendLine(`[SKC LM Bridge] ❌ Server error: ${err.message}`);
     if (err.message.includes("EADDRINUSE")) {
@@ -177,7 +263,7 @@ export function startLmBridge(
 
   context.subscriptions.push({
     dispose: () => {
-      listener.close();
+      server.close();
       log("Server stopped.");
     }
   });
