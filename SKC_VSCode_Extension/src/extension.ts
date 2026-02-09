@@ -51,6 +51,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(installSkillsCommand);
 
+  const installAgentsCommand = commands.registerCommand("skc.installAgents", async () => {
+    await installAgents(context, channel);
+    void window.showInformationMessage("SKC Cursor agents installed.");
+  });
+  context.subscriptions.push(installAgentsCommand);
+
   const configureAuthCommand = commands.registerCommand("skc.configureMcpAuth", async () => {
     const saved = await promptAndSaveMcpSecrets(context);
     const message = saved
@@ -247,6 +253,10 @@ async function applyPresets(
   }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
+    const isCursor = env.appName.includes("Cursor");
+    if (isCursor) {
+      await installAgents(context, channel);
+    }
   }
 
   await context.globalState.update(STATE_KEY, true);
@@ -425,6 +435,50 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
   }
 
   channel.appendLine(`[SKC] Skills summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
+}
+
+async function installAgents(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+  const cfg = workspace.getConfiguration("skc");
+  const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
+
+  const sourceRoot = path.join(context.extensionPath, "agents");
+  const targetRoot = path.join(os.homedir(), ".cursor", "agents");
+
+  if (!(await pathExists(sourceRoot))) {
+    channel.appendLine(`[SKC] Agents folder not found at ${sourceRoot}; skipping agent install.`);
+    return;
+  }
+
+  await fs.mkdir(targetRoot, { recursive: true });
+  
+  const agentFiles = await fs.readdir(sourceRoot, { withFileTypes: true });
+  const mdFiles = agentFiles.filter((f) => f.isFile() && f.name.endsWith(".md"));
+
+  let installedCount = 0;
+  let skippedCount = 0;
+
+  for (const file of mdFiles) {
+    const src = path.join(sourceRoot, file.name);
+    const dest = path.join(targetRoot, file.name);
+
+    const destExists = await pathExists(dest);
+    if (destExists && !overwriteExisting) {
+      channel.appendLine(`[SKC] Agent '${file.name}' already exists; skipping (set skc.overwriteExistingSkills to overwrite).`);
+      skippedCount++;
+      continue;
+    }
+
+    await fs.copyFile(src, dest);
+    channel.appendLine(`[SKC] ${destExists ? "Updated" : "Installed"} agent ${file.name}.`);
+    installedCount++;
+  }
+
+  if (installedCount === 0 && skippedCount === 0) {
+    channel.appendLine(`[SKC] No agent files found in ${sourceRoot}.`);
+    return;
+  }
+
+  channel.appendLine(`[SKC] Agents summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 }
 
 async function copyDirectory(source: string, target: string): Promise<void> {

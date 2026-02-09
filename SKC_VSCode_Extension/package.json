@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "1.8.12",
+  "version": "1.8.14",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -58,6 +58,10 @@
       {
         "command": "skc.installSkills",
         "title": "SKC: Install Cursor Skills"
+      },
+      {
+        "command": "skc.installAgents",
+        "title": "SKC: Install Cursor Agents"
       },
       {
         "command": "skc.configureMcpAuth",
@@ -256,7 +260,6 @@
       "ms-dynamics-smb.al",
       "davidfeldhoff.al-codeactions",
       "usernamehw.errorlens",
-      "eg2.vscode-npm-script",
       "GitHub.vscode-pull-request-github",
       "rasmus.al-var-helper",
       "BartPermentier.al-toolbox",
@@ -281,7 +284,6 @@
       "ms-dynamics-smb.al",
       "davidfeldhoff.al-codeactions",
       "usernamehw.errorlens",
-      "eg2.vscode-npm-script",
       "GitHub.vscode-pull-request-github",
       "rasmus.al-var-helper",
       "BartPermentier.al-toolbox",

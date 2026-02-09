@@ -218,9 +218,17 @@ export function startLmBridge(
     return alFolders[0];
   }
 
-  mcpServer.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown> } }) => {
+  mcpServer.setRequestHandler(CallToolRequestSchema, async (request: { params: { name: string; arguments?: Record<string, unknown>; [key: string]: unknown } }) => {
     const toolName = request.params.name;
     let toolArgs = request.params.arguments ?? {};
+    // Some MCP clients send tool inputs as top-level params (e.g. { name, query }) instead of params.arguments
+    if (Object.keys(toolArgs).length === 0 && request.params && typeof request.params === "object") {
+      const { name: _n, arguments: _a, ...rest } = request.params;
+      if (Object.keys(rest).length > 0) {
+        toolArgs = rest;
+        log("CallTool: using top-level params as arguments:", JSON.stringify(toolArgs));
+      }
+    }
 
     log("CallTool:", toolName, "args:", JSON.stringify(toolArgs));
 
@@ -288,13 +296,23 @@ export function startLmBridge(
     // we cannot customize their confirmation messages - only the tool's own extension can do that.
 
     try {
-      const lm = (vscode as unknown as { lm?: { invokeTool: (name: string, args: object) => Promise<unknown> } }).lm;
+      const lm = (vscode as unknown as {
+        lm?: {
+          invokeTool: (
+            name: string,
+            options: { toolInvocationToken?: undefined; input: Record<string, unknown> }
+          ) => Promise<unknown>;
+        };
+      }).lm;
       if (!lm?.invokeTool) {
         throw new Error("vscode.lm.invokeTool is not available. Ensure VS Code version 1.90.0 or later.");
       }
 
+      // VS Code API: invokeTool(name, options) where options has { input, toolInvocationToken? }.
+      // Passing raw args as second param was wrong - the tool receives options.input, so it got undefined.
+      const options = { toolInvocationToken: undefined as undefined, input: toolArgs };
       log(`Invoking tool with args: ${JSON.stringify(toolArgs)} (VS Code will show confirmation dialog - click 'Always allow' to reduce future prompts)...`);
-      const result = await lm.invokeTool(toolName, toolArgs);
+      const result = await lm.invokeTool(toolName, options);
       log("CallTool OK:", toolName);
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result) }]
