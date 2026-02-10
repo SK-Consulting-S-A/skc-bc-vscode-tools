@@ -15,11 +15,14 @@ $Removed = 0
 
 # Remove agent files
 $AgentNames = @(
+    'bc-cal-converter.md',
+    'bc-researcher.md',
     'bc-architect.md',
     'bc-al-logic.md',
     'bc-al-ui.md',
     'bc-tester.md',
-    'bc-reviewer.md'
+    'bc-reviewer.md',
+    'bc-translator.md'
 )
 
 foreach ($name in $AgentNames) {

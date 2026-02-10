@@ -23,9 +23,18 @@ After running setup, restart Cursor to pick up the new agents and rule.
 
 ## How It Works
 
-The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate BC tasks to 7 specialist subagents. Each subagent consults BC Knowledge MCP specialists for guidance, then researches, implements, tests, reviews, or translates code.
+The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate BC tasks to 8 specialist subagents. Each subagent consults BC Knowledge MCP specialists for guidance, then converts legacy code, researches, implements, tests, reviews, or translates code.
 
 ### Orchestration Phases
+
+**CAL-to-AL migration** (triggered by "convert", "migrate", "upgrade from NAV", "CAL to AL", or presence of `.txt`/`.DELTA` files):
+
+0. **CAL-to-AL Conversion** -- `bc-cal-converter` subagent (foreground)
+   - Parses C/AL text exports and `.DELTA` files
+   - Applies smart detection: Object ID < 50000 → extensions, ID >= 50000 → new objects
+   - Consults MCP: `logan-legacy` (migration patterns), `sam-coder` (modern AL)
+   - Uses: `al_symbolsearch`, `find_bc_knowledge`, `workflow_start` (bc-version-upgrade)
+   - Output: AL source files (tables, tableextensions, pages, pageextensions, codeunits) + conversion report
 
 **Full feature implementation** (triggered by "implement", "build", "create", "add feature"):
 
@@ -57,6 +66,7 @@ The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate
 
 You can invoke any subagent directly:
 
+- "Convert these CAL files to AL" -- triggers `bc-cal-converter` only
 - "Research how X works in BC" -- triggers `bc-researcher` only
 - "Design an extension for X" -- triggers `bc-architect` (+ `bc-researcher` in parallel if unfamiliar area)
 - "Implement the logic for X" -- triggers `bc-al-logic` only
@@ -76,6 +86,7 @@ The MCP specialists remain accessible outside the orchestration:
 
 | Subagent | File | Key Tools / MCP Specialists |
 |----------|------|-----------------------------|
+| CAL Converter | `bc-cal-converter.md` | al_symbolsearch, find_bc_knowledge, workflow_start, logan-legacy, sam-coder, alex-architect |
 | Researcher | `bc-researcher.md` | al_symbolsearch, find_bc_knowledge, get_bc_topic, WebSearch, WebFetch, github-pull-request_doSearch, ask_bc_expert |
 | Architect | `bc-architect.md` | al_symbolsearch, alex-architect, jordan-bridge |
 | Logic Dev | `bc-al-logic.md` | al_symbolsearch, sam-coder, eva-errors, jordan-bridge |
@@ -84,18 +95,25 @@ The MCP specialists remain accessible outside the orchestration:
 | Reviewer | `bc-reviewer.md` | al_build, al_getdiagnostics, roger-reviewer, seth-security, morgan-market |
 | Translator | `bc-translator.md` | al_build, createLanguageXlf, skc_translate_xlf, skc_list_translation_files |
 
-All code-producing subagents (researcher, architect, logic dev, UI dev) follow an **AL Research-First Approach** — they verify symbols, patterns, and best practices through `al_symbolsearch`, Microsoft Learn, and GitHub before writing or designing any code.
+All code-producing subagents (CAL converter, researcher, architect, logic dev, UI dev) follow an **AL Research-First Approach** — they verify symbols, patterns, and best practices through `al_symbolsearch`, Microsoft Learn, and GitHub before writing or designing any code.
+
+### Smart Detection for CAL-to-AL Conversion
+
+The `bc-cal-converter` subagent uses object ID-based smart detection:
+
+- **Object ID < 50000** (standard BC object): Creates **tableextension** or **pageextension** containing only custom fields (field IDs 50000..99999) and custom code
+- **Object ID >= 50000** (fully custom object): Creates new AL **table**, **page**, **codeunit**, **report**, **xmlport**, or **query**
+- Extension object IDs are allocated from the project's `app.json` `idRanges`, not from the original object IDs
 
 ## MCP Tools Used
 
-### BC Knowledge MCP (`user-bc-knowledge`)
+### BC Knowledge MCP (`user-bc-intelligence`)
 - `ask_bc_expert` -- direct specialist consultation
-- `get_specialist_advice` -- session-based specialist conversation
 - `find_bc_knowledge` -- search BC topics, specialists, workflows
 - `get_bc_topic` -- detailed topic content with code samples
-- `handoff_to_specialist` -- transfer context between specialists
-- `start_bc_workflow` -- begin structured multi-phase workflow
-- `advance_workflow` -- progress to next workflow phase
+- `workflow_start` -- begin structured multi-phase workflow (including bc-version-upgrade)
+- `workflow_progress` -- report progress in active workflow
+- `workflow_complete` -- complete workflow and generate final report
 - `analyze_al_code` -- automated AL code analysis
 
 ### LM-Bridge MCP (`user-LM-Bridge`)

@@ -22,6 +22,14 @@
 
 ## Subagent-to-Specialist Mapping
 
+### bc-cal-converter
+
+| When | Consult | Via |
+|------|---------|-----|
+| Always (migration phase) | `logan-legacy` | `ask_bc_expert` with `autonomous_mode: true` for migration patterns |
+| Modern AL patterns | `sam-coder` | `ask_bc_expert` with `autonomous_mode: true` for AL replacements |
+| Restructuring to extensions | `alex-architect` | `ask_bc_expert` for extension design strategy |
+
 ### bc-architect
 
 | When | Consult | Via |
@@ -84,15 +92,20 @@ Parameters: target_specialist_id, handoff_type (transfer|consultation|collaborat
 
 ### Workflow Tools
 
-**`start_bc_workflow`** -- Begin a structured multi-phase workflow.
+**`workflow_start`** -- Begin a structured multi-phase workflow.
 ```
-Types: new-bc-app, enhance-bc-app, review-bc-code, debug-bc-issues, modernize-bc-code, onboard-developer, upgrade-bc-version, add-ecosystem-features, document-bc-solution
-Parameters: workflow_type (required), context (required), bc_version (optional)
+Types: new-bc-app, enhance-bc-app, review-bc-code, debug-bc-issues, modernize-bc-code, onboard-developer, bc-version-upgrade, add-ecosystem-features, document-bc-solution
+Parameters: workflow_type (required), scope (workspace|directory|files), path (optional), options (optional, includes source_version and target_version for bc-version-upgrade)
 ```
 
-**`advance_workflow`** -- Progress to the next phase of an active workflow.
+**`workflow_progress`** -- Report progress and obtain the next action in an active workflow.
 ```
-Parameters: workflow_id (required), phase_results (required), next_focus (optional)
+Parameters: session_id (required), completed_action (optional), findings (optional), proposed_changes (optional)
+```
+
+**`workflow_complete`** -- Finish a workflow session and generate the final report.
+```
+Parameters: session_id (required), generate_report (optional), apply_changes (optional)
 ```
 
 ### Analysis Tools

@@ -1,12 +1,38 @@
 ---
-description: Orchestrates Business Central AL development through phased subagent delegation. Activates when working with .al files, app.json, or BC development tasks. Coordinates architect, logic dev, UI dev, tester, and reviewer subagents backed by BC Knowledge MCP specialists.
-globs: "**/*.al,**/app.json"
+description: Orchestrates Business Central AL development through phased subagent delegation. Activates when working with .al files, app.json, CAL text exports, or BC development tasks. Coordinates CAL converter, architect, logic dev, UI dev, tester, and reviewer subagents backed by BC Knowledge MCP specialists.
+globs: "**/*.al,**/app.json,**/*.txt,**/*.DELTA"
 alwaysApply: false
 ---
 
 # BC Development Orchestrator
 
-When the user asks to implement, build, or create a Business Central feature, follow this phased orchestration. Each phase uses a dedicated subagent that consults BC Knowledge MCP specialists.
+When the user asks to implement, build, create a Business Central feature, or migrate from NAV/CAL, follow this phased orchestration. Each phase uses a dedicated subagent that consults BC Knowledge MCP specialists.
+
+## Migration Orchestration
+
+When the request involves CAL-to-AL conversion or NAV migration (triggered by "convert", "migrate", "upgrade from NAV", "CAL to AL", or presence of `.txt`/`.DELTA` files), execute the migration phase first:
+
+### Phase 0: CAL-to-AL Conversion
+
+1. Detect migration intent:
+   - User mentions: "convert CAL", "migrate from NAV", "upgrade", "CAL to AL"
+   - Or `.txt` / `.DELTA` files are present in the workspace or provided by user
+2. Delegate to `bc-cal-converter` subagent in **foreground**. Pass:
+   - Path to directory containing CAL files (`.txt` and/or `.DELTA` files)
+   - Or specific file paths if user provided them
+   - The project's `app.json` path for ID range and naming convention
+3. Capture the conversion report output:
+   - Generated AL files (tables, tableextensions, pages, pageextensions, codeunits)
+   - Manual review items
+   - Conversion statistics
+4. Present the conversion summary to the user.
+5. **Optional chaining**: If the user wants to continue with the full pipeline, proceed to Phase 1 (Design) using the generated AL files as input.
+
+### Smart Detection Logic
+
+The `bc-cal-converter` applies object ID-based smart detection:
+- **Object ID < 50000**: Standard BC object → create **tableextension** or **pageextension** with only custom fields (50000..99999) and custom code
+- **Object ID >= 50000**: Fully custom object → create new AL **table**, **page**, **codeunit**, **report**, etc.
 
 ## Full Feature Orchestration
 
@@ -60,6 +86,7 @@ For single-purpose requests, delegate to one subagent only:
 
 | User intent | Subagent | Mode |
 |-------------|----------|------|
+| "Convert these CAL files...", "Migrate from NAV...", "CAL to AL..." | `bc-cal-converter` | foreground |
 | "Design...", "Plan...", "What objects do I need for..." | `bc-architect` | foreground |
 | "Implement the logic for...", "Create a codeunit..." | `bc-al-logic` | foreground |
 | "Build the pages...", "Create a report for..." | `bc-al-ui` | foreground |
@@ -69,9 +96,10 @@ For single-purpose requests, delegate to one subagent only:
 ## Direct Specialist Access
 
 Do NOT block direct MCP specialist consultations. If the user says:
+- "Ask Logan about migration..." -> use `ask_bc_expert` with `preferred_specialist: "logan-legacy"`
 - "Ask Dean about..." -> use `ask_bc_expert` with `preferred_specialist: "dean-debug"`
-- "Talk to Sam about..." -> use `get_specialist_advice` with `specialist_id: "sam-coder"`
-- "What does Alex think about..." -> use `get_specialist_advice` with `specialist_id: "alex-architect"`
+- "Talk to Sam about..." -> use `ask_bc_expert` with `preferred_specialist: "sam-coder"`
+- "What does Alex think about..." -> use `ask_bc_expert` with `preferred_specialist: "alex-architect"`
 
 These bypass the subagent pipeline and go directly to the MCP specialist.
 

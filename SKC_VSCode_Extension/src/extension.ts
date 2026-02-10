@@ -269,6 +269,7 @@ async function applyPresets(
 
 /**
  * Returns the mcp.servers value to apply: preset only (optionally removing others), or preset merged with existing.
+ * Existing MCP servers (by id) are never replaced; preset is used only for servers that do not already exist.
  */
 function resolveMcpServersToApply(
   presetMcpServers: unknown[] | undefined,
@@ -278,25 +279,39 @@ function resolveMcpServersToApply(
   if (!Array.isArray(presetMcpServers)) {
     return undefined;
   }
-  if (removeOthers) {
-    return presetMcpServers;
-  }
   const config = workspace.getConfiguration();
   const current = config.get<unknown[]>("mcp.servers");
   const currentList = Array.isArray(current) ? current : [];
-  const presetIds = new Set(
-    presetMcpServers.map((s) => (s && typeof s === "object" && "id" in s ? (s as { id: string }).id : undefined)).filter(Boolean)
-  );
-  const merged = [...presetMcpServers];
+  const currentById = new Map<string, unknown>();
   for (const entry of currentList) {
     if (entry && typeof entry === "object" && "id" in entry) {
       const id = (entry as { id: string }).id;
-      if (id && !presetIds.has(id)) {
-        merged.push(entry);
+      if (id) currentById.set(id, entry);
+    }
+  }
+  const presetIds = new Set(
+    presetMcpServers.map((s) => (s && typeof s === "object" && "id" in s ? (s as { id: string }).id : undefined)).filter(Boolean)
+  );
+  const merged: unknown[] = [];
+  let keptExisting = 0;
+  for (const presetServer of presetMcpServers) {
+    const id = presetServer && typeof presetServer === "object" && "id" in presetServer ? (presetServer as { id: string }).id : undefined;
+    if (id && currentById.has(id)) {
+      merged.push(currentById.get(id));
+      keptExisting++;
+    } else {
+      merged.push(presetServer);
+    }
+  }
+  if (!removeOthers) {
+    for (const entry of currentList) {
+      if (entry && typeof entry === "object" && "id" in entry) {
+        const id = (entry as { id: string }).id;
+        if (id && !presetIds.has(id)) merged.push(entry);
       }
     }
   }
-  channel.appendLine(`[SKC] Merged MCP: ${presetMcpServers.length} from preset + ${merged.length - presetMcpServers.length} existing kept.`);
+  channel.appendLine(`[SKC] Merged MCP: ${presetMcpServers.length} preset (${keptExisting} existing kept)${!removeOthers ? ` + extras` : ""}.`);
   return merged;
 }
 
@@ -760,8 +775,7 @@ async function readExtensionsFile(
 /**
  * Writes MCP servers to the Cursor user path (e.g. %USERPROFILE%\.cursor\mcp.json on Windows)
  * in Cursor's expected format ({ "mcpServers": { "id": { ...config } } }).
- * Uses the same list as settings (preset-only or merged per removeMcpsNotInPreset), so removals
- * and version updates stay in sync: if an MCP is removed from the preset, it is removed here too.
+ * Existing MCP servers in the file are never replaced; new entries are added only for servers not already present.
  */
 async function writeCursorMcpFileIfNeeded(
   channel: OutputChannel,
@@ -770,7 +784,19 @@ async function writeCursorMcpFileIfNeeded(
   const cursorDir = path.join(os.homedir(), ".cursor");
   const mcpFilePath = path.join(cursorDir, "mcp.json");
 
-  const mcpServersObj: Record<string, unknown> = {};
+  let existingObj: Record<string, unknown> = {};
+  try {
+    const raw = await fs.readFile(mcpFilePath, "utf8");
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed && typeof parsed === "object" && parsed.mcpServers && typeof parsed.mcpServers === "object") {
+      existingObj = parsed.mcpServers as Record<string, unknown>;
+    }
+  } catch {
+    // File missing or invalid; start fresh
+  }
+
+  const mcpServersObj = { ...existingObj };
+  let added = 0;
   for (const entry of mcpServers) {
     if (!entry || typeof entry !== "object") {
       continue;
@@ -781,7 +807,10 @@ async function writeCursorMcpFileIfNeeded(
       channel.appendLine(`[SKC] Skipping MCP server without id when writing ${mcpFilePath}.`);
       continue;
     }
-    mcpServersObj[id] = server;
+    if (!(id in mcpServersObj)) {
+      mcpServersObj[id] = server;
+      added++;
+    }
   }
 
   try {
@@ -789,7 +818,7 @@ async function writeCursorMcpFileIfNeeded(
     const content = JSON.stringify({ mcpServers: mcpServersObj }, null, 2);
     await fs.writeFile(mcpFilePath, content, "utf8");
     const count = Object.keys(mcpServersObj).length;
-    channel.appendLine(`[SKC] Wrote ${count} MCP server(s) to ${mcpFilePath}.`);
+    channel.appendLine(`[SKC] Wrote ${count} MCP server(s) to ${mcpFilePath} (${added} added, ${count - added} existing kept).`);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     channel.appendLine(`[SKC] Failed to write ${mcpFilePath}: ${message}`);
