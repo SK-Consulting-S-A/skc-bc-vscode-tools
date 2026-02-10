@@ -47,13 +47,13 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const installSkillsCommand = commands.registerCommand("skc.installSkills", async () => {
     await installSkills(context, channel);
-    void window.showInformationMessage("SKC Cursor skills installed.");
+    void window.showInformationMessage("SKC skills installed.");
   });
   context.subscriptions.push(installSkillsCommand);
 
   const installAgentsCommand = commands.registerCommand("skc.installAgents", async () => {
     await installAgents(context, channel);
-    void window.showInformationMessage("SKC Cursor agents installed.");
+    void window.showInformationMessage("SKC agents installed.");
   });
   context.subscriptions.push(installAgentsCommand);
 
@@ -253,10 +253,7 @@ async function applyPresets(
   }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
-    const isCursor = env.appName.includes("Cursor");
-    if (isCursor) {
-      await installAgents(context, channel);
-    }
+    await installAgents(context, channel);
   }
 
   await context.globalState.update(STATE_KEY, true);
@@ -396,9 +393,12 @@ async function applySettings(
 async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
+  const isCursor = env.appName.includes("Cursor");
 
   const sourceRoot = path.join(context.extensionPath, "skills");
-  const targetRoot = path.join(os.homedir(), ".cursor", "skills");
+  const targetRoot = isCursor
+    ? path.join(os.homedir(), ".cursor", "skills")
+    : path.join(os.homedir(), ".copilot", "skills");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Skills folder not found at ${sourceRoot}; skipping skill install.`);
@@ -440,9 +440,12 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
 async function installAgents(context: ExtensionContext, channel: OutputChannel): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
+  const isCursor = env.appName.includes("Cursor");
 
   const sourceRoot = path.join(context.extensionPath, "agents");
-  const targetRoot = path.join(os.homedir(), ".cursor", "agents");
+  const targetRoot = isCursor
+    ? path.join(os.homedir(), ".cursor", "agents")
+    : path.join(os.homedir(), ".copilot", "agents");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Agents folder not found at ${sourceRoot}; skipping agent install.`);
@@ -479,6 +482,25 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
   }
 
   channel.appendLine(`[SKC] Agents summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
+
+  // Ensure VS Code Copilot discovers agents in ~/.copilot/agents/
+  if (!isCursor) {
+    await ensureCopilotAgentsPath(channel, targetRoot);
+  }
+}
+
+async function ensureCopilotAgentsPath(channel: OutputChannel, _agentsPath: string): Promise<void> {
+  try {
+    const config = workspace.getConfiguration("chat");
+    const current = config.get<Record<string, boolean>>("agentFilesLocations", {});
+    const key = "~/.copilot/agents";
+    if (current[key]) return;
+    const updated = { ...current, [key]: true };
+    await config.update("agentFilesLocations", updated, ConfigurationTarget.Global);
+    channel.appendLine(`[SKC] Added chat.agentFilesLocations: ${key}`);
+  } catch (e) {
+    channel.appendLine(`[SKC] Note: Could not update chat.agentFilesLocations: ${e}`);
+  }
 }
 
 async function copyDirectory(source: string, target: string): Promise<void> {

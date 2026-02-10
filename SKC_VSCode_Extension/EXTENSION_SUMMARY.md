@@ -11,9 +11,9 @@
 
 ## What It Does
 
-### 0. **Bundles Cursor AI Skills**
+### 0. **Bundles Skills and Subagents**
 
-Ships with the full Anthropic curated skills set plus the SKC `bc-word-layout` skill. Skills are installed to `~/.cursor/skills/` on extension updates (via Apply Presets), and can be installed manually via command.
+Ships with the full Anthropic curated skills set plus the SKC `bc-word-layout` skill. Skills and BC subagents install on extension updates (via Apply Presets): Cursor → `~/.cursor/skills/` & `~/.cursor/agents/`, VS Code → `~/.copilot/skills/` & `~/.copilot/agents/`. In VS Code, `chat.agentFilesLocations` is updated so Copilot discovers the installed agents. Can be installed manually via commands.
 
 ### 1. **XLF Translation Tools**
 
@@ -108,7 +108,8 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 
 ### Commands
 - **SKC: Apply Presets** - Manually apply all presets
-- **SKC: Install Cursor Skills** - Install bundled Cursor skills to `~/.cursor/skills/`
+- **SKC: Install Cursor Skills** - Install bundled skills (Cursor: `~/.cursor/skills/`, VS Code: `~/.copilot/skills/`)
+- **SKC: Install Cursor Agents** - Install BC subagents (Cursor: `~/.cursor/agents/`, VS Code: `~/.copilot/agents/`)
 - **SKC: Configure MCP Auth** - Set up MCP server authentication
 - **SKC: Configure Translation URL** - Set Azure Translation Function endpoint
 - **Translate File** - Translate selected XLF file (from sidebar)

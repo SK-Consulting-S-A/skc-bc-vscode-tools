@@ -19,7 +19,8 @@
 - **All Anthropic Curated Skills + SKC BC Word Layout** are bundled with the extension
 - **Auto-install on update** when presets are applied (default on)
 - **Manual install**: `SKC: Install Cursor Skills` · **Setting**: `skc.installSkillsOnApplyPresets`
-- Skills install to `~/.cursor/skills/`
+- Skills install to `~/.cursor/skills/` (Cursor) or `~/.copilot/skills/` (VS Code)
+- Agents (subagents) install to `~/.cursor/agents/` (Cursor) or `~/.copilot/agents/` (VS Code); in VS Code, `chat.agentFilesLocations` is configured automatically
 
 ---
 
