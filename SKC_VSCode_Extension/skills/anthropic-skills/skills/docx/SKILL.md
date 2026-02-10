@@ -10,6 +10,9 @@ license: Proprietary. LICENSE.txt has complete terms
 
 A user may ask you to create, edit, or analyze the contents of a .docx file. A .docx file is essentially a ZIP archive containing XML files and other resources that you can read or edit. You have different tools and workflows available for different tasks.
 
+**Related Skills:**
+- **mermaid-to-word** - For converting Markdown with Mermaid diagrams to Word documents. Use this skill first to generate .docx from markdown, then use the docx skill for further editing.
+
 ## Workflow Decision Tree
 
 ### Reading/Analyzing Content
@@ -195,3 +198,24 @@ Required dependencies (install if not available):
 - **LibreOffice**: `sudo apt-get install libreoffice` (for PDF conversion)
 - **Poppler**: `sudo apt-get install poppler-utils` (for pdftoppm to convert PDF to images)
 - **defusedxml**: `pip install defusedxml` (for secure XML parsing)
+
+## Integration with Other Skills
+
+### Converting Markdown with Diagrams to Word
+
+If you need to convert Markdown files with Mermaid diagrams to Word:
+
+1. **Use mermaid-to-word skill first** to generate the initial .docx:
+   ```bash
+   node scripts/convert.js document.md --output report.docx
+   ```
+
+2. **Then use docx skill** for advanced editing:
+   - Add tracked changes and comments
+   - Modify formatting and structure
+   - Extract or analyze content
+
+This workflow is ideal for:
+- Technical documentation with architecture diagrams
+- Project reports with flowcharts and sequence diagrams
+- Design specifications with visual representations
