@@ -1,15 +1,19 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 1.8.0 - Latest Release
+## Version 2.0.0 - Latest Release
 
-### 🚀 NEW: BC Orchestration Skill - CAL to AL Converter
+### 🚀 NEW: BC CAL-to-AL Converter & Upgrade Automation
 
 #### Complete NAV 2017 to BC 2027 Upgrade Pipeline
-- **bc-cal-converter Subagent** – Intelligent CAL-to-AL conversion with dual-mode strategy
+
+This major release adds the **bc-cal-converter** subagent and complete PowerShell automation for upgrading from NAV 2017 to BC 2027.
+
+#### bc-cal-converter Subagent (NEW)
+- **Intelligent CAL-to-AL conversion** with dual-mode strategy
 - **Smart Detection** – Automatically creates table/page extensions for standard BC objects (ID < 50000) with custom fields
 - **Bulk Conversion** – Fast conversion of fully custom objects (ID >= 50000) using Microsoft Txt2Al.exe
 - **BC Knowledge Integration** – Consults logan-legacy, sam-coder, and alex-architect specialists for upgrade guidance
-- **Automated Scripts** – Complete PowerShell pipeline for NAV export, delta generation, and conversion
+- **50% Time Savings** – Dual-mode approach cuts conversion time in half while maintaining quality
 
 #### Dual-Mode Conversion Strategy
 - **Mode 1 (Smart Detection)** – For standard BC objects with customizations
@@ -77,6 +81,28 @@
 - Traditional approach: ~50 minutes
 - Dual-mode approach: ~25 minutes
 - **Time savings: 50% faster with same quality**
+
+---
+
+## Version 1.8.0
+
+### 🤖 BC Orchestration Skill - Subagents
+
+This version introduced the BC orchestration framework with 7 specialist subagents (bc-cal-converter was added in v2.0.0).
+
+#### 7 BC Subagents
+- **bc-researcher** – Gathers documentation, APIs, events from Microsoft Learn, GitHub, BC Knowledge
+- **bc-architect** – Designs AL extension structure, object lists, events, APIs
+- **bc-al-logic** – Implements tables, codeunits, enums, interfaces, integration code
+- **bc-al-ui** – Implements pages, reports, role centers, layouts
+- **bc-tester** – Creates test codeunits and validates implementations
+- **bc-reviewer** – Reviews quality, security, best practices, AppSource readiness
+- **bc-translator** – Manages multilanguage translation workflow
+
+#### BC Knowledge MCP Integration
+- Access to 15+ BC specialists (alex-architect, sam-coder, logan-legacy, etc.)
+- Workflow tools for structured multi-phase development
+- AL code analysis and validation
 
 ---
 
