@@ -6,8 +6,8 @@
 # ============================================================================
 
 param(
-    [Parameter(Mandatory=$true)]
-    [PSCustomObject]$Config
+  [Parameter(Mandatory = $true)]
+  [PSCustomObject]$Config
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,30 +40,30 @@ New-Item -ItemType Directory -Path $vscodeDir -Force | Out-Null
 # Create launch.json for debugging
 $launchJsonPath = Join-Path $vscodeDir 'launch.json'
 if (-not (Test-Path $launchJsonPath)) {
-    Write-Host "Creating launch.json for debugging..." -ForegroundColor Yellow
+  Write-Host "Creating launch.json for debugging..." -ForegroundColor Yellow
     
-    $launchJson = @{
-        version = "0.2.0"
-        configurations = @(
-            @{
-                name = "Your own server"
-                type = "al"
-                request = "launch"
-                server = "http://localhost"
-                serverInstance = "BC270"
-                authentication = "Windows"
-                startupObjectId = 22
-                startupObjectType = "Page"
-                breakOnError = $true
-                launchBrowser = $true
-                enableLongRunningSqlStatements = $true
-                enableSqlInformationDebugger = $true
-            }
-        )
-    } | ConvertTo-Json -Depth 10
+  $launchJson = @{
+    version        = "0.2.0"
+    configurations = @(
+      @{
+        name                           = "Your own server"
+        type                           = "al"
+        request                        = "launch"
+        server                         = "http://localhost"
+        serverInstance                 = "BC270"
+        authentication                 = "Windows"
+        startupObjectId                = 22
+        startupObjectType              = "Page"
+        breakOnError                   = $true
+        launchBrowser                  = $true
+        enableLongRunningSqlStatements = $true
+        enableSqlInformationDebugger   = $true
+      }
+    )
+  } | ConvertTo-Json -Depth 10
     
-    $launchJson | Out-File -FilePath $launchJsonPath -Encoding UTF8
-    Write-Host "[OK] launch.json created" -ForegroundColor Green
+  $launchJson | Out-File -FilePath $launchJsonPath -Encoding UTF8
+  Write-Host "[OK] launch.json created" -ForegroundColor Green
 }
 
 Write-Host ""
@@ -97,7 +97,7 @@ Before compilation, download BC symbols using the AL Language extension.
 
 ### Instructions for Cursor:
 
-Use the LM-Bridge MCP tool to download symbols:
+Use the VS Code tool to download symbols:
 
 ``````
 al_downloadsymbols(workspace_path: "$workspace")
@@ -111,7 +111,7 @@ Compile the AL code to check for errors.
 
 ### Instructions for Cursor:
 
-Use the LM-Bridge MCP tool to build:
+Use the VS Code tool to build:
 
 ``````
 al_build(workspace_path: "$workspace")
@@ -430,7 +430,7 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "1. Open Cursor in the BC workspace: $workspace" -ForegroundColor White
 Write-Host "2. Read the compilation instructions: compile-instructions.md" -ForegroundColor White
-Write-Host "3. Download symbols and compile using LM-Bridge MCP tools" -ForegroundColor White
+Write-Host "3. Download symbols and compile using VS Code tools" -ForegroundColor White
 Write-Host "4. Run bc-reviewer subagent for quality check" -ForegroundColor White
 Write-Host "5. Use review-checklist.md to track progress" -ForegroundColor White
 Write-Host ""

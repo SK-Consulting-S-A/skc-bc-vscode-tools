@@ -21,7 +21,7 @@ Complete multilanguage translation workflow for BC extensions.
 
 #### MCP Tools Used:
 ```al
-// From user-LM-Bridge MCP server
+// VS Code Language Model tools
 al_build                    // Generate .g.xlf and package
 createLanguageXlf          // Create target language XLF
 skc_translate_xlf          // Auto-translate via Azure
@@ -61,7 +61,7 @@ skc_list_translation_files // Check translation status
 
 #### MCP Tools Used:
 ```al
-// From user-LM-Bridge MCP server
+// VS Code Language Model tools
 al_build                  // Compile project
 al_getdiagnostics        // Get compilation errors
 al_downloadsymbols       // Download missing symbols
@@ -255,7 +255,7 @@ Updated **bc-reviewer.md** to:
 ## Configuration Needed
 
 The bc-reviewer subagent now requires access to:
-- **user-LM-Bridge MCP server** (for al_build, al_getdiagnostics, al_downloadsymbols)
+- **VS Code Language Model tools** (for al_build, al_getdiagnostics, al_downloadsymbols)
 - **user-bc-knowledge MCP server** (for analyze_al_code, specialists)
 
 These should already be configured in your Cursor setup.

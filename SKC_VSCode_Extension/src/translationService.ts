@@ -425,9 +425,85 @@ export async function getTranslationStatusSummary(workspaceFolderUri?: vscode.Ur
 }
 
 /**
+ * Perform a simple HTTP GET and return the parsed JSON body.
+ */
+function httpGet(url: string): Promise<unknown> {
+    return new Promise((resolve, reject) => {
+        const isHttps = url.startsWith("https");
+        const httpModule = isHttps ? https : http;
+        const req = httpModule.get(url, { timeout: 30000 }, (res) => {
+            let data = "";
+            res.on("data", (chunk) => { data += chunk; });
+            res.on("end", () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch {
+                    reject(new Error(`Failed to parse response: ${data.substring(0, 200)}`));
+                }
+            });
+        });
+        req.on("error", reject);
+        req.on("timeout", () => { req.destroy(); reject(new Error("Poll request timed out")); });
+    });
+}
+
+/**
+ * Poll a job status URL until the job completes or fails.
+ * Returns the final job result with translatedContent, translatedCount, syncInfo.
+ */
+async function pollJobUntilComplete(
+    statusUrl: string,
+    channel: vscode.OutputChannel
+): Promise<TranslationResult> {
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_WAIT_MS = REQUEST_TIMEOUT_MS;
+    const started = Date.now();
+
+    channel.appendLine(`[SKC] Async job created — polling for result...`);
+
+    while (Date.now() - started < MAX_WAIT_MS) {
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+
+        const statusResponse = await httpGet(statusUrl) as Record<string, unknown>;
+        const status = statusResponse.status as string;
+        const progress = statusResponse.progress as Record<string, unknown> | undefined;
+
+        channel.appendLine(`[SKC] Job status: ${status}${progress?.message ? ` — ${progress.message}` : ""}`);
+
+        if (status === "completed") {
+            // Fetch result and clean up job in one request
+            const resultUrl = `${statusUrl}&result=true&delete=true`;
+            const resultResponse = await httpGet(resultUrl) as Record<string, unknown>;
+            const result = resultResponse.result as Record<string, unknown> | undefined;
+
+            if (!result?.translatedContent) {
+                throw new Error("Job completed but no translated content in result");
+            }
+
+            return {
+                translatedContent: result.translatedContent as string,
+                translatedCount: (result.translatedCount as number) ?? 0,
+                syncInfo: result.syncInfo as TranslationResult["syncInfo"]
+            };
+        }
+
+        if (status === "failed") {
+            throw new Error(`Translation job failed: ${(statusResponse.error as string) ?? "unknown error"}`);
+        }
+
+        if (status === "expired") {
+            throw new Error("Translation job expired before completing");
+        }
+    }
+
+    throw new Error("Translation job timed out after 10 minutes");
+}
+
+/**
  * Call the Azure Translation Function with sync support
  * Sends both source content (for schema) and target content (to update)
  * Azure Function will: add missing units, remove obsolete units, translate
+ * Handles both synchronous (200) and asynchronous (202) responses.
  */
 async function callAzureFunctionWithSync(
     url: string,
@@ -436,28 +512,27 @@ async function callAzureFunctionWithSync(
     targetLanguage: string,
     channel: vscode.OutputChannel
 ): Promise<TranslationResult | null> {
-    return new Promise((resolve, reject) => {
-        // Ensure URL has mode=direct parameter
-        const urlObj = new URL(url);
-        if (!urlObj.searchParams.has("mode")) {
-            urlObj.searchParams.set("mode", "direct");
-        }
+    // Ensure URL has mode=direct parameter
+    const urlObj = new URL(url);
+    if (!urlObj.searchParams.has("mode")) {
+        urlObj.searchParams.set("mode", "direct");
+    }
 
-        const finalUrl = urlObj.toString();
-        channel.appendLine(`[SKC] Calling Azure Function: ${urlObj.hostname}`);
+    const finalUrl = urlObj.toString();
+    channel.appendLine(`[SKC] Calling Azure Function: ${urlObj.hostname}`);
 
-        // Send both source (for sync schema) and target (to update)
-        const payload = JSON.stringify({
-            content: targetContent,       // Target file to update
-            sourceContent: sourceContent, // Source file for sync schema
-            targetLanguage
-        });
+    const payload = JSON.stringify({
+        content: targetContent,       // Target file to update
+        sourceContent: sourceContent, // Source file for sync schema
+        targetLanguage
+    });
 
-        channel.appendLine(`[SKC] Payload size: ${(Buffer.byteLength(payload) / 1024).toFixed(1)} KB`);
+    channel.appendLine(`[SKC] Payload size: ${(Buffer.byteLength(payload) / 1024).toFixed(1)} KB`);
 
-        const isHttps = finalUrl.startsWith("https");
-        const httpModule = isHttps ? https : http;
+    const isHttps = finalUrl.startsWith("https");
+    const httpModule = isHttps ? https : http;
 
+    const { statusCode, body } = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
         const options: https.RequestOptions = {
             method: "POST",
             headers: {
@@ -470,37 +545,50 @@ async function callAzureFunctionWithSync(
 
         const req = httpModule.request(finalUrl, options, (res) => {
             let data = "";
-
-            res.on("data", (chunk) => {
-                data += chunk;
-            });
-
-            res.on("end", () => {
-                if (res.statusCode !== 200) {
-                    reject(new Error(`Azure Function returned status ${res.statusCode}: ${data.substring(0, 200)}`));
-                    return;
-                }
-
-                try {
-                    const result = JSON.parse(data) as TranslationResult;
-                    resolve(result);
-                } catch {
-                    reject(new Error("Failed to parse Azure Function response"));
-                }
-            });
+            res.on("data", (chunk) => { data += chunk; });
+            res.on("end", () => resolve({ statusCode: res.statusCode ?? 0, body: data }));
         });
 
-        req.on("error", (error) => {
-            reject(error);
-        });
-
-        req.on("timeout", () => {
-            req.destroy();
-            reject(new Error("Request timed out"));
-        });
-
+        req.on("error", reject);
+        req.on("timeout", () => { req.destroy(); reject(new Error("Request timed out")); });
         req.write(payload);
         req.end();
     });
+
+    // Synchronous success
+    if (statusCode === 200) {
+        try {
+            return JSON.parse(body) as TranslationResult;
+        } catch {
+            throw new Error("Failed to parse Azure Function response");
+        }
+    }
+
+    // Async job accepted — poll for result
+    if (statusCode === 202) {
+        let jobInfo: Record<string, unknown>;
+        try {
+            jobInfo = JSON.parse(body) as Record<string, unknown>;
+        } catch {
+            throw new Error("Failed to parse async job response");
+        }
+
+        let statusUrl = jobInfo.statusUrl as string;
+        if (!statusUrl) {
+            throw new Error("Async response missing statusUrl");
+        }
+
+        // The Azure Function strips auth params when building statusUrl — re-attach the code key
+        const originalCode = urlObj.searchParams.get("code");
+        if (originalCode && !statusUrl.includes("code=")) {
+            const sep = statusUrl.includes("?") ? "&" : "?";
+            statusUrl = `${statusUrl}${sep}code=${encodeURIComponent(originalCode)}`;
+        }
+
+        channel.appendLine(`[SKC] Large file detected — processing asynchronously (job: ${jobInfo.jobId})`);
+        return await pollJobUntilComplete(statusUrl, channel);
+    }
+
+    throw new Error(`Azure Function returned status ${statusCode}: ${body.substring(0, 200)}`);
 }
 

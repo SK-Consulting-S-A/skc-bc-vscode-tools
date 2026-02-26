@@ -659,10 +659,10 @@ Produce a comprehensive conversion report covering BOTH modes:
 | `workflow_progress` | Report progress in active workflow |
 | `workflow_complete` | Complete workflow and generate final report |
 
-### LM-Bridge MCP (`user-LM-Bridge`)
+### VS Code Tools
 
 | Tool | Purpose |
-|------|---------|
+|------|-------|
 | `al_symbolsearch` | Verify target BC object names before creating extensions |
 | `al_build` | Compile generated AL code to verify syntax |
 | `al_getdiagnostics` | Get compilation errors for generated files |

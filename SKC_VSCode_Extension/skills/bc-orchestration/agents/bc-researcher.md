@@ -32,7 +32,7 @@ If no `.aidocs` folder exists, skip this step and note it in your output.
 
 ### STEP 2 — MANDATORY: AL Symbol Search (Current Project & Dependencies)
 
-Use `al_symbolsearch` (from `user-LM-Bridge` MCP) to discover real tables, fields, events, codeunits, and enums from the project AND its dependencies (including the BC platform, system app, and any installed extensions like MS Subscription Billing).
+Use `al_symbolsearch` (VS Code tool) to discover real tables, fields, events, codeunits, and enums from the project AND its dependencies (including the BC platform, system app, and any installed extensions like MS Subscription Billing).
 
 **This is the most reliable source for actual object IDs, field names, and event signatures.**
 
@@ -95,7 +95,7 @@ Use `WebSearch` to find current Microsoft Learn documentation:
 
 ### STEP 5 — HIGHLY RECOMMENDED: GitHub Code Search for Standard BC Patterns
 
-Use the GitHub search tools from `user-LM-Bridge` MCP to find real AL code patterns.
+Use the GitHub search tools to find real AL code patterns.
 
 **Standard Microsoft Apps (FBakkensen/bc-w1 repository):**
 
@@ -185,7 +185,7 @@ Always analyze the current project to ensure consistency:
 | `get_specialist_advice` | Session-based specialist conversation |
 | `browse_specialists` | Discover available specialists and their domains |
 
-### LM-Bridge MCP (`user-LM-Bridge`)
+### VS Code Tools
 
 | Tool | Purpose |
 |------|---------|

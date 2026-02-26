@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -203,6 +203,11 @@
           "default": true,
           "description": "When applying presets, also write MCP servers to the Cursor user path (e.g. %USERPROFILE%\\.cursor\\mcp.json on Windows, ~/.cursor/mcp.json elsewhere). Disable if you manage that file yourself."
         },
+        "skc.writeVSCodeMcpFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "When applying presets, write MCP servers directly to the VS Code user mcp.json file (e.g. %APPDATA%\\Code - Insiders\\User\\mcp.json). This uses the VS Code object format (server name as key, no id field) and migrates any old numeric-key entries created by previous versions. Disable if you manage that file yourself."
+        },
         "skc.extensionsFilePath": {
           "type": "string",
           "default": "presets/extensions.json",
@@ -237,16 +242,6 @@
           "type": "string",
           "default": "",
           "description": "URL of the Azure Translation Function endpoint (e.g., https://your-function.azurewebsites.net/api/github-webhook?mode=direct)."
-        },
-        "skc.enableLmBridge": {
-          "type": "boolean",
-          "default": true,
-          "description": "Expose VS Code Language Model tools (e.g. AL extension tools) to Cursor AI via an MCP SSE server (LM-Bridge). Cursor can connect to the URL shown in the SKC Presets output when the bridge is running."
-        },
-        "skc.lmBridgePort": {
-          "type": "number",
-          "default": 7878,
-          "description": "Port for the LM Bridge MCP SSE server. Change if 7878 is already in use."
         }
       }
     },
@@ -267,7 +262,6 @@
       "ms-azuretools.vscode-azurefunctions",
       "ms-azuretools.vscode-azureappservice",
       "ms-azuretools.vscode-azureresourcegroups",
-      "ms-vscode.azure-account",
       "ms-vscode.vscode-typescript-next",
       "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",
@@ -291,7 +285,6 @@
       "ms-azuretools.vscode-azurefunctions",
       "ms-azuretools.vscode-azureappservice",
       "ms-azuretools.vscode-azureresourcegroups",
-      "ms-vscode.azure-account",
       "ms-vscode.vscode-typescript-next",
       "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",

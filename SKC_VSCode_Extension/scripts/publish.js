@@ -64,6 +64,7 @@ if (versionType) {
 if (isPreRelease) {
     command += ' --pre-release';
 }
+command += ' --allow-star-activation';
 command += ` --pat ${token}`;
 
 (async () => {

@@ -55,7 +55,7 @@ Available subagents:
 
 ### MCP Tools Used:
 ```
-user-LM-Bridge server:
+VS Code tools:
   - al_build                    // Generate .g.xlf and package
   - createLanguageXlf          // Create target language XLF
   - skc_translate_xlf          // Auto-translate via Azure

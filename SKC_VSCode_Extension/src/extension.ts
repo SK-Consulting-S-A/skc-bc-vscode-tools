@@ -16,7 +16,7 @@ import {
   TextEditorRevealType
 } from "vscode";
 import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
-// Heavy modules (translationsView, translationService, lmBridge, translationTools) are loaded lazily in setImmediate
+// Heavy modules (translationsView, translationService, translationTools) are loaded lazily in setImmediate
 // so activation returns quickly and "Activating..." does not hang.
 
 const OUTPUT_CHANNEL_NAME = "SKC Tools";
@@ -66,16 +66,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(configureAuthCommand);
 
-  // Defer view, LM Bridge, and startup tasks so activate() returns immediately (avoids long "Activating...").
-  // Start LM Bridge first (so Cursor's MCP client can connect to localhost:7878 without ECONNREFUSED).
+  // Defer view and startup tasks so activate() returns immediately (avoids long "Activating...").
   setImmediate(() => {
     void (async () => {
-      const isCursor = env.appName.includes("Cursor");
-      if (isCursor) {
-        const { startLmBridge } = await import("./lmBridge");
-        startLmBridge(context, channel);
-      }
-
       const [
         { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass },
         { translateFile, createTranslationFile },
@@ -220,17 +213,20 @@ async function applyPresets(
   channel.appendLine(`[SKC] Extensions path: ${extensionsPath || "(empty)"}`);
 
   const { settings, extensions: presetExtensions } = await readPresetFile(presetPath, context, channel);
-  const mcpServersRaw = await readMcpFile(mcpPath, context, channel);
+  const { servers: mcpServersRaw, inputs: mcpInputs } = await readMcpFile(mcpPath, context, channel);
   const mcpServers = await injectMcpSecrets(context, channel, mcpServersRaw, silent);
   const extraExtensions = await readExtensionsFile(extensionsPath, context, channel);
 
   const settingsToApply = settings ? { ...settings } : {};
   channel.appendLine(`[SKC] Loaded ${Object.keys(settingsToApply).length} settings from preset file.`);
+  const isCursor = env.appName.includes("Cursor");
   const removeMcpsNotInPreset = cfg.get<boolean>("removeMcpsNotInPreset", true);
   const mcpServersToApply = resolveMcpServersToApply(mcpServers, removeMcpsNotInPreset, channel);
   if (mcpServersToApply !== undefined) {
-    settingsToApply["mcp.servers"] = mcpServersToApply;
-    channel.appendLine(`[SKC] Set mcp.servers to ${mcpServersToApply.length} server(s) (preset only: ${removeMcpsNotInPreset}).`);
+    settingsToApply["mcp.servers"] = isCursor
+      ? mcpServersToApply
+      : mcpServersArrayToObject(mcpServersToApply);
+    channel.appendLine(`[SKC] Set mcp.servers to ${mcpServersToApply.length} server(s) as ${isCursor ? "array" : "object"} (preset only: ${removeMcpsNotInPreset}).`);
   }
   const extensionsToInstall = Array.from(
     new Set([
@@ -250,6 +246,10 @@ async function applyPresets(
   // Write Cursor mcp.json whenever we have a resolved list (including empty), so removals and version updates stay in sync.
   if (writeCursorMcpFile && mcpServersToApply !== undefined) {
     await writeCursorMcpFileIfNeeded(channel, mcpServersToApply);
+  }
+  const writeVSCodeMcpFile = cfg.get<boolean>("writeVSCodeMcpFile", true);
+  if (writeVSCodeMcpFile && mcpServersToApply !== undefined) {
+    await writeVSCodeMcpFileIfNeeded(context, channel, mcpServersToApply, mcpInputs);
   }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
@@ -280,8 +280,14 @@ function resolveMcpServersToApply(
     return undefined;
   }
   const config = workspace.getConfiguration();
-  const current = config.get<unknown[]>("mcp.servers");
-  const currentList = Array.isArray(current) ? current : [];
+  const current = config.get<unknown>("mcp.servers");
+  const currentList: unknown[] = Array.isArray(current)
+    ? current
+    : isRecord(current)
+      ? Object.entries(current).map(([key, val]) =>
+        isRecord(val) ? (typeof (val as Record<string, unknown>).id === "string" ? val : { ...val, id: key }) : { id: key }
+      )
+      : [];
   const currentById = new Map<string, unknown>();
   for (const entry of currentList) {
     if (entry && typeof entry === "object" && "id" in entry) {
@@ -468,8 +474,9 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
   }
 
   await fs.mkdir(targetRoot, { recursive: true });
-  
+
   const agentFiles = await fs.readdir(sourceRoot, { withFileTypes: true });
+  // Source files use .agent.md (VS Code format). Cursor expects plain .md — strip the '.agent' part.
   const mdFiles = agentFiles.filter((f) => f.isFile() && f.name.endsWith(".md"));
 
   let installedCount = 0;
@@ -477,17 +484,19 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
 
   for (const file of mdFiles) {
     const src = path.join(sourceRoot, file.name);
-    const dest = path.join(targetRoot, file.name);
+    // For Cursor: bc-xxx.agent.md → bc-xxx.md. For VS Code: keep .agent.md as-is.
+    const destName = isCursor ? file.name.replace(/\.agent\.md$/, ".md") : file.name;
+    const dest = path.join(targetRoot, destName);
 
     const destExists = await pathExists(dest);
     if (destExists && !overwriteExisting) {
-      channel.appendLine(`[SKC] Agent '${file.name}' already exists; skipping (set skc.overwriteExistingSkills to overwrite).`);
+      channel.appendLine(`[SKC] Agent '${destName}' already exists; skipping (set skc.overwriteExistingSkills to overwrite).`);
       skippedCount++;
       continue;
     }
 
     await fs.copyFile(src, dest);
-    channel.appendLine(`[SKC] ${destExists ? "Updated" : "Installed"} agent ${file.name}.`);
+    channel.appendLine(`[SKC] ${destExists ? "Updated" : "Installed"} agent ${destName}.`);
     installedCount++;
   }
 
@@ -615,6 +624,7 @@ type PresetFileShape = {
 type McpFileShape = {
   servers?: unknown;
   mcpServers?: unknown;
+  inputs?: unknown;
 };
 
 type ExtensionsFileShape = {
@@ -662,15 +672,15 @@ async function readMcpFile(
   mcpPath: string | undefined,
   context: ExtensionContext,
   channel: OutputChannel
-): Promise<unknown[] | undefined> {
+): Promise<{ servers?: unknown[]; inputs?: unknown[] }> {
   if (!mcpPath) {
-    return undefined;
+    return {};
   }
 
   const resolvedPath = await resolvePath(mcpPath, context);
   if (!resolvedPath) {
     channel.appendLine(`[SKC] Unable to resolve MCP path '${mcpPath}'; keeping existing mcp.servers.`);
-    return undefined;
+    return {};
   }
 
   try {
@@ -680,25 +690,31 @@ async function readMcpFile(
     const servers =
       isRecord(parsed) && Array.isArray(parsed.servers)
         ? (parsed.servers as unknown[])
-        : Array.isArray(parsed)
-          ? parsed
-          : isRecord(parsed) && isRecord(parsed.mcpServers)
-            ? convertCursorMcpServersToArray(parsed.mcpServers, resolvedPath, channel)
-            : undefined;
+        : isRecord(parsed) && isRecord(parsed.servers)
+          ? convertCursorMcpServersToArray(parsed.servers as Record<string, unknown>, resolvedPath, channel)
+          : Array.isArray(parsed)
+            ? parsed
+            : isRecord(parsed) && isRecord(parsed.mcpServers)
+              ? convertCursorMcpServersToArray(parsed.mcpServers as Record<string, unknown>, resolvedPath, channel)
+              : undefined;
+
+    const inputs = isRecord(parsed) && Array.isArray(parsed.inputs)
+      ? (parsed.inputs as unknown[])
+      : undefined;
 
     if (!servers) {
       channel.appendLine(
-        `[SKC] MCP file at ${resolvedPath} did not contain a 'servers' array, a top-level array, or a 'mcpServers' object; leaving mcp.servers unchanged.`
+        `[SKC] MCP file at ${resolvedPath} did not contain a recognized 'servers' format; leaving mcp.servers unchanged.`
       );
-      return undefined;
+      return {};
     }
 
-    channel.appendLine(`[SKC] Loaded MCP servers from ${resolvedPath}.`);
-    return servers;
+    channel.appendLine(`[SKC] Loaded MCP servers from ${resolvedPath}${inputs ? ` (${inputs.length} input(s))` : ""}.`);
+    return { servers, inputs };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     channel.appendLine(`[SKC] Failed to read MCP file at ${resolvedPath}: ${message}`);
-    return undefined;
+    return {};
   }
 }
 
@@ -825,6 +841,104 @@ async function writeCursorMcpFileIfNeeded(
   }
 }
 
+/**
+ * Writes MCP servers to the VS Code user mcp.json file
+ * (e.g. %APPDATA%\Code - Insiders\User\mcp.json on Windows)
+ * using the VS Code format: { "servers": { "name": { ...config (no id field) } }, "inputs": [...] }.
+ *
+ * Existing entries are preserved; old numeric-key entries created by previous versions are
+ * migrated to use the server name as key. Only new servers are added; existing preset
+ * servers already in the file are left unchanged.
+ */
+async function writeVSCodeMcpFileIfNeeded(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  mcpServers: unknown[],
+  presetInputs?: unknown[]
+): Promise<void> {
+  // Derive VS Code User directory: globalStorageUri is …/User/globalStorage/<extId>
+  const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
+  const mcpFilePath = path.join(userDir, "mcp.json");
+
+  let existingServers: Record<string, unknown> = {};
+  let existingInputs: unknown[] = [];
+  try {
+    const raw = await fs.readFile(mcpFilePath, "utf8");
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (isRecord(parsed.servers)) {
+      // Migrate old numeric-key entries (written by previous extension versions)
+      for (const [key, val] of Object.entries(parsed.servers as Record<string, unknown>)) {
+        if (/^\d+$/.test(key) && isRecord(val)) {
+          const innerId = typeof (val as Record<string, unknown>).id === "string"
+            ? (val as Record<string, unknown>).id as string
+            : null;
+          if (innerId) {
+            const { id: _id, ...rest } = val as Record<string, unknown> & { id: string };
+            existingServers[innerId] = rest;
+            channel.appendLine(`[SKC] VS Code mcp.json: migrated numeric entry "${key}" → "${innerId}".`);
+            continue;
+          }
+        }
+        existingServers[key] = val;
+      }
+    }
+    if (Array.isArray(parsed.inputs)) {
+      existingInputs = parsed.inputs;
+    }
+  } catch {
+    // File missing or invalid — start fresh
+  }
+
+  // Merge servers: preset adds new entries; existing entries (by key) are kept unchanged
+  const merged: Record<string, unknown> = { ...existingServers };
+  let added = 0;
+  for (const entry of mcpServers) {
+    if (!isRecord(entry)) continue;
+    const id = typeof entry.id === "string" ? entry.id : undefined;
+    if (!id) {
+      channel.appendLine(`[SKC] Skipping VS Code MCP server without id when writing ${mcpFilePath}.`);
+      continue;
+    }
+    if (!(id in merged)) {
+      const copy: Record<string, unknown> = { ...entry };
+      delete copy.id;
+      merged[id] = copy;
+      added++;
+    }
+  }
+
+  // Merge inputs: preset inputs are added if not already present (matched by id).
+  // The inputs array is used by VS Code to prompt for secrets at runtime (e.g. ${input:githubToken}).
+  const mergedInputs = mergeInputs(existingInputs, presetInputs ?? []);
+
+  try {
+    const content = JSON.stringify({ servers: merged, inputs: mergedInputs }, null, "\t");
+    await fs.writeFile(mcpFilePath, content, "utf8");
+    const count = Object.keys(merged).length;
+    channel.appendLine(`[SKC] Wrote ${count} MCP server(s) and ${mergedInputs.length} input(s) to VS Code ${mcpFilePath} (${added} server(s) added).`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    channel.appendLine(`[SKC] Failed to write VS Code MCP file ${mcpFilePath}: ${message}`);
+  }
+}
+
+/**
+ * Merges two inputs arrays. Preset inputs with an `id` already present in existing are skipped.
+ * New preset inputs without a matching id are appended.
+ */
+function mergeInputs(existing: unknown[], preset: unknown[]): unknown[] {
+  const existingIds = new Set(
+    existing.map((e) => (isRecord(e) && typeof e.id === "string" ? e.id : undefined)).filter(Boolean)
+  );
+  const result = [...existing];
+  for (const input of preset) {
+    const inputId = isRecord(input) && typeof input.id === "string" ? input.id : undefined;
+    if (inputId && existingIds.has(inputId)) continue;
+    result.push(input);
+  }
+  return result;
+}
+
 async function resolvePath(
   configuredPath: string,
   context: ExtensionContext
@@ -877,7 +991,6 @@ async function injectMcpSecrets(
   }
 
   const allowPrompt = !silent;
-  let githubToken: string | undefined;
   let context7ApiKey: string | undefined;
   const hydrated: unknown[] = [];
 
@@ -889,26 +1002,6 @@ async function injectMcpSecrets(
 
     const copy: Record<string, unknown> = { ...server };
     const headers = isRecord(copy.headers) ? { ...copy.headers } : {};
-
-    if (copy.id === "github") {
-      if (!githubToken) {
-        githubToken = await getOrPromptSecret(
-          context,
-          "skc.githubToken",
-          "Enter a GitHub MCP token (PAT or MCP token). Stored securely.",
-          allowPrompt
-        );
-      }
-      if (githubToken) {
-        headers.Authorization = githubToken.startsWith("Bearer ")
-          ? githubToken
-          : `Bearer ${githubToken}`;
-      } else {
-        channel.appendLine(
-          "[SKC] No GitHub token available; 'github' MCP server will be applied without Authorization."
-        );
-      }
-    }
 
     if (copy.id === "context7") {
       if (!context7ApiKey) {
@@ -986,6 +1079,23 @@ async function promptAndSaveMcpSecrets(context: ExtensionContext): Promise<boole
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+/**
+ * Converts the internal array format (entries with `id` field) to the VS Code
+ * mcp.servers object format (keys = server names, no `id` inside the value).
+ */
+function mcpServersArrayToObject(servers: unknown[]): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const server of servers) {
+    if (!isRecord(server)) continue;
+    const id = typeof server.id === "string" ? server.id : undefined;
+    if (!id) continue;
+    const copy: Record<string, unknown> = { ...server };
+    delete copy.id;
+    result[id] = copy;
+  }
+  return result;
 }
 
 async function showNewsIfNeeded(

@@ -10,7 +10,6 @@
     "ms-azuretools.vscode-azurefunctions",
     "ms-azuretools.vscode-azureappservice",
     "ms-azuretools.vscode-azureresourcegroups",
-    "ms-vscode.azure-account",
     "ms-vscode.vscode-typescript-next",
     "stefanmaron.businesscentral-lintercop",
     "redhat.vscode-xml",

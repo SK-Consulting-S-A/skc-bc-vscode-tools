@@ -1,14 +1,12 @@
 {
-  "_comment": "LM-Bridge is started by the SKC VS Tools extension (skc.enableLmBridge, skc.lmBridgePort). Apply presets and run Cursor/VS Code with the extension loaded so the bridge is available.",
-  "servers": [
-    {
-      "id": "LM-Bridge",
-      "type": "sse",
+  "servers": {
+    "LM-Bridge": {
+      "type": "http",
       "url": "http://localhost:7878/sse",
       "description": "SKC LM Bridge: exposes VS Code Language Model tools (e.g. from AL extension) to MCP clients. Requires SKC VS Tools extension with LM Bridge enabled."
     },
-    {
-      "id": "playwright",
+    "playwright": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -18,38 +16,62 @@
         "PLAYWRIGHT_BROWSER": "msedge"
       }
     },
-    {
-      "id": "context7",
+    "context7": {
+      "type": "http",
       "url": "https://mcp.context7.com/mcp",
       "headers": {
         "CONTEXT7_API_KEY": "<CONTEXT7_API_KEY>"
       }
     },
-    {
-      "id": "MS Learn Docs",
+    "MS Learn Docs": {
+      "type": "http",
       "url": "https://learn.microsoft.com/api/mcp",
       "headers": {}
     },
-    {
-      "id": "github",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer <GITHUB_TOKEN>"
-      }
-    },
-    {
-      "id": "bc-intelligence",
+    "bc-intelligence": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "bc-code-intelligence-mcp"
       ]
     },
-    {
-      "id": "mcp-pandoc",
+    "mcp-pandoc": {
+      "type": "stdio",
       "command": "uvx",
       "args": [
         "mcp-pandoc"
       ]
+    },
+    "microsoft/markitdown": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "markitdown-mcp@0.0.1a4"
+      ],
+      "gallery": "https://api.mcp.github.com",
+      "version": "1.0.0"
+    },
+    "io.github.github/github-mcp-server": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN=${input:githubToken}",
+        "ghcr.io/github/github-mcp-server:0.31.0"
+      ],
+      "gallery": "https://api.mcp.github.com",
+      "version": "0.31.0"
+    }
+  },
+  "inputs": [
+    {
+      "id": "githubToken",
+      "type": "promptString",
+      "description": "GitHub Personal Access Token for MCP server",
+      "password": true
     }
   ]
 }

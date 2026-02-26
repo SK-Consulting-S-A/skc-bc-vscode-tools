@@ -86,14 +86,14 @@ The MCP specialists remain accessible outside the orchestration:
 
 | Subagent | File | Key Tools / MCP Specialists |
 |----------|------|-----------------------------|
-| CAL Converter | `bc-cal-converter.md` | al_symbolsearch, find_bc_knowledge, workflow_start, logan-legacy, sam-coder, alex-architect |
-| Researcher | `bc-researcher.md` | al_symbolsearch, find_bc_knowledge, get_bc_topic, WebSearch, WebFetch, github-pull-request_doSearch, ask_bc_expert |
-| Architect | `bc-architect.md` | al_symbolsearch, alex-architect, jordan-bridge |
-| Logic Dev | `bc-al-logic.md` | al_symbolsearch, sam-coder, eva-errors, jordan-bridge |
-| UI Dev | `bc-al-ui.md` | al_symbolsearch, github-pull-request_doSearch, uma-ux, sam-coder |
-| Tester | `bc-tester.md` | al_downloadsymbols, al_build, al_getdiagnostics, quinn-tester |
-| Reviewer | `bc-reviewer.md` | al_build, al_getdiagnostics, roger-reviewer, seth-security, morgan-market |
-| Translator | `bc-translator.md` | al_build, createLanguageXlf, skc_translate_xlf, skc_list_translation_files |
+| CAL Converter | `bc-cal-converter.agent.md` | al_symbolsearch, find_bc_knowledge, workflow_start, logan-legacy, sam-coder, alex-architect |
+| Researcher | `bc-researcher.agent.md` | al_symbolsearch, find_bc_knowledge, get_bc_topic, WebSearch, search_code, ask_bc_expert |
+| Architect | `bc-architect.agent.md` | al_symbolsearch, alex-architect, jordan-bridge |
+| Logic Dev | `bc-al-logic.agent.md` | al_symbolsearch, sam-coder, eva-errors, jordan-bridge |
+| UI Dev | `bc-al-ui.agent.md` | al_symbolsearch, search_code, uma-ux, sam-coder |
+| Tester | `bc-tester.agent.md` | al_downloadsymbols, al_build, al_getdiagnostics, quinn-tester |
+| Reviewer | `bc-reviewer.agent.md` | al_build, al_getdiagnostics, roger-reviewer, seth-security, morgan-market |
+| Translator | `bc-translator.agent.md` | al_build, createLanguageXlf, skc_translate_xlf, skc_list_translation_files |
 
 All code-producing subagents (CAL converter, researcher, architect, logic dev, UI dev) follow an **AL Research-First Approach** — they verify symbols, patterns, and best practices through `al_symbolsearch`, Microsoft Learn, and GitHub before writing or designing any code.
 
@@ -116,7 +116,7 @@ The `bc-cal-converter` subagent uses object ID-based smart detection:
 - `workflow_complete` -- complete workflow and generate final report
 - `analyze_al_code` -- automated AL code analysis
 
-### LM-Bridge MCP (`user-LM-Bridge`)
+### VS Code Tools
 - `al_symbolsearch` -- search AL symbols (tables, fields, events) in project and dependencies
 - `al_build` -- compile AL project
 - `al_getdiagnostics` -- get compilation errors

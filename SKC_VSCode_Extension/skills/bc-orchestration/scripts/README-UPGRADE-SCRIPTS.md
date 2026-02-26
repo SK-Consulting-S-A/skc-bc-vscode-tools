@@ -24,7 +24,6 @@ These scripts implement a three-phase upgrade pipeline:
 
 - `bc-orchestration` skill installed in Cursor
 - BC Knowledge MCP server configured
-- LM-Bridge MCP server configured
 
 ## Quick Start
 
@@ -170,7 +169,7 @@ The subagent will:
 
 ### Step 2: Compilation
 
-Use LM-Bridge MCP tools in Cursor:
+Use VS Code tools in Cursor:
 
 ```
 Download symbols and compile the BC extension.

@@ -111,15 +111,7 @@ This version introduced the BC orchestration framework with 7 specialist subagen
 ### 🤖 NEW: Translation LLM Tools
 - **#translateXlf** – Let the AI translate an XLF file to a target language. Provide the source file path and locale (e.g. `fr-FR`); the model can invoke the tool and get a summary (translated count, sync info).
 - **#listTranslations** – Let the AI list all XLF files and translation progress (units translated per language). Use in chat when you ask about translation status.
-- **LM Bridge** – In Cursor, these tools are also exposed via the LM-Bridge MCP server so Cursor AI can call them during conversations.
 - Requires **skc.azureFunctionUrl** for translate; list works without it. Available when the editor supports the Language Model Tools API (VS Code 1.108+ / Cursor).
-
-### 🌉 LM Bridge – VS Code tools in Cursor
-- **Expose VS Code Language Model tools to Cursor** via an MCP SSE server
-- **LM-Bridge** runs locally (default: `http://localhost:7878/sse`) and forwards tool calls from Cursor to VS Code’s built-in LM tools (e.g. from the AL extension)
-- **Included in MCP preset** – Apply Presets adds the LM-Bridge server so Cursor can connect automatically
-- **Config**: `skc.enableLmBridge` (default: true), `skc.lmBridgePort` (default: 7878)
-- Check the **SKC Presets** output channel for the bridge URL when it’s running
 
 ### 🧠 Cursor Skills Auto-Install
 - **All Anthropic Curated Skills + SKC BC Word Layout** are bundled with the extension
