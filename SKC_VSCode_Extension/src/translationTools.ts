@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
+import * as fs from "fs/promises";
+import * as path from "path";
 import type { OutputChannel } from "vscode";
-import { translateFileHeadless, getTranslationStatusSummary } from "./translationService";
+import { translateFileHeadless, getTranslationStatusSummary, createTranslationFile } from "./translationService";
 
 export interface TranslateXlfInput {
     sourceFilePath: string;
@@ -52,6 +54,42 @@ export function createListTranslationFilesTool(
     };
 }
 
+export interface CreateXlfLanguageInput {
+    sourceFilePath: string;
+    targetLanguage: string;
+}
+
+export function createCreateXlfLanguageTool(channel: OutputChannel): vscode.LanguageModelTool<CreateXlfLanguageInput> {
+    return {
+        async prepareInvocation(options, _token) {
+            return {
+                invocationMessage: `Create ${options.input.targetLanguage} translation file from ${options.input.sourceFilePath}`,
+                confirmationMessages: {
+                    title: "Create XLF language file",
+                    message: new vscode.MarkdownString(
+                        `Create **${options.input.targetLanguage}** translation file from **${options.input.sourceFilePath}**?`
+                    )
+                }
+            };
+        },
+        async invoke(options, _token) {
+            const { sourceFilePath, targetLanguage } = options.input;
+            const srcUri = vscode.Uri.file(sourceFilePath);
+            const srcPath = srcUri.fsPath;
+            const outName = path.basename(srcPath).replace(".g.xlf", `.${targetLanguage}.xlf`);
+            const outPath = path.join(path.dirname(srcPath), outName);
+            try {
+                await fs.access(outPath);
+                return textResult(`Error: Translation file already exists: ${outName}`);
+            } catch {
+                // file does not exist — proceed
+            }
+            const ok = await createTranslationFile(srcUri, targetLanguage, channel);
+            return textResult(ok ? `Created: ${outPath}` : `Error: Failed to create translation file for ${targetLanguage}.`);
+        }
+    };
+}
+
 export function registerTranslationTools(
     context: vscode.ExtensionContext,
     channel: OutputChannel
@@ -64,6 +102,7 @@ export function registerTranslationTools(
 
     const translateTool = lm.registerTool("skc_translate_xlf", createTranslateXlfTool(channel));
     const listTool = lm.registerTool("skc_list_translation_files", createListTranslationFilesTool(channel));
-    context.subscriptions.push(translateTool, listTool);
-    channel.appendLine("[SKC] Registered language model tools: skc_translate_xlf, skc_list_translation_files");
+    const createLangTool = lm.registerTool("skc_create_xlf_language", createCreateXlfLanguageTool(channel));
+    context.subscriptions.push(translateTool, listTool, createLangTool);
+    channel.appendLine("[SKC] Registered language model tools: skc_translate_xlf, skc_list_translation_files, skc_create_xlf_language");
 }

@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "2.0.2",
+  "version": "2.0.5",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -88,6 +88,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "skc.addLanguage",
+        "title": "Add Language",
+        "icon": "$(add)"
+      },
+      {
         "command": "skc.filterUntranslated",
         "title": "Find Untranslated Units",
         "icon": "$(search)"
@@ -118,9 +123,14 @@
           "group": "inline"
         },
         {
+          "command": "skc.addLanguage",
+          "when": "view == skc.translationsView && viewItem == sourceFile",
+          "group": "inline@1"
+        },
+        {
           "command": "skc.translateFile",
           "when": "view == skc.translationsView && viewItem == sourceFile",
-          "group": "inline"
+          "group": "inline@2"
         }
       ]
     },
@@ -143,6 +153,32 @@
             "targetLanguage": {
               "type": "string",
               "description": "Target language code (e.g. fr-FR, de-DE, es-ES)."
+            }
+          },
+          "required": [
+            "sourceFilePath",
+            "targetLanguage"
+          ]
+        }
+      },
+      {
+        "name": "skc_create_xlf_language",
+        "displayName": "Create XLF Language File",
+        "modelDescription": "Creates a new target-language XLF translation file from an existing Business Central source file (*.g.xlf). All translation units are copied with state='needs-translation' so they can be translated afterwards. Use before calling skc_translate_xlf when the target language file does not yet exist. Returns the path of the created file or an error if the file already exists.\n\nExamples:\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'de-DE' → creates MyApp.de-DE.xlf\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'pt-PT' → creates MyApp.pt-PT.xlf",
+        "userDescription": "Create a new XLF language file from a source .g.xlf.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "createXlfLanguage",
+        "icon": "$(add)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sourceFilePath": {
+              "type": "string",
+              "description": "Absolute path to the source XLF file (*.g.xlf). Example: 'C:/MyProject/Translations/MyApp.g.xlf'"
+            },
+            "targetLanguage": {
+              "type": "string",
+              "description": "BCP-47 locale code for the new language. Examples: 'de-DE' (German), 'pt-PT' (Portuguese Portugal), 'pt-BR' (Portuguese Brazil), 'es-ES' (Spanish), 'fr-FR' (French), 'nl-NL' (Dutch), 'it-IT' (Italian), 'da-DK' (Danish), 'sv-SE' (Swedish), 'nb-NO' (Norwegian), 'pl-PL' (Polish)."
             }
           },
           "required": [

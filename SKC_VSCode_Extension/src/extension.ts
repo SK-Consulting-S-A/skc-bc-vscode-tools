@@ -110,6 +110,53 @@ export async function activate(context: ExtensionContext): Promise<void> {
           }
         }
       ));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.addLanguage",
+        async (sourceFile?: SourceFileItem) => {
+          if (!(sourceFile instanceof SourceFileItemClass)) {
+            void window.showWarningMessage("Please select a source file from the Translations view.");
+            return;
+          }
+          const COMMON_LOCALES = [
+            { label: "pt-PT", description: "Portuguese (Portugal)" },
+            { label: "pt-BR", description: "Portuguese (Brazil)" },
+            { label: "es-ES", description: "Spanish (Spain)" },
+            { label: "fr-FR", description: "French (France)" },
+            { label: "de-DE", description: "German (Germany)" },
+            { label: "nl-NL", description: "Dutch (Netherlands)" },
+            { label: "it-IT", description: "Italian (Italy)" },
+            { label: "da-DK", description: "Danish (Denmark)" },
+            { label: "sv-SE", description: "Swedish (Sweden)" },
+            { label: "nb-NO", description: "Norwegian Bokmål (Norway)" },
+            { label: "fi-FI", description: "Finnish (Finland)" },
+            { label: "pl-PL", description: "Polish (Poland)" },
+            { label: "cs-CZ", description: "Czech (Czech Republic)" },
+            { label: "hu-HU", description: "Hungarian (Hungary)" },
+            { label: "ro-RO", description: "Romanian (Romania)" },
+            { label: "zh-CN", description: "Chinese (Simplified)" },
+            { label: "ja-JP", description: "Japanese (Japan)" },
+            { label: "ko-KR", description: "Korean (South Korea)" },
+            { label: "ru-RU", description: "Russian (Russia)" },
+          ];
+          const picked = await window.showQuickPick(COMMON_LOCALES, {
+            placeHolder: "Select language or type a locale code (e.g. fr-FR)",
+            matchOnDescription: true,
+          });
+          if (!picked) return;
+          const srcPath = sourceFile.resourceUri.fsPath;
+          const outName = path.basename(srcPath).replace(".g.xlf", `.${picked.label}.xlf`);
+          const outPath = path.join(path.dirname(srcPath), outName);
+          try {
+            await fs.access(outPath);
+            void window.showWarningMessage(`Translation file already exists: ${outName}`);
+            return;
+          } catch {
+            // file does not exist — proceed
+          }
+          await createTranslationFile(sourceFile.resourceUri, picked.label, channel);
+          translationsProvider.refresh();
+        }
+      ));
       context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => translationsProvider.refresh()));
       context.subscriptions.push(commands.registerCommand(
         "skc.openTransUnit",
