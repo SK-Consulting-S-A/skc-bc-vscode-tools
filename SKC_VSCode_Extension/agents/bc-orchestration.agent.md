@@ -1,19 +1,11 @@
 ---
 name: bc-orchestration
 description: Master BC orchestrator for any Business Central AL extension project. Coordinates phased subagent delegation for the full development lifecycle — research, design, logic, UI, test, review, translate. Use for any multi-step BC development task. Automatically routes to the right subagents based on the request type.
-tools:
-  - agent
-  - codebase
-  - readFile
-  - editFiles
-  - createFile
-  - fileSearch
-  - textSearch
-  - fetch
-  - usages
-  - problems
-  - runInTerminal
-  - runVscodeCommand
+model:
+  - 'Claude Haiku 4.6 (copilot)'
+  - 'Claude Haiku 4.5 (copilot)'
+  - 'Claude Sonnet 4.6 (copilot)'
+tools: [agent, agent/runSubagent, memory, "read", "edit", "search", "execute", "web", "bc-intelligence/*", "al_build", "al_downloadsymbols", "al_symbolsearch", "al_getdiagnostics", todo]
 agents:
   - bc-architect
   - bc-researcher

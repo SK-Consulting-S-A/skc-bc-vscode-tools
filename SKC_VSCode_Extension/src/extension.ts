@@ -266,34 +266,26 @@ async function applyPresets(
 
   const settingsToApply = settings ? { ...settings } : {};
   channel.appendLine(`[SKC] Loaded ${Object.keys(settingsToApply).length} settings from preset file.`);
-  const isCursor = env.appName.includes("Cursor");
   const removeMcpsNotInPreset = cfg.get<boolean>("removeMcpsNotInPreset", true);
   const mcpServersToApply = resolveMcpServersToApply(mcpServers, removeMcpsNotInPreset, channel);
   if (mcpServersToApply !== undefined) {
-    settingsToApply["mcp.servers"] = isCursor
-      ? mcpServersToApply
-      : mcpServersArrayToObject(mcpServersToApply);
-    channel.appendLine(`[SKC] Set mcp.servers to ${mcpServersToApply.length} server(s) as ${isCursor ? "array" : "object"} (preset only: ${removeMcpsNotInPreset}).`);
+    settingsToApply["mcp.servers"] = mcpServersArrayToObject(mcpServersToApply);
+    channel.appendLine(`[SKC] Set mcp.servers to ${mcpServersToApply.length} server(s) as object (preset only: ${removeMcpsNotInPreset}).`);
   }
-  const extensionsToInstall = Array.from(
-    new Set([
-      ...(presetExtensions ?? []),
-      ...(extraExtensions ?? [])
-    ])
-  );
+  const presetEntries: ExtensionEntry[] = (presetExtensions ?? []).map(id => ({ id }));
+  const extraEntries: ExtensionEntry[] = extraExtensions ?? [];
+  const byExtId = new Map<string, ExtensionEntry>();
+  for (const e of presetEntries) byExtId.set(e.id, e);
+  for (const e of extraEntries) byExtId.set(e.id, e);
+  const extensionsToInstall = Array.from(byExtId.values());
 
   const uninstallRemoved = cfg.get<boolean>("uninstallExtensionsRemovedFromPreset", false);
   await uninstallExtensionsRemovedFromPreset(context, channel, extensionsToInstall, uninstallRemoved);
 
   await ensureExtensions(channel, skipInstalled, extensionsToInstall);
-  await context.globalState.update(STATE_LAST_EXTENSION_IDS_KEY, extensionsToInstall);
+  await context.globalState.update(STATE_LAST_EXTENSION_IDS_KEY, extensionsToInstall.map(e => e.id));
 
   await applySettings(channel, settingsToApply);
-  const writeCursorMcpFile = cfg.get<boolean>("writeCursorMcpFile", true);
-  // Write Cursor mcp.json whenever we have a resolved list (including empty), so removals and version updates stay in sync.
-  if (writeCursorMcpFile && mcpServersToApply !== undefined) {
-    await writeCursorMcpFileIfNeeded(channel, mcpServersToApply);
-  }
   const writeVSCodeMcpFile = cfg.get<boolean>("writeVSCodeMcpFile", true);
   if (writeVSCodeMcpFile && mcpServersToApply !== undefined) {
     await writeVSCodeMcpFileIfNeeded(context, channel, mcpServersToApply, mcpInputs);
@@ -461,12 +453,9 @@ async function applySettings(
 async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
-  const isCursor = env.appName.includes("Cursor");
 
   const sourceRoot = path.join(context.extensionPath, "skills");
-  const targetRoot = isCursor
-    ? path.join(os.homedir(), ".cursor", "skills")
-    : path.join(os.homedir(), ".copilot", "skills");
+  const targetRoot = path.join(os.homedir(), ".copilot", "skills");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Skills folder not found at ${sourceRoot}; skipping skill install.`);
@@ -508,12 +497,9 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
 async function installAgents(context: ExtensionContext, channel: OutputChannel): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
-  const isCursor = env.appName.includes("Cursor");
 
   const sourceRoot = path.join(context.extensionPath, "agents");
-  const targetRoot = isCursor
-    ? path.join(os.homedir(), ".cursor", "agents")
-    : path.join(os.homedir(), ".copilot", "agents");
+  const targetRoot = path.join(os.homedir(), ".copilot", "agents");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Agents folder not found at ${sourceRoot}; skipping agent install.`);
@@ -531,8 +517,7 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
 
   for (const file of mdFiles) {
     const src = path.join(sourceRoot, file.name);
-    // For Cursor: bc-xxx.agent.md → bc-xxx.md. For VS Code: keep .agent.md as-is.
-    const destName = isCursor ? file.name.replace(/\.agent\.md$/, ".md") : file.name;
+    const destName = file.name;
     const dest = path.join(targetRoot, destName);
 
     const destExists = await pathExists(dest);
@@ -554,10 +539,7 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
 
   channel.appendLine(`[SKC] Agents summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 
-  // Ensure VS Code Copilot discovers agents in ~/.copilot/agents/
-  if (!isCursor) {
-    await ensureCopilotAgentsPath(channel, targetRoot);
-  }
+  await ensureCopilotAgentsPath(channel, targetRoot);
 }
 
 async function ensureCopilotAgentsPath(channel: OutputChannel, _agentsPath: string): Promise<void> {
@@ -608,13 +590,13 @@ async function copyDirectory(source: string, target: string): Promise<void> {
 async function uninstallExtensionsRemovedFromPreset(
   context: ExtensionContext,
   channel: OutputChannel,
-  extensionsToInstall: string[],
+  extensionsToInstall: ExtensionEntry[],
   enabled: boolean
 ): Promise<void> {
   if (!enabled) {
     return;
   }
-  const allowedSet = new Set(extensionsToInstall);
+  const allowedSet = new Set(extensionsToInstall.map(e => e.id));
   const myId = context.extension?.id;
   // Snapshot list so we don't iterate over a changing array (e.g. if uninstall triggers updates)
   const allExtensions = [...extensions.all];
@@ -644,18 +626,22 @@ async function uninstallExtensionsRemovedFromPreset(
 async function ensureExtensions(
   channel: OutputChannel,
   skipInstalled: boolean,
-  extensionsToInstall: string[]
+  extensionsToInstall: ExtensionEntry[]
 ): Promise<void> {
-  for (const id of extensionsToInstall) {
-    const isInstalled = extensions.getExtension(id) !== undefined;
+  for (const entry of extensionsToInstall) {
+    const isInstalled = extensions.getExtension(entry.id) !== undefined;
 
     if (isInstalled && skipInstalled) {
-      channel.appendLine(`[SKC] ${id} already installed; skipping.`);
+      channel.appendLine(`[SKC] ${entry.id} already installed; skipping.`);
       continue;
     }
 
-    channel.appendLine(`[SKC] Installing ${id}...`);
-    await commands.executeCommand("workbench.extensions.installExtension", id);
+    channel.appendLine(`[SKC] Installing ${entry.id}${entry.preRelease ? " (pre-release)" : ""}...`);
+    await commands.executeCommand(
+      "workbench.extensions.installExtension",
+      entry.id,
+      entry.preRelease ? { installPreReleaseVersion: true } : undefined
+    );
   }
 }
 
@@ -677,6 +663,8 @@ type McpFileShape = {
 type ExtensionsFileShape = {
   extensions?: unknown;
 };
+
+type ExtensionEntry = { id: string; preRelease?: boolean };
 
 async function readPresetFile(
   presetPath: string | undefined,
@@ -738,12 +726,10 @@ async function readMcpFile(
       isRecord(parsed) && Array.isArray(parsed.servers)
         ? (parsed.servers as unknown[])
         : isRecord(parsed) && isRecord(parsed.servers)
-          ? convertCursorMcpServersToArray(parsed.servers as Record<string, unknown>, resolvedPath, channel)
+          ? convertMcpServersObjectToArray(parsed.servers as Record<string, unknown>, resolvedPath, channel)
           : Array.isArray(parsed)
             ? parsed
-            : isRecord(parsed) && isRecord(parsed.mcpServers)
-              ? convertCursorMcpServersToArray(parsed.mcpServers as Record<string, unknown>, resolvedPath, channel)
-              : undefined;
+            : undefined;
 
     const inputs = isRecord(parsed) && Array.isArray(parsed.inputs)
       ? (parsed.inputs as unknown[])
@@ -765,7 +751,7 @@ async function readMcpFile(
   }
 }
 
-function convertCursorMcpServersToArray(
+function convertMcpServersObjectToArray(
   mcpServers: Record<string, unknown>,
   sourcePath: string,
   channel: OutputChannel
@@ -795,7 +781,7 @@ async function readExtensionsFile(
   extensionsPath: string | undefined,
   context: ExtensionContext,
   channel: OutputChannel
-): Promise<string[] | undefined> {
+): Promise<ExtensionEntry[] | undefined> {
   if (!extensionsPath) {
     return undefined;
   }
@@ -809,19 +795,25 @@ async function readExtensionsFile(
   try {
     const raw = await fs.readFile(resolvedPath, "utf8");
     const parsed: ExtensionsFileShape = JSON.parse(raw);
-    const ext =
+    const rawExt: unknown[] | undefined =
       parsed.extensions && Array.isArray(parsed.extensions)
-        ? parsed.extensions
+        ? (parsed.extensions as unknown[])
         : Array.isArray(parsed as unknown)
-          ? (parsed as string[])
+          ? (parsed as unknown[])
           : undefined;
 
-    const valid =
-      ext && ext.every((e) => typeof e === "string") ? (ext as string[]) : undefined;
+    const isValidEntry = (e: unknown): e is string | ExtensionEntry =>
+      typeof e === "string" ||
+      (isRecord(e) && typeof (e as ExtensionEntry).id === "string");
+
+    const valid: ExtensionEntry[] | undefined =
+      rawExt && rawExt.every(isValidEntry)
+        ? rawExt.map((e): ExtensionEntry => typeof e === "string" ? { id: e } : e as ExtensionEntry)
+        : undefined;
 
     if (!valid) {
       channel.appendLine(
-        `[SKC] Extensions file at ${resolvedPath} did not contain a string array; ignoring.`
+        `[SKC] Extensions file at ${resolvedPath} did not contain a valid extensions array; ignoring.`
       );
       return undefined;
     }
@@ -840,54 +832,6 @@ async function readExtensionsFile(
  * in Cursor's expected format ({ "mcpServers": { "id": { ...config } } }).
  * Existing MCP servers in the file are never replaced; new entries are added only for servers not already present.
  */
-async function writeCursorMcpFileIfNeeded(
-  channel: OutputChannel,
-  mcpServers: unknown[]
-): Promise<void> {
-  const cursorDir = path.join(os.homedir(), ".cursor");
-  const mcpFilePath = path.join(cursorDir, "mcp.json");
-
-  let existingObj: Record<string, unknown> = {};
-  try {
-    const raw = await fs.readFile(mcpFilePath, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed && typeof parsed === "object" && parsed.mcpServers && typeof parsed.mcpServers === "object") {
-      existingObj = parsed.mcpServers as Record<string, unknown>;
-    }
-  } catch {
-    // File missing or invalid; start fresh
-  }
-
-  const mcpServersObj = { ...existingObj };
-  let added = 0;
-  for (const entry of mcpServers) {
-    if (!entry || typeof entry !== "object") {
-      continue;
-    }
-    const server = entry as Record<string, unknown>;
-    const id = typeof server.id === "string" ? server.id : undefined;
-    if (!id) {
-      channel.appendLine(`[SKC] Skipping MCP server without id when writing ${mcpFilePath}.`);
-      continue;
-    }
-    if (!(id in mcpServersObj)) {
-      mcpServersObj[id] = server;
-      added++;
-    }
-  }
-
-  try {
-    await fs.mkdir(cursorDir, { recursive: true });
-    const content = JSON.stringify({ mcpServers: mcpServersObj }, null, 2);
-    await fs.writeFile(mcpFilePath, content, "utf8");
-    const count = Object.keys(mcpServersObj).length;
-    channel.appendLine(`[SKC] Wrote ${count} MCP server(s) to ${mcpFilePath} (${added} added, ${count - added} existing kept).`);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    channel.appendLine(`[SKC] Failed to write ${mcpFilePath}: ${message}`);
-  }
-}
-
 /**
  * Writes MCP servers to the VS Code user mcp.json file
  * (e.g. %APPDATA%\Code - Insiders\User\mcp.json on Windows)
@@ -992,11 +936,6 @@ async function resolvePath(
 ): Promise<string | undefined> {
   if (!configuredPath) {
     return undefined;
-  }
-
-  if (configuredPath === "cursor-global") {
-    const cursorGlobalMcpPath = path.join(os.homedir(), ".cursor", "mcp.json");
-    return (await pathExists(cursorGlobalMcpPath)) ? cursorGlobalMcpPath : undefined;
   }
 
   if (path.isAbsolute(configuredPath)) {
@@ -1153,7 +1092,6 @@ async function showNewsIfNeeded(
 ): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const showNews = cfg.get<boolean>("showNewsOnStartup", true);
-  const autoOpenNews = cfg.get<boolean>("autoOpenNewsPage", false);
   const newsFilePath = cfg.get<string>("newsFilePath", "").trim();
 
   if (!showNews) {
@@ -1189,30 +1127,15 @@ async function showNewsIfNeeded(
     channel.appendLine(`[SKC] Showing news from ${resolvedNewsPath}`);
     const newsUri = Uri.file(resolvedNewsPath);
 
-    // Auto-open news page if configured
-    if (autoOpenNews) {
-      // Open markdown preview in a new tab at the top
-      await commands.executeCommand("markdown.showPreviewToSide", newsUri);
-      channel.appendLine(`[SKC] Auto-opened news file in preview mode (new tab).`);
-      // Mark as shown
-      if (currentVersion) {
-        await context.globalState.update(STATE_NEWS_SHOWN_KEY, currentVersion);
-      }
-      return;
-    }
+    // Always open the markdown preview automatically
+    await commands.executeCommand("markdown.showPreview", newsUri);
+    channel.appendLine(`[SKC] Auto-opened news file in preview mode.`);
 
-    // Show notification with options
-    const action = await window.showInformationMessage(
-      `📰 SKC Tools ${currentVersion ? `v${currentVersion}` : ""} - What's New?`,
-      "View News",
+    // Also show a notification alongside the preview
+    void window.showInformationMessage(
+      `📰 SKC Tools ${currentVersion ? `v${currentVersion}` : ""} - What's New!`,
       "Dismiss"
     );
-
-    if (action === "View News") {
-      // Open markdown preview in a new tab
-      await commands.executeCommand("markdown.showPreviewToSide", newsUri);
-      channel.appendLine(`[SKC] Opened news file in preview mode (new tab).`);
-    }
 
     // Mark news as shown for this version
     if (currentVersion) {

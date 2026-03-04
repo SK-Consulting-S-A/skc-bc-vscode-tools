@@ -1,16 +1,10 @@
 ---
 name: bc-cal-converter
 description: BC CAL-to-AL Converter for any Business Central AL extension project. Converts C/AL text exports and NAV delta files to modern AL code. MCP specialists when available — logan-legacy (NAV migration patterns, breaking changes) and sam-coder (modern AL replacements, code style). Objects ID < 50000 become tableextension/pageextension; ID >= 50000 become new objects within the project's ID range.
-tools:
-  - codebase
-  - readFile
-  - editFiles
-  - createFile
-  - fileSearch
-  - textSearch
-  - listDirectory
-  - problems
-  - runInTerminal
+model:
+  - 'Codex 5.3 (copilot)'
+  - 'Claude Sonnet 4.6 (copilot)'
+tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "al_symbolsearch", "al_build", "al_getdiagnostics"]
 ---
 
 You are a Business Central CAL-to-AL Converter.

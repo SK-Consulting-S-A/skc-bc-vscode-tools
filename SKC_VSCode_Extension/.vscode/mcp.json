@@ -1,34 +1,55 @@
 {
 	"servers": {
+		"playwright": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@playwright/mcp@latest"
+			],
+			"env": {
+				"PLAYWRIGHT_BROWSER": "msedge"
+			}
+		},
+		"context7": {
+			"type": "http",
+			"url": "https://mcp.context7.com/mcp",
+			"headers": {
+				"CONTEXT7_API_KEY": "<CONTEXT7_API_KEY>"
+			}
+		},
+		"MS Learn Docs": {
+			"type": "http",
+			"url": "https://learn.microsoft.com/api/mcp",
+			"headers": {}
+		},
+		"bc-intelligence": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"bc-code-intelligence-mcp"
+			]
+		},
+		"mcp-pandoc": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"mcp-pandoc"
+			]
+		},
 		"microsoft/markitdown": {
 			"type": "stdio",
 			"command": "uvx",
 			"args": [
 				"markitdown-mcp@0.0.1a4"
-			],
-			"gallery": "https://api.mcp.github.com",
-			"version": "1.0.0"
-		},
-		"io.github.github/github-mcp-server": {
-			"type": "stdio",
-			"command": "docker",
-			"args": [
-				"run",
-				"-i",
-				"--rm",
-				"-e",
-				"GITHUB_PERSONAL_ACCESS_TOKEN=${input:token}",
-				"ghcr.io/github/github-mcp-server:0.31.0"
-			],
-			"gallery": "https://api.mcp.github.com",
-			"version": "0.31.0"
+			]
 		}
 	},
 	"inputs": [
 		{
-			"id": "token",
+			"id": "githubToken",
 			"type": "promptString",
-			"description": "",
+			"description": "GitHub Personal Access Token for MCP server",
 			"password": true
 		}
 	]

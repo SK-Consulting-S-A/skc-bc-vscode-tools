@@ -1,8 +1,8 @@
 {
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
-  "description": "Business Central AL dev setup: presets, MCP servers, extensions, XLF translation, and LM Bridge to expose VS Code Language Model tools to Cursor.",
-  "version": "2.0.5",
+  "description": "Business Central AL dev setup: presets, MCP servers, extensions, and XLF translation.",
+  "version": "2.2.0",
   "publisher": "SKConsultingSA",
   "repository": {
     "type": "git",
@@ -57,11 +57,11 @@
       },
       {
         "command": "skc.installSkills",
-        "title": "SKC: Install Cursor Skills"
+        "title": "SKC: Install Copilot Skills"
       },
       {
         "command": "skc.installAgents",
-        "title": "SKC: Install Cursor Agents"
+        "title": "SKC: Install Copilot Agents"
       },
       {
         "command": "skc.configureMcpAuth",
@@ -206,6 +206,17 @@
         }
       }
     ],
+    "chatSkills": [
+      {
+        "path": "./skills/bc-orchestration/SKILL.md"
+      },
+      {
+        "path": "./skills/bc-word-layout/SKILL.md"
+      },
+      {
+        "path": "./skills/mermaid-to-word/SKILL.md"
+      }
+    ],
     "configuration": {
       "title": "SKC Presets",
       "properties": {
@@ -227,17 +238,12 @@
         "skc.mcpFilePath": {
           "type": "string",
           "default": "presets/mcp.json",
-          "description": "Optional path to a JSON file that defines only MCP servers. If set, it replaces the built-in mcp.servers. Relative paths resolve from the first workspace folder. Special value: 'cursor-global' resolves to the global Cursor MCP file (~/.cursor/mcp.json)."
+          "description": "Optional path to a JSON file that defines only MCP servers. If set, it replaces the built-in mcp.servers. Relative paths resolve from the first workspace folder."
         },
         "skc.removeMcpsNotInPreset": {
           "type": "boolean",
           "default": true,
           "description": "When applying presets, set mcp.servers to exactly the preset list (any MCP server not in the preset is removed). If false, preset servers are merged with existing ones (existing servers not in the preset are kept)."
-        },
-        "skc.writeCursorMcpFile": {
-          "type": "boolean",
-          "default": true,
-          "description": "When applying presets, also write MCP servers to the Cursor user path (e.g. %USERPROFILE%\\.cursor\\mcp.json on Windows, ~/.cursor/mcp.json elsewhere). Disable if you manage that file yourself."
         },
         "skc.writeVSCodeMcpFile": {
           "type": "boolean",
@@ -252,22 +258,17 @@
         "skc.installSkillsOnApplyPresets": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically install Cursor skills when applying presets."
+          "description": "Automatically install Copilot skills when applying presets."
         },
         "skc.overwriteExistingSkills": {
           "type": "boolean",
           "default": true,
-          "description": "Overwrite existing Cursor skills when installing. If false, existing skills are skipped to preserve user modifications."
+          "description": "Overwrite existing Copilot skills when installing. If false, existing skills are skipped to preserve user modifications."
         },
         "skc.showNewsOnStartup": {
           "type": "boolean",
           "default": true,
-          "description": "Show news notification on VS Code startup, especially when a new version is detected."
-        },
-        "skc.autoOpenNewsPage": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically open the news page in full view on startup instead of showing a notification. Requires 'showNewsOnStartup' to be enabled."
+          "description": "Show the What's New page and notification on VS Code startup when a new version is detected."
         },
         "skc.newsFilePath": {
           "type": "string",

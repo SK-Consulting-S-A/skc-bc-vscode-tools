@@ -12,8 +12,14 @@ function readJson(filePath) {
     return JSON.parse(raw);
 }
 
-function ensureStringArray(value) {
-    return Array.isArray(value) && value.every((item) => typeof item === "string");
+function ensureExtensionsArray(value) {
+    return Array.isArray(value) && value.every(
+        (item) => typeof item === "string" || (typeof item === "object" && item !== null && typeof item.id === "string")
+    );
+}
+
+function extractId(entry) {
+    return typeof entry === "string" ? entry : entry.id;
 }
 
 function main() {
@@ -22,11 +28,11 @@ function main() {
     }
 
     const preset = readJson(presetPath);
-    if (!ensureStringArray(preset.extensions)) {
-        throw new Error("presets/extensions.json must contain an 'extensions' string array.");
+    if (!ensureExtensionsArray(preset.extensions)) {
+        throw new Error("presets/extensions.json must contain an 'extensions' array of strings or { id, preRelease? } objects.");
     }
 
-    const extensions = Array.from(new Set(preset.extensions));
+    const extensions = Array.from(new Set(preset.extensions.map(extractId)));
 
     const pkg = readJson(packagePath);
     pkg.contributes = pkg.contributes ?? {};

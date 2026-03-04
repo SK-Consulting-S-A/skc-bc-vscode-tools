@@ -1,21 +1,13 @@
 ---
 description: "Expert BC AL developer for any Business Central AL extension project. Reads, writes, searches, and compiles AL code following all project conventions. Delegates to specialist subagents for design, research, logic, UI, review, testing, translation, and CAL migration."
 name: "AL Developer"
-tools:
-  - codebase
-  - readFile
-  - editFiles
-  - createFile
-  - listDirectory
-  - fileSearch
-  - textSearch
-  - fetch
-  - problems
-  - usages
-  - runInTerminal
-  - runVscodeCommand
+model:
+  - 'Claude Haiku 4.6 (copilot)'
+  - 'Claude Haiku 4.5 (copilot)'
+  - 'Claude Sonnet 4.6 (copilot)'
+tools: [agent, agent/runSubagent, memory, "read", "edit", "search", "execute", "web", "bc-intelligence/*", "al_build", "al_symbolsearch", todo]
 agents:
-  - bc-orchestrator
+  - bc-orchestration
   - bc-architect
   - bc-researcher
   - bc-al-logic

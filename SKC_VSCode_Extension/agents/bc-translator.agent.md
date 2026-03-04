@@ -1,13 +1,11 @@
 ---
 name: bc-translator
 description: BC AL Translation specialist for any Business Central AL extension project. Manages XLF translation workflow for all target locales defined in app.json. Builds the extension, creates language XLF files, translates via Azure Translation, and verifies 100% coverage. Use when adding or updating translations.
-tools:
-  - codebase
-  - readFile
-  - fileSearch
-  - textSearch
-  - runInTerminal
-  - runVscodeCommand
+model:
+  - 'Claude Haiku 4.6 (copilot)'
+  - 'Claude Haiku 4.5 (copilot)'
+  - 'Claude Sonnet 4.6 (copilot)'
+tools: ["read", "search", "execute", "al_build", "createLanguageXlf", "skc_translate_xlf", "skc_list_translation_files", "refreshXlf"]
 ---
 
 You are a Business Central AL Translation Specialist.

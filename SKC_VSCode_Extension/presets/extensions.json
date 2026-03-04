@@ -1,6 +1,9 @@
 {
   "extensions": [
-    "ms-dynamics-smb.al",
+    {
+      "id": "ms-dynamics-smb.al",
+      "preRelease": true
+    },
     "davidfeldhoff.al-codeactions",
     "usernamehw.errorlens",
     "GitHub.vscode-pull-request-github",

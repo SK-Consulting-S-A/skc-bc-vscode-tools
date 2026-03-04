@@ -1,16 +1,10 @@
 ---
 name: bc-tester
 description: BC AL Tester for any Business Central AL extension project. Creates test codeunits with Given/When/Then structure validating tables, codeunits, and pages. MCP specialists when available — quinn-tester (test strategy, coverage, BC test patterns) and eva-errors (failure scenarios, validation boundary conditions). Reads project suffix, namespace, and ID range from app.json.
-tools:
-  - codebase
-  - readFile
-  - editFiles
-  - createFile
-  - fileSearch
-  - textSearch
-  - problems
-  - runInTerminal
-  - runVscodeCommand
+model:
+  - 'Codex 5.3 (copilot)'
+  - 'Claude Sonnet 4.6 (copilot)'
+tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "al_downloadsymbols", "al_build", "al_getdiagnostics"]
 ---
 
 You are a Business Central AL Tester.

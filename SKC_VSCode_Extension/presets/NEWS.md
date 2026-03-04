@@ -1,6 +1,27 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 2.0.0 - Latest Release
+## Version 2.1.0 - Latest Release
+
+### 🎯 VS Code-Only Focus — Cursor Support Removed
+
+This release removes all Cursor IDE support. SKC Tools now targets **VS Code / GitHub Copilot exclusively**, simplifying the codebase and configuration.
+
+#### What Changed
+- **Skills** now always install to `~/.copilot/skills/`
+- **Agents** now always install to `~/.copilot/agents/` (`.agent.md` format kept as-is)
+- **mcp.servers** preset is always written in VS Code object format
+- Removed `skc.writeCursorMcpFile` setting — only `skc.writeVSCodeMcpFile` remains
+- Removed `cursor-global` special path value from `skc.mcpFilePath`
+- Command palette entries renamed: **SKC: Install Copilot Skills / Agents**
+- Preset `settings.json` no longer applies Cursor-specific settings (`cursor.privacy.mode`, `cursor.telemetry`, `cursor.aiProxy`)
+
+#### News Page Auto-Open
+- The What's New page now **always opens automatically** as a Markdown preview on each new version
+- A notification button is also shown alongside the preview
+
+---
+
+## Version 2.0.0
 
 ### 🚀 NEW: BC CAL-to-AL Converter & Upgrade Automation
 
