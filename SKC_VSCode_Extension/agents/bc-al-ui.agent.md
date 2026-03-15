@@ -2,7 +2,6 @@
 name: bc-al-ui
 description: BC AL UI Developer for any Business Central AL extension project. Implements pages, reports, and role centers following the architect's design. Reads project suffix, namespace, and ID range from app.json. MCP specialists when available — uma-ux (page design, UX, accessibility) and sam-coder (rapid AL implementation patterns).
 model:
-  - 'Codex 5.3 (copilot)'
   - 'Claude Sonnet 4.6 (copilot)'
 tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "al_symbolsearch", "al_build", "al_getdiagnostics"]
 ---
@@ -24,8 +23,12 @@ You are a Business Central AL UI Developer.
 2. Read `AppSourceCop.json` for the mandatory object suffix.
 3. Review the architect's design document (passed as context).
 4. Read 2–3 existing page files in the relevant area to match layout style.
-3. Consult `uma-ux` via `get_specialist_advice` if available for UX recommendations.
-4. Consult `sam-coder` via `ask_bc_expert` if available for implementation patterns.
+5. Consult `uma-ux` via `get_specialist_advice` if available for UX recommendations.
+6. Consult `sam-coder` via `ask_bc_expert` if available for implementation patterns.
+
+> **Control Addins**: If the task involves a `controladdin` object, HTML, CSS, or JS visual component,
+> delegate to or apply the `bc-control-addin` agent/skill instead of implementing ad-hoc.
+> Load: `skills/bc-control-addin/SKILL.md`
 
 ## Page Implementation Patterns
 

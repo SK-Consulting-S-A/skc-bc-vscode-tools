@@ -30,6 +30,21 @@
         "bc-code-intelligence-mcp"
       ]
     },
+    "bc-mcp-proxy": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "bc-mcp-proxy-fisqal"
+      ],
+      "env": {
+        "BC_TENANT_ID": "<YOUR_TENANT_ID_OR_DOMAIN>",
+        "BC_CLIENT_ID": "<YOUR_AZURE_AD_APP_CLIENT_ID>",
+        "BC_ENVIRONMENT": "Production",
+        "BC_COMPANY": "<YOUR_BC_COMPANY_NAME>",
+        "BC_CONFIG_NAME": ""
+      }
+    },
     "mcp-pandoc": {
       "type": "stdio",
       "command": "uvx",

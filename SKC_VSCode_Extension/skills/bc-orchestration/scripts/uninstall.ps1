@@ -20,6 +20,7 @@ $AgentNames = @(
     'bc-architect.md',
     'bc-al-logic.md',
     'bc-al-ui.md',
+    'bc-agent-sdk.md',
     'bc-tester.md',
     'bc-reviewer.md',
     'bc-translator.md'

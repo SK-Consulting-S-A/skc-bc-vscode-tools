@@ -14,7 +14,7 @@ ms-appx-web://microsoft.aad.brokerplugin/YOUR-CLIENT-ID
 The proxy uses the Windows authentication broker, which requires a specific Redirect URI format.
 
 **Solution:**
-1. Copy the Redirect URI from the error message (e.g., `ms-appx-web://microsoft.aad.brokerplugin/7d36be52-772d-4234-ac08-eee1258f09ec`)
+1. Copy the Redirect URI from the error message (e.g., `ms-appx-web://microsoft.aad.brokerplugin/<your-client-id>`)
 2. Go to [Azure Portal](https://portal.azure.com) > **App registrations** > Your App
 3. Select **Authentication**
 4. Click **Add a platform** > **Mobile and desktop applications**
@@ -64,7 +64,7 @@ The `TenantId` in your `appsettings.json` doesn't match the tenant where your us
 
 1. **Check Available Accounts:**
    - When the authentication dialog appears, look at the available accounts
-   - The error shows which accounts are available (e.g., "luis.monteiro@skc.lu", "luis.monteiro@cc3.lu")
+   - The error shows which accounts are available (e.g., "user@contoso.com")
 
 2. **Select the Correct Account:**
    - Choose the account that exists in the tenant specified in `TenantId`

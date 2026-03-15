@@ -90,6 +90,7 @@ For single-purpose requests, delegate to one subagent only:
 | "Design...", "Plan...", "What objects do I need for..." | `bc-architect` | foreground |
 | "Implement the logic for...", "Create a codeunit..." | `bc-al-logic` | foreground |
 | "Build the pages...", "Create a report for..." | `bc-al-ui` | foreground |
+| "Build a BC agent extension", "Implement IAgentFactory...", "Use the BC Agent SDK...", "Create an agent that deploys as an app..." | `bc-agent-sdk` | foreground |
 | "Add tests for...", "Test this..." | `bc-tester` | foreground |
 | "Review this code", "Check for best practices" | `bc-reviewer` | foreground |
 
