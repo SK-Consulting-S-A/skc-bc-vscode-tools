@@ -19,7 +19,7 @@ import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
 // Heavy modules (translationsView, translationService, translationTools) are loaded lazily in setImmediate
 // so activation returns quickly and "Activating..." does not hang.
 
-const OUTPUT_CHANNEL_NAME = "SKC Tools";
+const OUTPUT_CHANNEL_NAME = "SKC AL Tools";
 const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
@@ -31,7 +31,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const currentVersion = (context.extension?.packageJSON?.version as string | undefined) ?? "unknown";
   channel.appendLine("=".repeat(60));
-  channel.appendLine(`SKC Tools v${currentVersion} - Business Central Development Toolkit`);
+  channel.appendLine(`SKC AL Tools v${currentVersion} - Business Central AL toolkit`);
   channel.appendLine("=".repeat(60));
   channel.appendLine(`[SKC] Extension activated in ${env.appName}`);
   channel.appendLine(`[SKC] Workspace: ${workspace.workspaceFolders?.[0]?.uri.fsPath ?? "No workspace"}`);
@@ -584,7 +584,7 @@ async function copyDirectory(source: string, target: string): Promise<void> {
 
 /**
  * If enabled, uninstalls any installed extension that is not in the current preset list.
- * The preset list is the single source of truth; only SKC VS Tools is always kept.
+ * The preset list is the single source of truth; only SKC AL Tools is always kept.
  * Built-in extensions are skipped (they cannot be uninstalled).
  */
 async function uninstallExtensionsRemovedFromPreset(
@@ -1133,7 +1133,7 @@ async function showNewsIfNeeded(
 
     // Also show a notification alongside the preview
     void window.showInformationMessage(
-      `📰 SKC Tools ${currentVersion ? `v${currentVersion}` : ""} - What's New!`,
+      `📰 SKC AL Tools ${currentVersion ? `v${currentVersion}` : ""} - What's New!`,
       "Dismiss"
     );
 

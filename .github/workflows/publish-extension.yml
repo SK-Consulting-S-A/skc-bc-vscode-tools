@@ -7,7 +7,7 @@
 # Create PAT: https://dev.azure.com → User settings → Personal access tokens
 # Scope: Marketplace (Manage).
 #
-# Repo root is SKC_Tools; this workflow publishes only the extension in SKC_VSCode_Extension/.
+# Public repo skc-bc-internal-tools; this workflow publishes SKC_VSCode_Extension/ to the public Marketplace listing SKConsultingSA.skc-vs-tools.
 
 name: Publish SKC VS Code Extension
 

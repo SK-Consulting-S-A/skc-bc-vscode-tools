@@ -84,7 +84,6 @@ command += ` --pat ${token}`;
         const publishedVersion = updatedPackageJson.version;
         const manageUrl = `https://marketplace.visualstudio.com/manage/publishers/${publisher}/extensions/${extensionName}/hub`;
         const publisherUrl = `https://marketplace.visualstudio.com/manage/publishers/${publisher}`;
-        // Note: Public marketplace URL won't work for private extensions
         const marketplaceUrl = `https://marketplace.visualstudio.com/items?itemName=${publisher}.${extensionName}`;
 
         console.log('\n' + '='.repeat(70));
@@ -93,25 +92,17 @@ command += ` --pat ${token}`;
         console.log(`📦 Extension: ${extensionName}`);
         console.log(`👤 Publisher: ${publisher}`);
         console.log(`🔢 Version: ${publishedVersion}`);
-        console.log(`\n⚙️  Manage Extension (ALWAYS WORKS):`);
+        console.log(`\n⚙️  Manage Extension:`);
         console.log(`   ${manageUrl}`);
         console.log(`\n📋 Publisher Dashboard:`);
         console.log(`   ${publisherUrl}`);
-        console.log(`\n🌐 Public Marketplace (only if extension is public):`);
+        console.log(`\n🌐 Public Marketplace:`);
         console.log(`   ${marketplaceUrl}`);
-        console.log(`   ⚠️  Note: This will show 404 if extension is private`);
         console.log('='.repeat(70));
 
-        // Note: According to official VS Code documentation, extensions are private by default
-        // Reference: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
-        // Extensions are only visible to the publisher until shared or made public via the web UI
-        console.log('\n🔒 Extension Privacy:');
-        console.log('   By default, extensions are private and only visible to you.');
-        console.log('   To share or make public, visit the management page:');
+        console.log('\n🌍 Visibility:');
+        console.log('   SKC AL Tools is a public listing. Keep Marketplace visibility Public.');
         console.log(`   ${manageUrl}`);
-        console.log('   Reference: https://code.visualstudio.com/api/working-with-extensions/publishing-extension');
-        // Privacy is set via the web UI only; the marketplace API does not support
-        // programmatic privacy updates (PUT returns HTTP 500 ArgumentNullException).
 
         // Get and display extension details (with retry since marketplace needs time to index)
         console.log('\n📦 Fetching extension details...');
@@ -125,7 +116,7 @@ command += ` --pat ${token}`;
             console.log(`   1. Visit publisher dashboard: ${publisherUrl}`);
             console.log(`   2. Or manage extension directly: ${manageUrl}`);
             console.log(`   3. Check that version ${publishedVersion} is listed`);
-            console.log(`   4. Verify privacy settings (private extensions won't appear in public marketplace)`);
+            console.log(`   4. Confirm visibility is Public`);
         }
 
         // Final success summary
@@ -136,13 +127,8 @@ command += ` --pat ${token}`;
         console.log(`\nNext steps:`);
         console.log(`  • Manage extension: ${manageUrl}`);
         console.log(`  • Publisher dashboard: ${publisherUrl}`);
-        if (packageJson.private !== true) {
-            console.log(`  • Public marketplace: ${marketplaceUrl}`);
-            console.log(`  • Share with others: ext install ${publisher}.${extensionName}`);
-        } else {
-            console.log(`  • Note: Extension is private - not accessible via public marketplace`);
-            console.log(`  • To share: Make it public in the manage page, then use: ext install ${publisher}.${extensionName}`);
-        }
+        console.log(`  • Public marketplace: ${marketplaceUrl}`);
+        console.log(`  • Install: ext install ${publisher}.${extensionName}`);
         console.log('');
 
     } catch (error) {

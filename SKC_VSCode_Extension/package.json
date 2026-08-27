@@ -1,8 +1,8 @@
 {
   "name": "skc-vs-tools",
-  "displayName": "SKC VS Tools",
-  "description": "Business Central AL dev setup: presets, MCP servers, extensions, and XLF translation.",
-  "version": "2.4.1",
+  "displayName": "SKC AL Tools",
+  "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, and XLF translation.",
+  "version": "2.4.2",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -17,12 +17,23 @@
   "bugs": {
     "url": "https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues"
   },
-  "_comment": "Note: Extension visibility (public/private) is managed via VS Code Marketplace web UI. Extensions are private by default. To change visibility, visit: https://marketplace.visualstudio.com/manage/publishers/SKConsultingSA/extensions/skc-vs-tools/hub",
+  "_comment": "Public listing: https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools — keep visibility Public. Publisher ID SKConsultingSA must not change.",
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": [
-    "Other"
+    "Extension Packs",
+    "Programming Languages",
+    "AI",
+    "Chat"
+  ],
+  "keywords": [
+    "al",
+    "business central",
+    "copilot",
+    "ai",
+    "xlf",
+    "dynamics 365"
   ],
   "activationEvents": [
     "onView:skcTranslationsView",
@@ -35,7 +46,7 @@
       "activitybar": [
         {
           "id": "skc-tools",
-          "title": "SKC Tools",
+          "title": "SKC AL Tools",
           "icon": "assets/skc-icon.svg"
         }
       ]
@@ -236,7 +247,7 @@
         "skc.uninstallExtensionsRemovedFromPreset": {
           "type": "boolean",
           "default": true,
-          "description": "When applying presets, uninstall any installed extension that is not in the preset list. The preset list is the only allowed set; all other extensions (except SKC VS Tools) are removed."
+          "description": "When applying presets, uninstall any installed extension that is not in the preset list. The preset list is the only allowed set; all other extensions (except SKC AL Tools) are removed."
         },
         "skc.presetFilePath": {
           "type": "string",

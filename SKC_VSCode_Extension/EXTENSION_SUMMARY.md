@@ -1,13 +1,13 @@
-# SKC VS Tools - Extension Summary
+# SKC AL Tools - Extension Summary
 
-**Marketplace:** [https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools)  
-**Repository:** [https://github.com/SK-Consulting-S-A/SKC_Tools](https://github.com/SK-Consulting-S-A/SKC_Tools)  
-**Issues:** [https://github.com/SK-Consulting-S-A/SKC_Tools/issues](https://github.com/SK-Consulting-S-A/SKC_Tools/issues)  
+**Marketplace (public):** [https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools)  
+**Repository (public):** [https://github.com/SK-Consulting-S-A/skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools)  
+**Issues:** [https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues)  
 **Homepage:** [https://www.skc.lu](https://www.skc.lu)
 
 ## Overview
 
-**SKC VS Tools** is a VS Code extension pack that automatically configures a complete development environment for **Business Central AL development**. It installs essential AL extensions, configures MCP (Model Context Protocol) servers, and applies optimized settings for AL code development.
+**SKC AL Tools** is a VS Code extension pack for **Business Central AL**: Copilot AI agents and skills, recommended extensions, workspace presets, and XLF translation.
 
 ## What It Does
 
@@ -36,7 +36,7 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 - **app.json Integration**: Reads target languages from `supportedLocales` or `features[].languages`
 
 #### How to Use:
-1. Click the **SKC Tools** icon in the activity bar
+1. Click the **SKC AL Tools** icon in the activity bar
 2. Run "SKC: Configure Translation URL" to set your Azure Function endpoint
 3. Click the play button next to any `.g.xlf` file to translate it
 4. Select the target language and the translated file is saved automatically

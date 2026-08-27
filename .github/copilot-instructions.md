@@ -1,5 +1,7 @@
 # SKC VSCode Extension Workspace
 
+Public repo. SKC AL Tools is listed on the Visual Studio Marketplace (`SKConsultingSA.skc-vs-tools`); keep that listing Public.
+
 Two companion packages for Business Central AL development tooling:
 
 - **SKC_VSCode_Extension** – VS Code extension (TypeScript/esbuild) that auto-configures a BC AL dev environment: installs preset extensions + MCP servers, deploys Copilot agents/skills, and provides an XLF translation sidebar with Azure-backed AI translation.
@@ -83,6 +85,6 @@ npm start                # spawns .NET binary via cross-spawn, reads appsettings
 
 ## Publishing
 
-- **VSCode extension**: Publisher ID `SKConsultingSA`. Marketplace page: `ms-vscode.vscode-marketplace`. PAT in `.publish-token` (gitignored) or `VSCE_PAT` env var.
+- **VSCode extension**: Publisher ID `SKConsultingSA`. Public Marketplace listing: `SKConsultingSA.skc-vs-tools`. Keep visibility Public. PAT in `.publish-token` (gitignored) or `VSCE_PAT` env var.
 - **npm proxy package**: Publisher `Fisqal`. Uses `npm publish` with `NPM_TOKEN`.
 - Both packages version independently. See `PUBLISHING.md` in each folder.

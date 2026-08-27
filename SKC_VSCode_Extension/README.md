@@ -1,69 +1,78 @@
-# SKC VS Tools
+# SKC AL Tools
 
-Applies a preset VS Code setup for SKC: user settings, MCP servers, required extensions, and XLF translation tools.
+AL tools for Business Central from [SK Consulting S.A.](https://www.skc.lu): Copilot AI agents, workspace presets, recommended extensions, and XLF translation.
+
+Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools).
+
+## What you get
+
+- **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
+- **Workspace presets** — AL settings, CodeCop and UICop, recommended extensions, and MCP servers applied with **SKC: Apply Presets**.
+- **XLF translation** — sidebar to preview and translate `.g.xlf` files with Azure AI.
 
 ## What's included
-- `presets/settings.json`: user settings applied to User scope.
-- `presets/mcp.json`: MCP servers written to `mcp.servers` (if non-empty); secrets are injected from VS Code secret storage.
-- `presets/extensions.json`: extension IDs to install.
-- `skills/`: bundled Cursor AI skills (Anthropic curated set + SKC `bc-word-layout`).
-- `agents/`: BC subagents (bc-researcher, bc-architect, bc-al-logic, bc-al-ui, bc-tester, bc-reviewer, bc-translator) for Cursor and VS Code Copilot.
-- **Translations Sidebar**: View and translate `.g.xlf` files using Azure AI.
+
+- `presets/settings.json` — user settings applied to User scope
+- `presets/mcp.json` — MCP servers written to `mcp.servers` (secrets come from VS Code secret storage)
+- `presets/extensions.json` — extension pack to install
+- `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
+- `agents/` — BC Copilot subagents
+- **Translations** view — `.g.xlf` files and Azure AI translation
 
 ## How to use
 
-### Presets & MCP
-1) Install the VSIX (or load in dev).
-2) Run "SKC: Configure MCP Auth" to store your GitHub token and Context7 API key in VS Code secrets.
-3) Run "SKC: Apply Presets" (or rely on auto-run at first activation) to install extensions and apply settings/MCP servers.
-4) Skills and agents (subagents) install automatically when presets are applied; you can also run "SKC: Install Cursor Skills" and "SKC: Install Cursor Agents" manually.
+### Presets, extensions, and AI
+
+1. Install **SKC AL Tools** from the Marketplace.
+2. Run **SKC: Configure MCP Auth** to store your GitHub token and Context7 API key in VS Code secrets.
+3. Run **SKC: Apply Presets** (or rely on auto-run on first activation) to install extensions, apply settings, and register MCP servers.
+4. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
+
+Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 
 ### Translations
-1) Click the **SKC Tools** icon in the activity bar (sidebar).
-2) Run "SKC: Configure Translation URL" to set your Azure Translation Function endpoint.
-3) The **Translations** view shows all `.g.xlf` files in your `Translations` folder with statistics:
-   - `MyFile.g.xlf (45/120)` - 45 of 120 units translated
-   - Green icon = 100% complete, Yellow = partial, Gray = not started
-4) Click the **play** button next to a file to translate it.
-5) Select a target language from `app.json` (reads `supportedLocales` or `features[].languages`).
-6) The translated file is saved as `MyFile.<lang>.xlf` (e.g., `MyFile.fr-FR.xlf`).
 
-## Config knobs (Settings → skc.*)
-- `skipInstalledExtensions` (default true): skip already installed extensions.
-- `presetFilePath` (default `presets/settings.json`), `mcpFilePath` (default `presets/mcp.json`), `extensionsFilePath` (default `presets/extensions.json`); paths resolve from workspace or the bundled extension folder.
-- `installSkillsOnApplyPresets` (default true): auto-install Cursor skills when presets apply.
-- `azureFunctionUrl`: URL of the Azure Translation Function endpoint.
+1. Click the **SKC AL Tools** icon in the activity bar.
+2. Run **SKC: Configure Translation URL** and set your Azure Translation Function endpoint.
+3. The Translations view lists `.g.xlf` files in a `Translations` folder:
+   - `MyFile.g.xlf (45/120)` — 45 of 120 units translated
+   - Green = 100% complete, yellow = partial, gray = not started
+4. Click play next to a file to translate it.
+5. Pick a target language from `app.json` (`supportedLocales` or `features[].languages`).
+6. The result is saved as `MyFile.<lang>.xlf` (for example `MyFile.fr-FR.xlf`).
 
-## Use Cursor global MCP config (single source of truth)
-If you already manage MCP servers in Cursor's global file (`%USERPROFILE%\.cursor\mcp.json`), you can reuse it in VS Code:
-1) Set `skc.mcpFilePath` to `cursor-global`.
-2) Run "SKC: Apply Presets" (or reload VS Code) to apply the servers to `mcp.servers`.
+## Settings (`skc.*`)
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `skipInstalledExtensions` | `true` | Skip extensions that are already installed |
+| `presetFilePath` / `mcpFilePath` / `extensionsFilePath` | bundled presets | Override preset files (workspace or extension folder) |
+| `installSkillsOnApplyPresets` | `true` | Install Copilot skills when presets apply |
+| `azureFunctionUrl` | empty | Azure Translation Function endpoint |
 
 ## Commands
+
 | Command | Description |
-|---------|-------------|
-| `SKC: Apply Presets` | Install extensions and apply settings/MCP servers |
-| `SKC: Install Cursor Skills` | Install bundled skills (Cursor: `~/.cursor/skills/`, VS Code: `~/.copilot/skills/`) |
-| `SKC: Install Cursor Agents` | Install BC subagents (Cursor: `~/.cursor/agents/`, VS Code: `~/.copilot/agents/`) |
-| `SKC: Configure MCP Auth` | Store GitHub token and Context7 API key |
-| `SKC: Configure Translation URL` | Set Azure Translation Function endpoint |
-| `Translate File` | Translate selected XLF file (from sidebar) |
-| `Refresh Translations` | Refresh the translations list |
+|---|---|
+| **SKC: Apply Presets** | Install extensions and apply settings and MCP servers |
+| **SKC: Install Copilot Skills** | Install bundled skills (`~/.copilot/skills/`) |
+| **SKC: Install Copilot Agents** | Install BC subagents (`~/.copilot/agents/`) |
+| **SKC: Configure MCP Auth** | Store GitHub token and Context7 API key |
+| **SKC: Configure Translation URL** | Set Azure Translation Function endpoint |
+| **Translate File** | Translate the selected XLF file |
+| **Refresh Translations** | Refresh the translations list |
+| **Create Translation File** / **Add Language** | Create or extend XLF language files |
 
-## LM Bridge - Language Model Tools via MCP
+## Copilot and language-model tools
 
-The extension exposes VS Code Language Model Tools (e.g., `al_build` from the AL extension) to Cursor AI via an MCP SSE server. When Cursor invokes these tools, VS Code shows a confirmation dialog ("Run 'Build AL Project'") as a security measure.
+SKC AL Tools contributes Copilot chat skills and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
 
-**Note:** This confirmation dialog cannot be disabled - it's a VS Code security feature. However:
-- The dialog should include an "Always allow" option - use it to reduce future prompts
-- This affects all tools exposed through the LM Bridge, not just AL build
-- The dialog appears once per tool per VS Code session (or until you click "Always allow")
+## Build and publish
 
-This is a limitation of VS Code's Language Model Tools API (`vscode.lm.invokeTool`) and cannot be bypassed programmatically.
+```bash
+npm install
+npm run compile
+npx vsce package
+```
 
-## Build & package
-- Install deps: `npm install`
-- Build: `npm run compile`
-- Package VSIX: `npx vsce package`
-- Publish and extension visibility (private/public): see [PUBLISHING.md](PUBLISHING.md)
-
+This is a **public** Marketplace listing. See [PUBLISHING.md](PUBLISHING.md).

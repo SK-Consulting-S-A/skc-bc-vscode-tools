@@ -1,6 +1,16 @@
 # Change Log
 
-All notable changes to the "SKC VS Tools" extension will be documented in this file.
+All notable changes to the "SKC AL Tools" extension will be documented in this file.
+
+## [2.4.2] - 2026-08-27
+
+### Changed
+- Marketplace display name is now **SKC AL Tools** (install ID remains `SKConsultingSA.skc-vs-tools`).
+- Short description, categories (Extension Packs, Programming Languages, AI, Chat), and README now describe Copilot AI agents, AL presets, and XLF translation.
+- Listing is documented as a public Marketplace product.
+- Marketplace icon updated to the SK agent mark.
+
+---
 
 ## [2.4.1] - 2026-08-27
 

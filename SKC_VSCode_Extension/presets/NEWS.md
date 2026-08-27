@@ -1,10 +1,18 @@
-# 📰 SKC VS Tools - What's New
+# 📰 SKC AL Tools - What's New
 
-## Version 2.4.1 - Latest Release
+## Version 2.4.2 - Latest Release
+
+### Renamed to SKC AL Tools
+
+Marketplace display name is now **SKC AL Tools** (identity stays `SKConsultingSA.skc-vs-tools`). Short description: AL tools for Business Central with Copilot AI agents, workspace presets, recommended extensions, and XLF translation. Categories are Extension Packs, Programming Languages, AI, and Chat. The listing is public.
+
+---
+
+## Version 2.4.1
 
 ### BusinessCentral.LinterCop removed
 
-LinterCop is deprecated (last AL Language support: March 2026; expected to stop working with AL Language v18 around October 2026). SKC VS Tools no longer installs it or enables `BusinessCentral.LinterCop.dll`.
+LinterCop is deprecated (last AL Language support: March 2026; expected to stop working with AL Language v18 around October 2026). SKC AL Tools no longer installs it or enables `BusinessCentral.LinterCop.dll`.
 
 Microsoft **CodeCop** and **UICop** remain the default analyzers. AppSourceCop / PerTenantExtensionCop stay per-project. ALCops (alcops.dev) is the community successor if a team wants extra rules later; it is not bundled.
 
@@ -186,7 +194,7 @@ This version introduced the BC orchestration framework with 7 specialist subagen
 
 ## Version 1.5.0
 
-Welcome to **SKC VS Tools**! Your all-in-one extension for streamlined Business Central AL development.
+Welcome to **SKC AL Tools**! Your all-in-one extension for streamlined Business Central AL development.
 
 ---
 
@@ -250,14 +258,14 @@ Includes essential AL development extensions:
 1. **Generate a GitHub Token**:
    - Visit [GitHub Personal Access Tokens](https://github.com/settings/tokens)
    - Click "Generate new token" → "Generate new token (classic)"
-   - Give it a descriptive name (e.g., "SKC VS Tools MCP")
+   - Give it a descriptive name (e.g., "SKC AL Tools MCP")
    - Select required scopes:
      - `repo` (Full control of private repositories)
      - `read:org` (Read org and team membership)
      - `user` (Read user profile data)
    - Click "Generate token" and **copy the token immediately**
 
-2. **Configure in SKC VS Tools**:
+2. **Configure in SKC AL Tools**:
    - Open Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
    - Run: `SKC: Configure MCP Auth`
    - Paste your GitHub token when prompted
@@ -270,7 +278,7 @@ Includes essential AL development extensions:
    - Navigate to API Settings or API Keys section
    - Copy your API key
 
-2. **Configure in SKC VS Tools**:
+2. **Configure in SKC AL Tools**:
    - Open Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
    - Run: `SKC: Configure MCP Auth`
    - Enter your Context7 API key when prompted
@@ -283,10 +291,10 @@ Includes essential AL development extensions:
 ## 🆘 Support & Resources
 
 - **Website**: [skc.lu](https://www.skc.lu)
-- **GitHub**: [SK-Consulting-S-A/SKC_Tools](https://github.com/SK-Consulting-S-A/SKC_Tools)
+- **GitHub**: [SK-Consulting-S-A/skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools)
 - **Issues**: Report bugs or request features on GitHub
 
 ---
 
-**Thank you for using SKC VS Tools!** 🎉  
+**Thank you for using SKC AL Tools!** 🎉  
 *Making Business Central development easier, one preset at a time.*
