@@ -164,20 +164,18 @@ Additional cleanup actions available on demand:
 
 **Implication**: When generating code, always write proper `Label` variables yourself. Do not rely on the extension to extract bare strings — the extension is a safety net, not a substitute for correct code generation.
 
-### BusinessCentral.LinterCop (`StefanMaron.businesscentral-lintercop`)
+### Microsoft AL analyzers (CodeCop + UICop)
 
-LinterCop is loaded as the **fourth code analyzer** alongside AppSourceCop, UICop, and CodeCop:
+Code analysis uses Microsoft's built-in analyzers only:
 
 ```json
 "al.codeAnalyzers": [
-    "${AppSourceCop}",
-    "${UICop}",
     "${CodeCop}",
-    "${analyzerFolder}BusinessCentral.LinterCop.dll"
+    "${UICop}"
 ]
 ```
 
-Treat LinterCop violations with the same zero-tolerance policy as CodeCop violations. When reviewing code, flag any LinterCop rule violations (e.g., `LC001`–`LC999` rule range).
+AppSourceCop / PerTenantExtensionCop belong in the project workspace when the app type requires them. Treat CodeCop and UICop violations with the same zero-tolerance policy. Do not add BusinessCentral.LinterCop or ALCops.
 
 ### Object ID Ninja (`anzwdev.obj-id-ninja`)
 

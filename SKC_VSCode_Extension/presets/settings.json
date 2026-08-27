@@ -10,8 +10,7 @@
     "al.enableCodeAnalysis": true,
     "al.codeAnalyzers": [
       "${CodeCop}",
-      "${UICop}",
-      "${analyzerFolder}BusinessCentral.LinterCop.dll"
+      "${UICop}"
     ],
     "al.areProfileLensesSupported": true,
     "al.inlayhints.parameterNames.enabled": true,

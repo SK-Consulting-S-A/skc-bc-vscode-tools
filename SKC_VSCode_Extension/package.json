@@ -2,16 +2,20 @@
   "name": "skc-vs-tools",
   "displayName": "SKC VS Tools",
   "description": "Business Central AL dev setup: presets, MCP servers, extensions, and XLF translation.",
-  "version": "2.3.0",
+  "version": "2.4.1",
   "publisher": "SKConsultingSA",
+  "author": {
+    "name": "SK Consulting S.A.",
+    "url": "https://www.skc.lu"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SK-Consulting-S-A/SKC_Tools"
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-internal-tools"
   },
   "homepage": "https://www.skc.lu",
   "license": "SEE LICENSE IN LICENSE",
   "bugs": {
-    "url": "https://github.com/SK-Consulting-S-A/SKC_Tools/issues"
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues"
   },
   "_comment": "Note: Extension visibility (public/private) is managed via VS Code Marketplace web UI. Extensions are private by default. To change visibility, visit: https://marketplace.visualstudio.com/manage/publishers/SKConsultingSA/extensions/skc-vs-tools/hub",
   "engines": {
@@ -304,7 +308,6 @@
       "ms-azuretools.vscode-azureappservice",
       "ms-azuretools.vscode-azureresourcegroups",
       "ms-vscode.vscode-typescript-next",
-      "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",
@@ -327,7 +330,6 @@
       "ms-azuretools.vscode-azureappservice",
       "ms-azuretools.vscode-azureresourcegroups",
       "ms-vscode.vscode-typescript-next",
-      "stefanmaron.businesscentral-lintercop",
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",

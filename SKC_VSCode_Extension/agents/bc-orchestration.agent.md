@@ -213,7 +213,7 @@ vscode_askQuestions([
     question: "Ready for code review?",
     header: "Review",
     options: [
-      { label: "Yes — run full review (AppSourceCop, LinterCop, security)", recommended: true },
+      { label: "Yes — run full review (AppSourceCop, CodeCop, security)", recommended: true },
       { label: "Quick review — AppSourceCop only" },
       { label: "Skip review" }
     ]
@@ -222,7 +222,7 @@ vscode_askQuestions([
 ```
 
 **Step 4b** → Delegate to **`bc-reviewer`**:
-- AppSourceCop, CodeCop, LinterCop compliance
+- AppSourceCop, CodeCop, UICop compliance
 - Label usage, `Validate()` calls, permissions, data classification
 - Open Banking routing guard, install/upgrade patterns
 
@@ -300,7 +300,7 @@ Read the following values from `app.json` and `AppSourceCop.json` at runtime:
 | `bc-researcher` | `bc-researcher.agent.md` | Researches BC docs, events, local patterns |
 | `bc-al-logic` | `bc-al-logic.agent.md` | Tables, codeunits, enums, integration code |
 | `bc-al-ui` | `bc-al-ui.agent.md` | Pages, page extensions, reports |
-| `bc-reviewer` | `bc-reviewer.agent.md` | Code review (AppSourceCop, LinterCop, security) |
+| `bc-reviewer` | `bc-reviewer.agent.md` | Code review (AppSourceCop, CodeCop, security) |
 | `bc-tester` | `bc-tester.agent.md` | Test codeunits, Given/When/Then |
 | `bc-translator` | `bc-translator.agent.md` | XLF generation and translation for all locales |
 | `bc-cal-converter` | `bc-cal-converter.agent.md` | CAL-to-AL conversion with smart extension detection |
@@ -319,7 +319,7 @@ Estimate what a human BC developer would have spent on each phase completed in t
 | Business Logic | Tables, codeunits, enums (per object) | 3–8 h | 1–4 h |
 | UI / Pages | Pages, page extensions, reports (per object) | 2–6 h | 1–3 h |
 | Tests | Test codeunits, Given/When/Then (per codeunit) | 2–6 h | 1–3 h |
-| Code Review | AppSourceCop + LinterCop + quality review | 1–4 h | 0.5–2 h |
+| Code Review | AppSourceCop + CodeCop + quality review | 1–4 h | 0.5–2 h |
 | CAL Migration | Per object converted and validated | 1–4 h | 0.5–2 h |
 | Translation | Per XLF file per locale | 0.5–2 h | 0.25–1 h |
 

@@ -85,7 +85,7 @@ Sets up Model Context Protocol (MCP) servers for AI-powered development assistan
 Configures VS Code with production-ready settings specifically optimized for AL development:
 
 #### AL-Specific Settings:
-- **Code Analysis**: Enables CodeCop, UICop, and BusinessCentral.LinterCop analyzers
+- **Code Analysis**: Enables Microsoft CodeCop and UICop analyzers
 - **Code Actions**: Auto-sorting of variables, procedures, properties, and permissions
 - **Code Cleanup**: Automatic formatting, data classification, and code quality improvements
 - **Incremental Build**: Faster compilation with parallel processing

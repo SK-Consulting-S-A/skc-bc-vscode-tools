@@ -2,6 +2,13 @@
 
 All notable changes to the "SKC VS Tools" extension will be documented in this file.
 
+## [2.4.1] - 2026-08-27
+
+### Removed
+- BusinessCentral.LinterCop from the extension pack, dependencies, presets, and Copilot agent guidance. Microsoft CodeCop and UICop remain the default analyzers.
+
+---
+
 ## [2.0.0] - 2025-02-10
 
 ### 🚀 Major Release: BC Orchestration & CAL-to-AL Converter

@@ -1,6 +1,18 @@
 # 📰 SKC VS Tools - What's New
 
-## Version 2.3.0 - Latest Release
+## Version 2.4.1 - Latest Release
+
+### BusinessCentral.LinterCop removed
+
+LinterCop is deprecated (last AL Language support: March 2026; expected to stop working with AL Language v18 around October 2026). SKC VS Tools no longer installs it or enables `BusinessCentral.LinterCop.dll`.
+
+Microsoft **CodeCop** and **UICop** remain the default analyzers. AppSourceCop / PerTenantExtensionCop stay per-project. ALCops (alcops.dev) is the community successor if a team wants extra rules later; it is not bundled.
+
+Re-run **SKC: Apply Presets** to drop LinterCop from user settings. Uninstall `stefanmaron.businesscentral-lintercop` if it is still installed. Existing repo `.vscode/settings.json` files that still list the DLL need a one-line cleanup.
+
+---
+
+## Version 2.3.0
 
 ### ⏱ Billable Effort Summary in Orchestration
 
