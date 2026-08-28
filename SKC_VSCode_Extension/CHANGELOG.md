@@ -2,6 +2,13 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Marketplace icon is the final SK agent mark (transparent PNG, 256×256).
+
+---
+
 ## [2.4.2] - 2026-08-27
 
 ### Changed
