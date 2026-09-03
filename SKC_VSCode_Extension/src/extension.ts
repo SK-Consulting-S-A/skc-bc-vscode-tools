@@ -16,6 +16,7 @@ import {
   TextEditorRevealType
 } from "vscode";
 import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
+import { registerBcChatParticipant } from "./bcChatParticipant";
 // Heavy modules (translationsView, translationService, translationTools) are loaded lazily in setImmediate
 // so activation returns quickly and "Activating..." does not hang.
 
@@ -36,6 +37,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
   channel.appendLine(`[SKC] Extension activated in ${env.appName}`);
   channel.appendLine(`[SKC] Workspace: ${workspace.workspaceFolders?.[0]?.uri.fsPath ?? "No workspace"}`);
   channel.appendLine("");
+
+  registerBcChatParticipant(context, channel);
 
   const storedVersion = context.globalState.get<string>(STATE_VERSION_KEY);
   const isNewVersion = Boolean(currentVersion && storedVersion !== currentVersion);

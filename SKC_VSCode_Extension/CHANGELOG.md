@@ -4,6 +4,9 @@ All notable changes to the "SKC AL Tools" extension will be documented in this f
 
 ## [Unreleased]
 
+### Added
+- `@bc` Copilot chat participant with `/docs`, `/object`, and `/how`. Type `@bc how do I post a sales invoice?` — no Agent picker or skill names. Looks up Microsoft Learn on demand; `/object` can use local AL symbols when a project is open, then points at [BCApps](https://github.com/microsoft/BCApps).
+
 ### Changed
 - Marketplace icon is the final SK agent mark (transparent PNG, 256×256).
 

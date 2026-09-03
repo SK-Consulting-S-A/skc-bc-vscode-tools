@@ -37,7 +37,8 @@
   ],
   "activationEvents": [
     "onView:skcTranslationsView",
-    "workspaceContains:**/app.json"
+    "workspaceContains:**/app.json",
+    "onChatParticipant:skc.bc"
   ],
   "main": "./out/extension.js",
   "icon": "assets/Small_Logo.png",
@@ -220,6 +221,29 @@
             }
           }
         }
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "skc.bc",
+        "name": "bc",
+        "fullName": "Business Central",
+        "description": "Ask how Business Central works. Try: how do I post a sales invoice?",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "docs",
+            "description": "Search Microsoft Learn for Business Central"
+          },
+          {
+            "name": "object",
+            "description": "Look up a table, page, or codeunit"
+          },
+          {
+            "name": "how",
+            "description": "Explain a Business Central process in plain language"
+          }
+        ]
       }
     ],
     "chatSkills": [

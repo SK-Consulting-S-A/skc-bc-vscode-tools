@@ -1,5 +1,13 @@
 # 📰 SKC AL Tools - What's New
 
+## Next release — @bc in Copilot Chat
+
+Type `@bc how do I post a sales invoice?` in Copilot Chat. No Agent picker and no skill names. Slash commands: `/docs`, `/object`, `/how`.
+
+`@bc` looks up Microsoft Learn when you ask. Slash commands: `/docs`, `/object`, `/how`.
+
+---
+
 ## Version 2.4.2 - Latest Release
 
 ### Renamed to SKC AL Tools
