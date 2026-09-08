@@ -1,8 +1,8 @@
 {
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
-  "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, and XLF translation.",
-  "version": "2.4.2",
+  "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
+  "version": "2.5.0",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -25,7 +25,8 @@
     "Extension Packs",
     "Programming Languages",
     "AI",
-    "Chat"
+    "Chat",
+    "Themes"
   ],
   "keywords": [
     "al",
@@ -33,7 +34,10 @@
     "copilot",
     "ai",
     "xlf",
-    "dynamics 365"
+    "dynamics 365",
+    "theme",
+    "dark theme",
+    "skc"
   ],
   "activationEvents": [
     "onView:skcTranslationsView",
@@ -331,6 +335,13 @@
         "editor.formatOnSave": true
       }
     },
+    "themes": [
+      {
+        "label": "SKC Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/skc-dark.json"
+      }
+    ],
     "extensionDependencies": [
       "ms-dynamics-smb.al",
       "davidfeldhoff.al-codeactions",

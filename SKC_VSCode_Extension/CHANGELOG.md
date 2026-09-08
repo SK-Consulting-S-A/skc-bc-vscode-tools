@@ -2,9 +2,10 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
-## [Unreleased]
+## [2.5.0] - 2026-09-08
 
 ### Added
+- **SKC Dark** color theme, matching the [skc.lu](https://www.skc.lu) dark design system (violet `#6c63ff`, cyan `#00d4ff`, night background `#0f0f1a`). Bundled in the extension (Color Theme picker → **SKC Dark**) and applied by **SKC: Apply Presets**.
 - `@bc` Copilot chat participant with `/docs`, `/object`, and `/how`. Type `@bc how do I post a sales invoice?` — no Agent picker or skill names. Looks up Microsoft Learn on demand; `/object` can use local AL symbols when a project is open, then points at [BCApps](https://github.com/microsoft/BCApps).
 
 ### Changed

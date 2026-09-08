@@ -9,6 +9,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - **@bc in Copilot Chat** — type `@bc how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
 - **Workspace presets** — AL settings, CodeCop and UICop, recommended extensions, and MCP servers applied with **SKC: Apply Presets**.
+- **SKC Dark** — color theme from the [skc.lu](https://www.skc.lu) dark design system (applied with presets; also in the Color Theme picker).
 - **XLF translation** — sidebar to preview and translate `.g.xlf` files with Azure AI.
 
 ## What's included
@@ -16,6 +17,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - `presets/settings.json` — user settings applied to User scope
 - `presets/mcp.json` — MCP servers written to `mcp.servers` (secrets come from VS Code secret storage)
 - `presets/extensions.json` — extension pack to install
+- `themes/skc-dark.json` — **SKC Dark** color theme (skc.lu palette)
 - `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
 - `agents/` — BC Copilot subagents
 - **Translations** view — `.g.xlf` files and Azure AI translation

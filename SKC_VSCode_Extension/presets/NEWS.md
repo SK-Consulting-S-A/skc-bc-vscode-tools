@@ -1,14 +1,21 @@
 # 📰 SKC AL Tools - What's New
 
-## Next release — @bc in Copilot Chat
+## Version 2.5.0 - Latest Release
 
-Type `@bc how do I post a sales invoice?` in Copilot Chat. No Agent picker and no skill names. Slash commands: `/docs`, `/object`, `/how`.
+### SKC Dark theme
 
-`@bc` looks up Microsoft Learn when you ask. Slash commands: `/docs`, `/object`, `/how`.
+SKC AL Tools now ships **SKC Dark**, a VS Code color theme taken from the [skc.lu](https://www.skc.lu) dark palette: night navy editor, violet chrome, cyan cursor and links.
+
+- Pick it from **File → Preferences → Theme → Color Theme → SKC Dark**
+- **SKC: Apply Presets** sets it as the default dark theme
+
+### @bc in Copilot Chat
+
+Type `@bc how do I post a sales invoice?` in Copilot Chat. No Agent picker and no skill names. Slash commands: `/docs`, `/object`, `/how`. `@bc` looks up Microsoft Learn when you ask.
 
 ---
 
-## Version 2.4.2 - Latest Release
+## Version 2.4.2
 
 ### Renamed to SKC AL Tools
 
