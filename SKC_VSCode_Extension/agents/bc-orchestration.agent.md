@@ -78,7 +78,7 @@ If the user's original message already clearly states the task type and scope, s
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Gate
 
-The Review phase must invoke bc-reviewer with the actual pr-diff or file-path inputs and require the official BCQuality bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md (the installed plugin root is the directory containing plugin.json). The reviewer must refresh the knowledge index best-effort, execute Entry before any dispatched action skill, and return the official DO JSON contract unchanged. Orchestration must preserve exact verified references, keep no-match/failed dispatch records visible, and never accept fabricated citations. BCQuality findings are additive to the normal compiler, analyzer, security, AppSource, and dashboard-specialist review.
+The Review phase must invoke bc-reviewer with the actual pr-diff or file-path inputs and require the official BCQuality bridge at skills/bcquality/skills/al-code-review/SKILL.md (the installed plugin root is the directory containing plugin.json). The reviewer must refresh the knowledge index best-effort, execute Entry before any dispatched action skill, and return the official DO JSON contract unchanged. Orchestration must preserve exact verified references, keep no-match/failed dispatch records visible, and never accept fabricated citations. BCQuality findings are additive to the normal compiler, analyzer, security, AppSource, and dashboard-specialist review.
 <!-- SKC BCQUALITY INTEGRATION: END -->
 
 ## Orchestration Phases

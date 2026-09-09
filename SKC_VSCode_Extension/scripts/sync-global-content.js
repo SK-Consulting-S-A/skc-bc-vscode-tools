@@ -6,6 +6,19 @@ const { applyBcQualityIntegration } = require("./bcquality-integration");
 
 const EXCLUDED_NAMES = new Set([".git", "node_modules", "__pycache__"]);
 const BCQUALITY_SKILL_NAME = "bcquality";
+const RENAMED_TOOL_IDS = new Map([
+    ["memory", "vscode/memory"],
+    ["al_build", "ms-dynamics-smb.al/al_build"],
+    ["al_publish", "ms-dynamics-smb.al/al_publish"],
+    ["al_symbolsearch", "ms-dynamics-smb.al/al_symbolsearch"],
+    ["al_debug", "ms-dynamics-smb.al/al_debug"],
+    ["al_setbreakpoint", "ms-dynamics-smb.al/al_setbreakpoint"],
+    ["al_snapshotdebugging", "ms-dynamics-smb.al/al_snapshotdebugging"],
+    ["al_downloadsymbols", "ms-dynamics-smb.al/al_downloadsymbols"],
+    ["al_getdiagnostics", "ms-dynamics-smb.al/al_get_diagnostics"],
+    ["createLanguageXlf", "nabsolutions.nab-al-tools/createLanguageXlf"],
+    ["refreshXlf", "nabsolutions.nab-al-tools/refreshXlf"]
+]);
 
 function copyDirectory(source, target) {
     fs.mkdirSync(target, { recursive: true });
@@ -41,11 +54,12 @@ function normalizeAgentFrontmatter(filePath) {
     while (contentStart < lines.length) {
         const line = lines[contentStart];
         if (line.trim() === "---") {
+            writeNormalizedAgent(filePath, lines.join("\n"));
             return;
         }
         if (!line.trim()) {
             lines.splice(contentStart, 0, "---");
-            fs.writeFileSync(filePath, lines.join("\n"), "utf8");
+            writeNormalizedAgent(filePath, lines.join("\n"));
             return;
         }
         if (metadataKeys.test(line.trim()) || /^\s+-\s/.test(line)) {
@@ -56,7 +70,20 @@ function normalizeAgentFrontmatter(filePath) {
     }
 
     lines.splice(contentStart, 0, "---");
-    fs.writeFileSync(filePath, lines.join("\n"), "utf8");
+    writeNormalizedAgent(filePath, lines.join("\n"));
+}
+
+function writeNormalizedAgent(filePath, content) {
+    const normalized = content.replace(/^(\s*tools:\s*\[)([^\]\r\n]*)(\]\s*)$/m, (match, prefix, tools, suffix) => {
+        const renamedTools = tools.split(",").map((tool) => {
+            const trimmed = tool.trim();
+            const identifier = trimmed.replace(/^['"]|['"]$/g, "");
+            const renamed = RENAMED_TOOL_IDS.get(identifier);
+            return renamed ? `"${renamed}"` : trimmed;
+        });
+        return `${prefix}${renamedTools.join(", ")}${suffix}`;
+    });
+    fs.writeFileSync(filePath, normalized, "utf8");
 }
 
 function resolveArguments() {
