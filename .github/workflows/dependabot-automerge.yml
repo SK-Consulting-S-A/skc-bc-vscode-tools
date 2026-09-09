@@ -30,7 +30,7 @@ jobs:
 
       - name: Enable squash auto-merge for supported npm packages
         if: >-
-          steps.metadata.outputs.package-ecosystem == 'npm' &&
+          steps.metadata.outputs.package-ecosystem == 'npm_and_yarn' &&
           (steps.metadata.outputs.directory == '/' ||
           steps.metadata.outputs.directory == '/SKC_VSCode_Extension')
         run: gh pr merge --auto --squash "$PR_URL"
