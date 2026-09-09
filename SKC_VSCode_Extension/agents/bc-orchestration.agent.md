@@ -3,7 +3,7 @@ name: bc-orchestration
 description: Master BC orchestrator for any Business Central AL extension project. Coordinates phased subagent delegation for the full development lifecycle — research, design, logic, UI, test, review, translate. Use for any multi-step BC development task. Automatically routes to the right subagents based on the request type.
 model:
   - 'Claude Sonnet 4.6 (copilot)'
-tools: [agent, agent/runSubagent, memory, "read", "edit", "search", "execute", "web", "bc-intelligence/*", "al_build", "al_publish", "al_downloadsymbols", "al_symbolsearch", "al_getdiagnostics", todo]
+tools: [agent, agent/runSubagent, "vscode/memory", "read", "edit", "search", "execute", "web", "bc-intelligence/*", "ms-dynamics-smb.al/al_build", "ms-dynamics-smb.al/al_publish", "ms-dynamics-smb.al/al_downloadsymbols", "ms-dynamics-smb.al/al_symbolsearch", "ms-dynamics-smb.al/al_get_diagnostics", todo]
 agents:
   - bc-architect
   - bc-researcher
@@ -73,6 +73,7 @@ If the user's original message already clearly states the task type and scope, s
 1. Read `app.json` for: `idRanges`, `namespace`, `supportedLocales`, `runtime`, `dependencies`.
 2. Read `AppSourceCop.json` for: `mandatoryAffixes` (object suffix).
 3. Use these values in all subsequent subagent instructions.
+
 
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Gate
