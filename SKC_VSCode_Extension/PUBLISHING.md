@@ -2,7 +2,7 @@
 
 SKC AL Tools is a **public** product:
 
-- Source: [SK-Consulting-S-A/skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools) (public)
+- Source: [SK-Consulting-S-A/skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools) (public)
 - Marketplace: [SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (public, searchable)
 - Install: VS Code Extensions view, or `ext install SKConsultingSA.skc-vs-tools`
 
@@ -11,6 +11,8 @@ Publisher **ID** is `SKConsultingSA` (do not change; it is the extension identit
 Keep visibility **Public** after each publish. A first-time `vsce publish` of a *new* extension ID defaults to private; this listing is already public and must stay that way.
 
 ## How to publish
+
+The consolidation target is version **2.5.1**. Build and package it for review, but do not publish automatically. BCQuality is bundled and validated offline; live upstream refresh is opt-in through `skc.bcQualityUpdateOnApply` or the explicit update command.
 
 - **Local:** Put your Azure DevOps PAT in `.publish-token`, then run:
   - `node scripts/publish.js` — publish current version

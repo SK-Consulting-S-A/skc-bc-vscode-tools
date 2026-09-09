@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
+import { spawn } from "child_process";
 import {
   commands,
   ConfigurationTarget,
@@ -59,6 +60,26 @@ export async function activate(context: ExtensionContext): Promise<void> {
     void window.showInformationMessage("SKC agents installed.");
   });
   context.subscriptions.push(installAgentsCommand);
+
+  const updateBcQualityCommand = commands.registerCommand("skc.updateBcQuality", async () => {
+    const choice = await window.showQuickPick([
+      { label: "Update from official BCQuality main", description: "Download and validate the latest upstream plugin snapshot.", value: "live" },
+      { label: "Refresh from bundled snapshot", description: "Use the snapshot shipped with this extension without network access.", value: "bundled" }
+    ], { placeHolder: "Choose how to update BCQuality" });
+    if (!choice) return;
+
+    const result = await updateBcQuality(context, channel, choice.value === "live", false);
+    if (result.success) {
+      void window.showInformationMessage(
+        result.fallback
+          ? "BCQuality update could not reach upstream; the last valid offline snapshot was kept."
+          : "BCQuality snapshot updated and validated."
+      );
+    } else {
+      void window.showErrorMessage(`BCQuality update failed: ${result.message}`);
+    }
+  });
+  context.subscriptions.push(updateBcQualityCommand);
 
   const configureAuthCommand = commands.registerCommand("skc.configureMcpAuth", async () => {
     const saved = await promptAndSaveMcpSecrets(context);
@@ -256,6 +277,7 @@ async function applyPresets(
   const mcpPath = cfg.get<string>("mcpFilePath", "").trim();
   const extensionsPath = cfg.get<string>("extensionsFilePath", "").trim();
   const installSkillsOnApply = cfg.get<boolean>("installSkillsOnApplyPresets", true);
+  const bcQualityUpdateOnApply = cfg.get<boolean>("bcQualityUpdateOnApply", false);
 
   channel.appendLine(`[SKC] Applying presets...`);
   channel.appendLine(`[SKC] Preset path: ${presetPath || "(empty)"}`);
@@ -298,6 +320,10 @@ async function applyPresets(
     await installAgents(context, channel);
   }
 
+  if (bcQualityUpdateOnApply) {
+    await updateBcQuality(context, channel, true, silent);
+  }
+
   await context.globalState.update(STATE_KEY, true);
   const currentVersion = (context.extension?.packageJSON?.version as string | undefined) ?? undefined;
   if (currentVersion) {
@@ -307,6 +333,46 @@ async function applyPresets(
   if (!silent) {
     void window.showInformationMessage("SKC presets applied.");
   }
+}
+
+type BcQualityUpdateResult = { success: boolean; fallback: boolean; message: string };
+
+async function updateBcQuality(context: ExtensionContext, channel: OutputChannel, live: boolean, silent: boolean): Promise<BcQualityUpdateResult> {
+  const scriptPath = path.join(context.extensionPath, "scripts", "sync-bcquality.js");
+  const bundledSource = path.join(context.extensionPath, "skills", "bcquality");
+  const target = path.join(os.homedir(), ".copilot", "skills", "bcquality");
+  if (!(await pathExists(scriptPath))) {
+    const message = `BCQuality sync script not found at ${scriptPath}.`;
+    channel.appendLine(`[SKC] ${message}`);
+    return { success: false, fallback: false, message };
+  }
+
+  const args = [scriptPath, "--target", target, "--source", bundledSource];
+  if (live) args.push("--live");
+  channel.appendLine(`[SKC] ${live ? "Downloading and validating" : "Refreshing"} BCQuality snapshot...`);
+  const result = await runNodeScript(args, context.extensionPath);
+  for (const line of result.output.split(/\r?\n/).filter(Boolean)) channel.appendLine(`[BCQuality] ${line}`);
+  const fallback = result.output.includes("BCQUALITY_SYNC_STATUS=fallback");
+  if (result.code === 0) {
+    channel.appendLine(`[SKC] BCQuality snapshot ${fallback ? "kept using offline fallback" : "updated"}.`);
+    return { success: true, fallback, message: "" };
+  }
+
+  const message = result.output.trim().split(/\r?\n/).filter(Boolean).pop() || "The sync process exited with an error.";
+  channel.appendLine(`[SKC] BCQuality snapshot update failed: ${message}`);
+  if (!silent) channel.appendLine("[SKC] Run the bundled refresh option after checking the BCQuality Output channel for details.");
+  return { success: false, fallback: false, message };
+}
+
+function runNodeScript(args: string[], cwd: string): Promise<{ code: number; output: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, { cwd, windowsHide: true });
+    let output = "";
+    child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
+    child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
+    child.on("error", (error: Error) => { output += `${error.message}\n`; resolve({ code: 1, output }); });
+    child.on("close", (code) => { resolve({ code: code ?? 1, output }); });
+  });
 }
 
 /**
@@ -542,10 +608,10 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
 
   channel.appendLine(`[SKC] Agents summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 
-  await ensureCopilotAgentsPath(channel, targetRoot);
+  await ensureCopilotAgentsPath(channel);
 }
 
-async function ensureCopilotAgentsPath(channel: OutputChannel, _agentsPath: string): Promise<void> {
+async function ensureCopilotAgentsPath(channel: OutputChannel): Promise<void> {
   try {
     const config = workspace.getConfiguration("chat");
     const current = config.get<Record<string, boolean>>("agentFilesLocations", {});
@@ -655,12 +721,6 @@ export function deactivate(): void {
 type PresetFileShape = {
   settings?: Record<string, unknown>;
   extensions?: unknown;
-};
-
-type McpFileShape = {
-  servers?: unknown;
-  mcpServers?: unknown;
-  inputs?: unknown;
 };
 
 type ExtensionsFileShape = {
@@ -854,7 +914,7 @@ async function writeVSCodeMcpFileIfNeeded(
   const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
   const mcpFilePath = path.join(userDir, "mcp.json");
 
-  let existingServers: Record<string, unknown> = {};
+  const existingServers: Record<string, unknown> = {};
   let existingInputs: unknown[] = [];
   try {
     const raw = await fs.readFile(mcpFilePath, "utf8");
@@ -867,7 +927,8 @@ async function writeVSCodeMcpFileIfNeeded(
             ? (val as Record<string, unknown>).id as string
             : null;
           if (innerId) {
-            const { id: _id, ...rest } = val as Record<string, unknown> & { id: string };
+            const rest = { ...(val as Record<string, unknown>) };
+            delete rest.id;
             existingServers[innerId] = rest;
             channel.appendLine(`[SKC] VS Code mcp.json: migrated numeric entry "${key}" → "${innerId}".`);
             continue;

@@ -1,5 +1,23 @@
 # 📰 SKC AL Tools - What's New
 
+## Version 2.5.1 - Latest Release
+
+### ✅ Official Microsoft BCQuality integration
+
+SKC AL Tools now bundles the official Microsoft **BCQuality** review plugin for Business Central AL quality checks.
+
+- `bc-reviewer` uses the Entry → READ → DO workflow for `pr-diff` and `file-path` reviews.
+- The complete offline snapshot includes the official knowledge index, Microsoft/community/custom knowledge layers, tools, and strict JSON findings.
+- Run **SKC: Update BCQuality Snapshot** to refresh the bundled snapshot. Live upstream refresh is opt-in during preset application through `skc.bcQualityUpdateOnApply` and falls back safely to the last valid snapshot.
+
+### 🧠 Synchronized Copilot skills and agents
+
+- Build and package flows synchronize the current global Copilot skill and agent bundles.
+- The dashboard specialist and updated Business Central skills are included while `algo-settings.agent.md` remains intentionally excluded.
+- The organization release keeps the **SKC Dark** theme and `@bc` Copilot Chat experience.
+
+---
+
 ## Version 2.5.0 - Latest Release
 
 ### SKC Dark theme

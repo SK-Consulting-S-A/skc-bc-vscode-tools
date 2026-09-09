@@ -80,6 +80,12 @@ When the request involves creating or implementing a complete BC feature (new ob
    - Test coverage
    - Review findings (critical/warning/suggestion)
 
+<!-- SKC BCQUALITY INTEGRATION: START -->
+### BCQuality review contract
+
+For the review phase, pass the concrete pr-diff or file-path input to bc-reviewer and require the official BCQuality bridge to run Entry first from the plugin root containing plugin.json. The bridge may refresh tools/Build-KnowledgeIndex.ps1 best-effort, then dispatch action skills. Preserve the DO JSON result (outcome, findings, references, confidence, suppressed) without reshaping it; every reference must be verified from an opened file in the installed tree. A no-match or failed dispatch record is a visible review outcome, not a reason to fabricate a citation. Keep the dashboard specialist route available for dashboard/control-addin work.
+<!-- SKC BCQUALITY INTEGRATION: END -->
+
 ## Individual Task Routing
 
 For single-purpose requests, delegate to one subagent only:

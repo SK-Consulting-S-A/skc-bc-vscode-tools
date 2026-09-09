@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SK-Consulting-S-A/skc-bc-internal-tools"
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools"
   },
   "homepage": "https://www.skc.lu",
   "license": "SEE LICENSE IN LICENSE",
   "bugs": {
-    "url": "https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues"
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues"
   },
   "_comment": "Public listing: https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools — keep visibility Public. Publisher ID SKConsultingSA must not change.",
   "engines": {
@@ -83,6 +83,10 @@
       {
         "command": "skc.installAgents",
         "title": "SKC: Install Copilot Agents"
+      },
+      {
+        "command": "skc.updateBcQuality",
+        "title": "SKC: Update BCQuality Snapshot"
       },
       {
         "command": "skc.configureMcpAuth",
@@ -262,6 +266,9 @@
       },
       {
         "path": "./skills/bc-control-addin/SKILL.md"
+      },
+      {
+        "path": "./skills/bcquality/SKILL.md"
       }
     ],
     "configuration": {
@@ -306,6 +313,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically install Copilot skills when applying presets."
+        },
+        "skc.bcQualityUpdateOnApply": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt in to downloading and validating the latest official BCQuality snapshot when presets are applied."
         },
         "skc.overwriteExistingSkills": {
           "type": "boolean",
@@ -388,18 +400,21 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run sync:extensions && npm run build",
+    "vscode:prepublish": "npm run sync:content && npm run build",
     "sync:extensions": "node scripts/sync-extensions.js",
+    "sync:global": "node scripts/sync-global-content.js",
+    "sync:bcquality": "node scripts/sync-bcquality.js",
+    "sync:content": "npm run sync:extensions && npm run sync:global && npm run sync:bcquality",
     "build": "node scripts/build.js --production",
-    "compile": "npm run sync:extensions && node scripts/build.js",
-    "package": "npm run sync:extensions && npm run build && vsce package",
+    "compile": "npm run sync:content && node scripts/build.js",
+    "package": "npm run build && vsce package",
     "publish": "npm run compile && node scripts/publish.js",
     "publish:patch": "npm run compile && node scripts/publish.js patch",
     "publish:minor": "npm run compile && node scripts/publish.js minor",
     "publish:major": "npm run compile && node scripts/publish.js major",
     "publish:prerelease": "npm run compile && node scripts/publish.js --pre-release",
     "watch": "node scripts/build.js --watch",
-    "lint": "eslint src --ext ts",
+    "lint": "set ESLINT_USE_FLAT_CONFIG=false&& eslint src --ext ts",
     "test": "npm run compile"
   },
   "dependencies": {
