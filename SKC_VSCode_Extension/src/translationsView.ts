@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { getTranslationStatsFromContent, getTranslationUnitStatus, isCompletedTranslation } from "./xlfStatus";
+import { getTranslationStatsFromContent, getTranslationUnitStatus, hasTranslatableSource, isCompletedTranslation } from "./xlfStatus";
 
 export interface TranslationStats {
     total: number;
@@ -389,8 +389,8 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
                 const sourceMatch = unitContent.match(/<source\b[^>]*>([\s\S]*?)<\/source>/);
                 const source = sourceMatch ? sourceMatch[1].trim() : "";
 
-                // NAB ignores units without source text because there is nothing translatable.
-                if (!source) {
+                // Ignore units without translatable source text, including markup-only placeholders.
+                if (!hasTranslatableSource(unitContent)) {
                     continue;
                 }
 
