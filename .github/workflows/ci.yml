@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  root-dependencies:
+    name: Root dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify dependency tree
+        run: npm ls --depth=0
+
+      - name: Smoke test sharp
+        run: |
+          node - <<'NODE'
+          const sharp = require('sharp');
+
+          sharp({
+            create: {
+              width: 2,
+              height: 2,
+              channels: 4,
+              background: '#336699'
+            }
+          })
+            .png()
+            .toBuffer({ resolveWithObject: true })
+            .then(({ info }) => {
+              if (info.width !== 2 || info.height !== 2) {
+                throw new Error(`Unexpected image dimensions: ${info.width}x${info.height}`);
+              }
+              console.log(`sharp ${sharp.versions.sharp} / libvips ${sharp.versions.vips} OK`);
+            })
+            .catch((error) => {
+              console.error(error);
+              process.exit(1);
+            });
+          NODE
+
+      - name: Audit critical vulnerabilities
+        run: npm audit --audit-level=critical
+
+  extension:
+    name: Extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SKC_VSCode_Extension
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: SKC_VSCode_Extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Package VSIX without synchronization side effects
+        shell: bash
+        run: |
+          package_dir="$(mktemp -d)"
+          git archive HEAD:SKC_VSCode_Extension | tar -x -C "$package_dir"
+          rm -rf "$package_dir/out"
+          cp -R out "$package_dir/out"
+
+          node - "$package_dir/package.json" <<'NODE'
+          const fs = require('fs');
+          const packageJsonPath = process.argv[2];
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+          delete packageJson.scripts['vscode:prepublish'];
+          fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+          NODE
+
+          (
+            cd "$package_dir"
+            "$GITHUB_WORKSPACE/SKC_VSCode_Extension/node_modules/.bin/vsce" package \
+              --no-dependencies \
+              --out "$RUNNER_TEMP/skc-vs-tools.vsix"
+          )
+
+          test -s "$RUNNER_TEMP/skc-vs-tools.vsix"
+
+      - name: Audit critical vulnerabilities
+        run: npm audit --audit-level=critical
