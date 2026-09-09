@@ -101,7 +101,8 @@ jobs:
         shell: bash
         run: |
           package_dir="$(mktemp -d)"
-          git archive HEAD:SKC_VSCode_Extension | tar -x -C "$package_dir"
+          git archive HEAD SKC_VSCode_Extension \
+            | tar -x --strip-components=1 -C "$package_dir"
           rm -rf "$package_dir/out"
           cp -R out "$package_dir/out"
 
