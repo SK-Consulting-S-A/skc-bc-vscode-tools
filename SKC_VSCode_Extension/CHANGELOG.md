@@ -2,6 +2,12 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
+## [3.0.7] - 2026-09-09
+
+### Fixed
+- Ignored markup-only XLIFF source units consistently in translation statistics and the translations tree.
+- Refreshed the extension summary so its recommended extensions match the bundled preset.
+
 ## [3.0.6] - 2026-09-09
 
 ### Fixed
