@@ -3,7 +3,7 @@ description: "Expert BC AL developer for any Business Central AL extension proje
 name: "AL Developer"
 model:
   - 'Claude Sonnet 4.6 (copilot)'
-tools: [agent, agent/runSubagent, memory, "read", "edit", "search", "execute", "web", "bc-intelligence/*", "al_build", "al_publish", "al_symbolsearch", "al_debug", "al_setbreakpoint", "al_snapshotdebugging", "al_getdiagnostics", todo]
+tools: [agent, agent/runSubagent, "vscode/memory", "read", "edit", "search", "execute", "web", "bc-intelligence/*", "ms-dynamics-smb.al/al_build", "ms-dynamics-smb.al/al_publish", "ms-dynamics-smb.al/al_symbolsearch", "ms-dynamics-smb.al/al_debug", "ms-dynamics-smb.al/al_setbreakpoint", "ms-dynamics-smb.al/al_snapshotdebugging", "ms-dynamics-smb.al/al_get_diagnostics", todo]
 agents:
   - bc-orchestration
   - bc-architect

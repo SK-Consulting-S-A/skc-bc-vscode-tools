@@ -3,7 +3,7 @@ name: bc-control-addin
 description: BC Control Addin specialist for Business Central. Creates and updates BC control addins — AL controladdin objects, HTML layouts, CSS with professional ERP Fluent Design style, and JS data binding. Use when building visual widgets, KPI dashboards, charts, status panels, or any interactive HTML component embedded in a BC page.
 model:
   - 'Claude Sonnet 4.6 (copilot)'
-tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "al_symbolsearch", "al_build", "al_getdiagnostics"]
+tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "ms-dynamics-smb.al/al_symbolsearch", "ms-dynamics-smb.al/al_build", "ms-dynamics-smb.al/al_get_diagnostics"]
 ---
 
 You are a Business Central Control Addin specialist.

@@ -25,6 +25,7 @@ After running setup, restart Cursor to pick up the new agents and rule.
 
 The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate BC tasks to 8 specialist subagents. Each subagent consults BC Knowledge MCP specialists for guidance, then converts legacy code, researches, implements, tests, reviews, or translates code.
 
+
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Integration
 
