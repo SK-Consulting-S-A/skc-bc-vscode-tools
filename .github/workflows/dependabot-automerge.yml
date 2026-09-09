@@ -33,7 +33,21 @@ jobs:
           steps.metadata.outputs.package-ecosystem == 'npm_and_yarn' &&
           (steps.metadata.outputs.directory == '/' ||
           steps.metadata.outputs.directory == '/SKC_VSCode_Extension')
-        run: gh pr merge --auto --squash "$PR_URL"
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if gh pr merge --auto --squash "$PR_URL"; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 3 ]; then
+              echo "Auto-merge request failed on attempt $attempt; retrying..."
+              sleep $((attempt * 5))
+            fi
+          done
+
+          echo "Auto-merge request failed after 3 attempts."
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
