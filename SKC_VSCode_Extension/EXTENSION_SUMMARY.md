@@ -32,7 +32,7 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 - **Translations View**: Shows all `.g.xlf` files in your `Translations` folder
 - **Translation Statistics**: Displays progress for each file (e.g., `45/120` units translated)
 - **Visual Status**: Color-coded icons (green = complete, yellow = partial, gray = not started)
-- **Azure AI Translation**: Translate files using Azure OpenAI via your Translation Function
+- **Azure Translation Function**: Translate files using the configured Azure Translation Function
 - **app.json Integration**: Reads target languages from `supportedLocales` or `features[].languages`
 
 #### How to Use:
@@ -41,14 +41,13 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 3. Click the play button next to any `.g.xlf` file to translate it
 4. Select the target language and the translated file is saved automatically
 
-### 2. **Installs AL Development Extensions** (18 extensions)
+### 2. **Installs AL Development Extensions** (17 extensions)
 
 The extension automatically installs a comprehensive set of VS Code extensions required for Business Central AL development:
 
 #### Core AL Extensions:
 - **ms-dynamics-smb.al** - Official Microsoft AL Language extension
 - **waldo.al-extension-pack** - AL Extension Pack by Waldo
-- **nabsolutions.nab-al-tools** - NAB AL Tools for enhanced AL development
 - **365businessdevelopment.365businessdev-alget** - AL development utilities
 
 #### AL Productivity Tools:

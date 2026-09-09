@@ -16,8 +16,6 @@ const RENAMED_TOOL_IDS = new Map([
     ["al_snapshotdebugging", "ms-dynamics-smb.al/al_snapshotdebugging"],
     ["al_downloadsymbols", "ms-dynamics-smb.al/al_downloadsymbols"],
     ["al_getdiagnostics", "ms-dynamics-smb.al/al_get_diagnostics"],
-    ["createLanguageXlf", "nabsolutions.nab-al-tools/createLanguageXlf"],
-    ["refreshXlf", "nabsolutions.nab-al-tools/refreshXlf"]
 ]);
 
 function copyDirectory(source, target) {

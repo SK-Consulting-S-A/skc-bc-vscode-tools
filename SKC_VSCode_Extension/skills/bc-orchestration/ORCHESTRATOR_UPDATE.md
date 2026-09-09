@@ -57,9 +57,9 @@ Available subagents:
 ```
 VS Code tools:
   - al_build                    // Generate .g.xlf and package
-  - createLanguageXlf          // Create target language XLF
-  - skc_translate_xlf          // Auto-translate via Azure
-  - skc_list_translation_files // Check translation status
+  - createXlfLanguage          // Create target language XLF (skc_create_xlf_language)
+  - translateXlf               // Auto-translate via Azure (skc_translate_xlf)
+  - listTranslations           // Check translation status (skc_list_translation_files)
 ```
 
 ### Integration with Other Subagents:

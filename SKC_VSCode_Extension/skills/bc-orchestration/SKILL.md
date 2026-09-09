@@ -66,7 +66,7 @@ During the Review phase, route AL pr-diff and file-path reviews through the offi
    - Output: critical / warning / suggestion findings, compilation status
 
 5. **Translation** -- `bc-translator` subagent (if `supportedLocales` in app.json)
-   - Uses: `al_build`, `createLanguageXlf`, `skc_translate_xlf`, `skc_list_translation_files`
+   - Uses: `al_build`, `createXlfLanguage` (`skc_create_xlf_language`), `translateXlf` (`skc_translate_xlf`), and `listTranslations` (`skc_list_translation_files`)
    - Output: translated XLF files for each locale
 
 ### Individual Tasks
@@ -104,7 +104,7 @@ The MCP specialists remain accessible outside the orchestration:
 | Agent SDK Dev | `bc-agent-sdk.md` | al_symbolsearch, al_build, al_getdiagnostics, sam-coder |
 | Tester | `bc-tester.agent.md` | al_downloadsymbols, al_build, al_getdiagnostics, quinn-tester |
 | Reviewer | `bc-reviewer.agent.md` | al_build, al_getdiagnostics, roger-reviewer, seth-security, morgan-market |
-| Translator | `bc-translator.agent.md` | al_build, createLanguageXlf, skc_translate_xlf, skc_list_translation_files |
+| Translator | `bc-translator.agent.md` | al_build, createXlfLanguage (`skc_create_xlf_language`), translateXlf (`skc_translate_xlf`), listTranslations (`skc_list_translation_files`) |
 
 All code-producing subagents (CAL converter, researcher, architect, logic dev, UI dev) follow an **AL Research-First Approach** — they verify symbols, patterns, and best practices through `al_symbolsearch`, Microsoft Learn, and GitHub before writing or designing any code.
 
@@ -134,7 +134,7 @@ The `bc-cal-converter` subagent uses object ID-based smart detection:
 - `al_downloadsymbols` -- download symbols for active project
 - `github-pull-request_formSearchQuery` -- convert natural language to GitHub query
 - `github-pull-request_doSearch` -- search GitHub code (bc-w1 for standard patterns, bctech for innovation)
-- `createLanguageXlf` / `skc_translate_xlf` / `skc_list_translation_files` -- translation workflow
+- `createXlfLanguage` (`skc_create_xlf_language`) / `translateXlf` (`skc_translate_xlf`) / `listTranslations` (`skc_list_translation_files`) -- SKC/Azure translation workflow
 
 ## Additional Resources
 
