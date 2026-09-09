@@ -109,12 +109,44 @@ if (([double]$manifest.minimumCleanRate -lt 0) -or ([double]$manifest.minimumCle
     $problems.Add('minimumCleanRate must be between 0 and 1.') | Out-Null
 }
 
-$leafDomains = @(
-    Get-ChildItem -LiteralPath (Join-Path $Root 'microsoft/skills/review') -File -Filter 'al-*-review.md' |
-        Where-Object Name -ne 'al-code-review.md' |
-        ForEach-Object { $_.BaseName -replace '^al-', '' -replace '-review$', '' } |
-        Sort-Object -Unique
+$layers = @(
+    [pscustomobject]@{ Name = 'microsoft'; Rank = 1 }
+    [pscustomobject]@{ Name = 'community'; Rank = 2 }
+    [pscustomobject]@{ Name = 'custom'; Rank = 3 }
 )
+$layerRanks = @{}
+foreach ($layer in $layers) {
+    $layerRanks[[string]$layer.Name] = [int]$layer.Rank
+}
+$leafCandidates = @(
+    foreach ($layer in $layers) {
+        $reviewDirectory = Join-Path $Root "$($layer.Name)/skills/review"
+        if (-not (Test-Path -LiteralPath $reviewDirectory -PathType Container)) {
+            continue
+        }
+        Get-ChildItem -LiteralPath $reviewDirectory -File -Filter 'al-*-review.md' |
+            Where-Object Name -ne 'al-code-review.md' |
+            ForEach-Object {
+                [pscustomobject]@{
+                    Domain = $_.BaseName -replace '^al-', '' -replace '-review$', ''
+                    Layer = $layer.Name
+                    Rank = $layer.Rank
+                    RelativePath = [System.IO.Path]::GetRelativePath($Root, $_.FullName).Replace('\', '/')
+                }
+            }
+    }
+)
+$leafSkills = @(
+    $leafCandidates |
+        Group-Object Domain |
+        ForEach-Object { $_.Group | Sort-Object Rank -Descending | Select-Object -First 1 } |
+        Sort-Object Domain
+)
+$leafDomains = @($leafSkills | ForEach-Object Domain)
+$leafByDomain = @{}
+foreach ($leafSkill in $leafSkills) {
+    $leafByDomain[[string]$leafSkill.Domain] = $leafSkill
+}
 
 $overrides = @{}
 if ($manifest.PSObject.Properties.Name -contains 'overrides') {
@@ -130,9 +162,35 @@ foreach ($overrideDomain in $overrides.Keys) {
 
 $caseList = [System.Collections.Generic.List[object]]::new()
 foreach ($domain in $leafDomains) {
-    $knowledgeDirectory = Join-Path $Root "microsoft/knowledge/$domain"
-    if (-not (Test-Path -LiteralPath $knowledgeDirectory -PathType Container)) {
-        $problems.Add("${domain}: no Microsoft knowledge directory exists.") | Out-Null
+    $articleCandidates = @(
+        foreach ($layer in $layers) {
+            $knowledgeDirectory = Join-Path $Root "$($layer.Name)/knowledge/$domain"
+            if (-not (Test-Path -LiteralPath $knowledgeDirectory -PathType Container)) {
+                continue
+            }
+            Get-ChildItem -LiteralPath $knowledgeDirectory -File -Filter '*.md' |
+                Where-Object {
+                    (Test-Path -LiteralPath (Join-Path $knowledgeDirectory "$($_.BaseName).good.al") -PathType Leaf) -and
+                    (Test-Path -LiteralPath (Join-Path $knowledgeDirectory "$($_.BaseName).bad.al") -PathType Leaf)
+                } |
+                ForEach-Object {
+                    [pscustomobject]@{
+                        BaseName = $_.BaseName
+                        File = $_
+                        Rank = $layer.Rank
+                        ArticlePath = [System.IO.Path]::GetRelativePath($Root, $_.FullName).Replace('\', '/')
+                    }
+                }
+        }
+    )
+    $articles = @(
+        $articleCandidates |
+            Group-Object BaseName |
+            ForEach-Object { $_.Group | Sort-Object Rank -Descending | Select-Object -First 1 } |
+            Sort-Object BaseName
+    )
+    if (-not $articles.Count) {
+        $problems.Add("${domain}: no enabled knowledge layer has an article with both .good.al and .bad.al companion samples.") | Out-Null
         continue
     }
 
@@ -143,27 +201,33 @@ foreach ($domain in $leafDomains) {
         if ($articleName.EndsWith('.md')) {
             $articleName = [System.IO.Path]::GetFileNameWithoutExtension($articleName)
         }
-        $candidate = Join-Path $knowledgeDirectory "$articleName.md"
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-            $selectedArticle = Get-Item -LiteralPath $candidate
-        } else {
-            $problems.Add("${domain}: override article does not exist: $articleName.md") | Out-Null
+        $selectedArticle = $articles | Where-Object BaseName -eq $articleName | Select-Object -First 1
+        if (-not $selectedArticle) {
+            $articleExists = @(
+                foreach ($layer in $layers) {
+                    $articleFile = Join-Path $Root "$($layer.Name)/knowledge/$domain/$articleName.md"
+                    if (Test-Path -LiteralPath $articleFile -PathType Leaf) {
+                        $articleFile
+                    }
+                }
+            ).Count -gt 0
+            if ($articleExists) {
+                $problems.Add("${domain}: override article does not have both .good.al and .bad.al companion samples: $articleName.md") | Out-Null
+            } else {
+                $problems.Add("${domain}: override article does not exist: $articleName.md") | Out-Null
+            }
+            continue
         }
     } else {
-        $selectedArticle = Get-ChildItem -LiteralPath $knowledgeDirectory -File -Filter '*.md' |
-            Sort-Object Name |
-            Where-Object {
-                (Test-Path -LiteralPath (Join-Path $knowledgeDirectory "$($_.BaseName).good.al") -PathType Leaf) -and
-                (Test-Path -LiteralPath (Join-Path $knowledgeDirectory "$($_.BaseName).bad.al") -PathType Leaf)
-            } |
-            Select-Object -First 1
+        $selectedArticle = $articles | Select-Object -First 1
     }
     if (-not $selectedArticle) {
         $problems.Add("${domain}: no article has both .good.al and .bad.al companion samples.") | Out-Null
         continue
     }
 
-    $articlePath = "microsoft/knowledge/$domain/$($selectedArticle.Name)"
+    $articlePath = [string]$selectedArticle.ArticlePath
+    $sampleDirectory = (Split-Path -Parent $articlePath).Replace('\', '/')
     $context = if ($override -and ($override.PSObject.Properties.Name -contains 'context')) {
         [string]$override.context
     } else {
@@ -173,7 +237,7 @@ foreach ($domain in $leafDomains) {
         $case = [pscustomobject]@{
             id = "$domain-$kind"
             domain = $domain
-            input = "microsoft/knowledge/$domain/$($selectedArticle.BaseName).$kind.al"
+            input = "$sampleDirectory/$($selectedArticle.BaseName).$kind.al"
             expected = if ($kind -eq 'bad') { @($articlePath) } else { @() }
         }
         if ($context) {
@@ -188,7 +252,7 @@ $seenIds = [System.Collections.Generic.HashSet[string]]::new([System.StringCompa
 foreach ($case in $cases) {
     $id = [string]$case.id
     $domain = [string]$case.domain
-    $input = [string]$case.input
+    $inputRelativePath = [string]$case.input
     $expected = @($case.expected)
 
     if ([string]::IsNullOrWhiteSpace($id)) {
@@ -200,15 +264,15 @@ foreach ($case in $cases) {
         $problems.Add("${id}: domain '$domain' has no registered al-$domain-review leaf.") | Out-Null
     }
 
-    $inputPath = Join-Path $Root $input
+    $inputPath = Join-Path $Root $inputRelativePath
     if (-not (Test-Path -LiteralPath $inputPath -PathType Leaf)) {
-        $problems.Add("${id}: input does not exist: $input") | Out-Null
+        $problems.Add("${id}: input does not exist: $inputRelativePath") | Out-Null
     }
-    if ($expected.Count -and $input -notmatch '\.bad\.[^.]+$') {
-        $problems.Add("${id}: positive case must use a .bad sample: $input") | Out-Null
+    if ($expected.Count -and $inputRelativePath -notmatch '\.bad\.[^.]+$') {
+        $problems.Add("${id}: positive case must use a .bad sample: $inputRelativePath") | Out-Null
     }
-    if (-not $expected.Count -and $input -notmatch '\.good\.[^.]+$') {
-        $problems.Add("${id}: clean case must use a .good sample: $input") | Out-Null
+    if (-not $expected.Count -and $inputRelativePath -notmatch '\.good\.[^.]+$') {
+        $problems.Add("${id}: clean case must use a .good sample: $inputRelativePath") | Out-Null
     }
 
     foreach ($reference in $expected) {
@@ -218,7 +282,7 @@ foreach ($case in $cases) {
         }
     }
     if ($expected.Count) {
-        $sampleSlug = ([System.IO.Path]::GetFileName($input) -replace '\.(?:good|bad)\.[^.]+$', '')
+        $sampleSlug = ([System.IO.Path]::GetFileName($inputRelativePath) -replace '\.(?:good|bad)\.[^.]+$', '')
         $primarySlug = [System.IO.Path]::GetFileNameWithoutExtension([string]$expected[0])
         if ($sampleSlug -ne $primarySlug) {
             $problems.Add("${id}: primary expected article '$primarySlug' must match sample slug '$sampleSlug'.") | Out-Null
@@ -311,9 +375,16 @@ if ($PrepareDirectory) {
     } | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $PrepareDirectory 'review-request.json') -Encoding UTF8
 
     foreach ($domain in $leafDomains) {
-        $domainArticles = @($fullIndex.articles | Where-Object domain -eq $domain)
+        $domainArticles = @(
+            $fullIndex.articles |
+                Where-Object domain -eq $domain |
+                Sort-Object @{ Expression = { $layerRanks[[string]$_.layer] }; Descending = $true }, path |
+                Group-Object { [System.IO.Path]::GetFileName([string]$_.path) } |
+                ForEach-Object { $_.Group | Select-Object -First 1 } |
+                Sort-Object path
+        )
         $domainIndexName = "index-$domain.json"
-        $leafPath = "microsoft/skills/review/al-$domain-review.md"
+        $leafPath = [string]$leafByDomain[$domain].RelativePath
         $leafFullText = Get-Content -LiteralPath (Join-Path $Root $leafPath) -Raw
         $leafInstructions = @($leafFullText -split '(?m)^## Output\s*\r?\n', 2)[0]
         $leafInstructions += "`n## Output`nReturn only the request's resultSchema."

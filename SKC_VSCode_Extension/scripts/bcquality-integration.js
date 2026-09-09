@@ -22,13 +22,13 @@ ${END_MARKER}`;
 const orchestrationSection = `${START_MARKER}
 ## BCQuality Review Gate
 
-The Review phase must invoke bc-reviewer with the actual pr-diff or file-path inputs and require the official BCQuality bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md (the installed plugin root is the directory containing plugin.json). The reviewer must refresh the knowledge index best-effort, execute Entry before any dispatched action skill, and return the official DO JSON contract unchanged. Orchestration must preserve exact verified references, keep no-match/failed dispatch records visible, and never accept fabricated citations. BCQuality findings are additive to the normal compiler, analyzer, security, AppSource, and dashboard-specialist review.
+The Review phase must invoke bc-reviewer with the actual pr-diff or file-path inputs and require the official BCQuality bridge at skills/bcquality/skills/al-code-review/SKILL.md (the installed plugin root is the directory containing plugin.json). The reviewer must refresh the knowledge index best-effort, execute Entry before any dispatched action skill, and return the official DO JSON contract unchanged. Orchestration must preserve exact verified references, keep no-match/failed dispatch records visible, and never accept fabricated citations. BCQuality findings are additive to the normal compiler, analyzer, security, AppSource, and dashboard-specialist review.
 ${END_MARKER}`;
 
 const skillSection = `${START_MARKER}
 ## BCQuality Review Integration
 
-During the Review phase, route AL pr-diff and file-path reviews through the official vendored bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md. The bridge owns Entry → dispatch → DO JSON semantics; this orchestration skill must not duplicate its knowledge catalog. Keep index refresh best-effort, preserve exact verified references, and treat no-match or failed dispatch records as explicit outcomes. Continue to use the existing AL build, analyzer, security, AppSource, and dashboard review checks alongside BCQuality.
+During the Review phase, route AL pr-diff and file-path reviews through the official vendored bridge at skills/bcquality/skills/al-code-review/SKILL.md. The bridge owns Entry → dispatch → DO JSON semantics; this orchestration skill must not duplicate its knowledge catalog. Keep index refresh best-effort, preserve exact verified references, and treat no-match or failed dispatch records as explicit outcomes. Continue to use the existing AL build, analyzer, security, AppSource, and dashboard review checks alongside BCQuality.
 ${END_MARKER}`;
 
 const ruleSection = `${START_MARKER}

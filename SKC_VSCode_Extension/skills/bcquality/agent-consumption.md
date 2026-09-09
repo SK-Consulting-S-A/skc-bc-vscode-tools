@@ -12,6 +12,10 @@ For the high-level framing and repo structure, start with the [README](README.md
   - **Global skills** in `/skills/` — the `entry.md` entry-point skill plus the READ · DO · WRITE contracts that govern the rest of the repo.
   - **Layer content** in `/microsoft/`, `/community/`, and `/custom/` — knowledge files and action skills grouped by authority.
 
+When BCQuality is installed as a standalone plugin, it additionally exposes
+`skills/al-code-review/SKILL.md`. This is a host-format adapter, not another
+action skill: it creates the task context and enters the same flow at Entry.
+
 ## The flow
 
 ```mermaid
@@ -31,6 +35,12 @@ The orchestrator has a URL setting that points at BCQuality (default: `github.co
 ### 2. Agent invokes Entry
 The agent reads `/skills/entry.md` and runs it against the task context. Entry applies its Source → Relevance → Worklist → Action steps over the action skills under `*/skills/**/*.md` and returns a **dispatch record**: the set of action skills to invoke, plus a list of candidates it skipped (with reasons). Routing is a skill, not orchestrator logic.
 
+For a standalone plugin installation, the host activates the
+`skills/al-code-review/SKILL.md` adapter first. That adapter preserves the
+caller's actual goal, constructs the task context, and invokes Entry. It does
+not select the internal `microsoft/skills/review/al-code-review.md` action skill
+itself or duplicate Entry's preparation, routing, and failure semantics.
+
 ### 3. Agent consumes the dispatch record
 The dispatch record names one or more action skills and the subset of inputs each should receive. If the outcome is `no-match` or `failed`, the agent returns the record to the orchestrator unchanged.
 
@@ -48,7 +58,7 @@ Each action skill is a markdown file that specifies what to do at each step. The
 | **Worklist** | Narrow from N candidates to the M that apply to this specific task. |
 | **Action** | Apply the relevant knowledge and produce structured output. |
 
-Example: a performance review skill sources from `/microsoft/knowledge/performance/` and `/community/knowledge/performance/`, filters to `bc-version: 26` and `technologies: [al]`, narrows the 25 candidate files to the 8 that apply to the 15 objects changed in the PR, and then evaluates each file against the diff.
+Example: the Microsoft-owned performance review skill selects `performance` entries across every enabled layer, filters to `bc-version: 26` and `technologies: [al]`, narrows the candidate files to those that apply to the changed objects, and then evaluates each file against the diff. Its canonical corpus lives beside it under `/microsoft/knowledge/performance/`; cross-layer entries are limited to custom overrides or short-lived promotion work.
 
 At this point the agent reads READ and DO on demand — it needs READ to interpret each knowledge file's frontmatter and sections, and DO to shape its output. Those contracts are fetched when first needed, not as part of bootstrap.
 
@@ -89,8 +99,12 @@ Orchestrators MUST tolerate an absent `domain` in reports from older producers. 
 ## Why this architecture
 
 - **Entry is the only hardcoded thing.** Orchestrators ship with one convention — *"invoke `/skills/entry.md` first"* — and nothing else. New action skills and new knowledge files are picked up automatically because Entry discovers them at dispatch time.
+- **Standalone installation adds an adapter, not another policy layer.** The
+  plugin's host-format `al-code-review` skill only translates the invocation
+  into Entry's task context. Entry and the dispatched action skills remain
+  authoritative.
 - **Layers decide authority, not code.** The agent sees `/microsoft/` and `/community/` together; if two files conflict, the precedence rule defined in READ resolves it. A partner fork can disable `/community/` — that's a config choice, not a code change.
-- **Knowledge and skills evolve independently.** A new knowledge file requires no skill changes — existing skills pick it up via frontmatter filters. A new skill requires no knowledge changes — it sources from what's already there.
+- **Knowledge and skills evolve independently within their owning layer.** A new knowledge file requires no skill changes because existing skills pick it up via frontmatter filters. Layer placement still follows skill ownership, so promoting a skill also promotes its canonical corpus.
 
 ## The mental model, in one sentence
 
