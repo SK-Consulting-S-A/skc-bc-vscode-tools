@@ -118,7 +118,7 @@ async function answerQuestion(
         }
     }
 
-    for (const hit of bcDocs.slice(0, 5)) {
+    for (const hit of docs.slice(0, 5)) {
         if (hit.url) {
             stream.reference(vscode.Uri.parse(hit.url));
         }
@@ -128,7 +128,7 @@ async function answerQuestion(
         question,
         command,
         hasAl,
-        docs: bcDocs,
+        docs,
         pageMarkdown,
         alSamples,
         symbols,
@@ -137,7 +137,7 @@ async function answerQuestion(
 
     const answered = await streamLanguageModel(request, chatContext, stream, token, contextBlock, channel);
     if (!answered) {
-        stream.markdown(fallbackMarkdown(question, bcDocs));
+        stream.markdown(fallbackMarkdown(question, docs));
     }
 
     stream.markdown(`\n\n### Source on GitHub\n${githubSourceLinks(question)}\n`);
