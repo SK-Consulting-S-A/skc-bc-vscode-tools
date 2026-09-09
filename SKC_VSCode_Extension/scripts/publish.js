@@ -21,7 +21,7 @@
  *   node scripts/publish.js patch       # Bump patch version and publish
  *   node scripts/publish.js --pre-release # Publish as pre-release
  */
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -56,16 +56,19 @@ const isPreRelease = args.includes('--pre-release');
 
 // Build the vsce publish command according to official documentation
 // Reference: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
-// Use npx so vsce is found from node_modules (CI and local).
-let command = 'npx vsce publish';
+// Invoke the installed CLI through the current Node runtime. This avoids the
+// Windows npx.cmd shim failing with spawnSync EINVAL. Keep the PAT out of the
+// process command line and pass it through the child environment.
+const projectRoot = path.join(__dirname, '..');
+const vsceCliPath = path.join(projectRoot, 'node_modules', '@vscode', 'vsce', 'vsce');
+const commandArguments = ['publish'];
 if (versionType) {
-    command += ` ${versionType}`;
+    commandArguments.push(versionType);
 }
 if (isPreRelease) {
-    command += ' --pre-release';
+    commandArguments.push('--pre-release');
 }
-command += ' --allow-star-activation';
-command += ` --pat ${token}`;
+commandArguments.push('--allow-star-activation');
 
 (async () => {
     console.log('Publishing extension...');
@@ -77,7 +80,11 @@ command += ` --pat ${token}`;
     }
 
     try {
-        execSync(command, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+        execFileSync(process.execPath, [vsceCliPath, ...commandArguments], {
+            stdio: 'inherit',
+            cwd: projectRoot,
+            env: { ...process.env, VSCE_PAT: token }
+        });
 
         // Reload package.json to get the updated version after vsce publish
         const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -108,7 +115,7 @@ command += ` --pat ${token}`;
         console.log('\n📦 Fetching extension details...');
         console.log('   (This may take a moment as the marketplace processes the new version...)');
         try {
-            await getExtensionDetailsWithRetry(publisher, extensionName, token);
+            await getExtensionDetailsWithRetry(publisher, extensionName, publishedVersion);
         } catch (error) {
             console.log('\n⚠️  Could not fetch extension details yet, but extension was published successfully.');
             console.log('   The extension may take a few minutes to appear in the API.');
@@ -135,6 +142,13 @@ command += ` --pat ${token}`;
         console.error('\n' + '❌'.repeat(35));
         console.error('PUBLISHING FAILED!');
         console.error('❌'.repeat(35));
+        console.error(`\n${error.message || error}`);
+        if (error.stderr) {
+            const stderr = error.stderr.toString().trim();
+            if (stderr) {
+                console.error(`\n${stderr}`);
+            }
+        }
         console.error('\nPlease check the error messages above and try again.');
         process.exit(1);
     }
@@ -143,10 +157,10 @@ command += ` --pat ${token}`;
 /**
  * Gets extension details with retry logic (marketplace needs time to index)
  */
-async function getExtensionDetailsWithRetry(publisherId, extensionId, pat, maxRetries = 5, delayMs = 3000) {
+async function getExtensionDetailsWithRetry(publisherId, extensionId, expectedVersion, maxRetries = 5, delayMs = 3000) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            await getExtensionDetails(publisherId, extensionId, pat);
+            await getExtensionDetails(publisherId, extensionId, expectedVersion);
             return;
         } catch (error) {
             if (attempt < maxRetries) {
@@ -168,91 +182,27 @@ function sleep(ms) {
 }
 
 /**
- * Gets and displays extension details from the marketplace
- * Uses the publisher-specific API endpoint first, then falls back to extensionquery API
+ * Gets and displays extension details from the Marketplace extensionquery API.
+ * The API can continue returning the previous version while a new publication
+ * is being indexed, so verification requires the expected version.
  */
-function getExtensionDetails(publisherId, extensionId, pat) {
-    return new Promise((resolve, reject) => {
-        const auth = Buffer.from(`:${pat}`).toString('base64');
-
-        // Try the publisher-specific endpoint first
-        const options = {
-            hostname: 'marketplace.visualstudio.com',
-            path: `/_apis/public/gallery/publishers/${publisherId}/extensions/${extensionId}?api-version=7.1-preview&includeVersions=true&includeFiles=true`,
-            method: 'GET',
-            headers: {
-                'Authorization': `Basic ${auth}`,
-                'Accept': 'application/json'
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => { data += chunk; });
-            res.on('end', () => {
-                try {
-                    if (res.statusCode >= 200 && res.statusCode < 300) {
-                        const extension = JSON.parse(data);
-                        displayExtensionInfo(extension);
-                        resolve();
-                    } else {
-                        // Try extensionquery API as fallback
-                        getExtensionDetailsViaQuery(publisherId, extensionId)
-                            .then(() => resolve())
-                            .catch(() => {
-                                // Last resort: try public API without auth
-                                getExtensionDetailsPublic(publisherId, extensionId)
-                                    .then(() => resolve())
-                                    .catch(() => reject(new Error(`Failed to fetch extension details (HTTP ${res.statusCode})`)));
-                            });
-                    }
-                } catch (err) {
-                    // Try extensionquery API as fallback
-                    getExtensionDetailsViaQuery(publisherId, extensionId)
-                        .then(() => resolve())
-                        .catch(() => {
-                            // Last resort: try public API without auth
-                            getExtensionDetailsPublic(publisherId, extensionId)
-                                .then(() => resolve())
-                                .catch(() => reject(err));
-                        });
-                }
-            });
-        });
-
-        req.on('error', () => {
-            // Try extensionquery API as fallback
-            getExtensionDetailsViaQuery(publisherId, extensionId)
-                .then(() => resolve())
-                .catch(() => {
-                    // Last resort: try public API without auth
-                    getExtensionDetailsPublic(publisherId, extensionId)
-                        .then(() => resolve())
-                        .catch(() => reject(new Error('Failed to fetch extension details')));
-                });
-        });
-
-        req.end();
-    });
+function getExtensionDetails(publisherId, extensionId, expectedVersion) {
+    return getExtensionDetailsViaQuery(publisherId, extensionId, expectedVersion);
 }
 
 /**
  * Gets extension details using the extensionquery API endpoint
  * This is an alternative method documented in the Marketplace API
  */
-function getExtensionDetailsViaQuery(publisherId, extensionId) {
+function getExtensionDetailsViaQuery(publisherId, extensionId, expectedVersion) {
     return new Promise((resolve, reject) => {
         const payload = JSON.stringify({
             filters: [
                 {
                     criteria: [
                         {
-                            filterType: 7, // Publisher name
-                            value: publisherId
-                        },
-                        {
-                            filterType: 8, // Extension name
-                            value: extensionId
+                            filterType: 7, // Fully qualified extension ID
+                            value: `${publisherId}.${extensionId}`
                         }
                     ]
                 }
@@ -280,6 +230,12 @@ function getExtensionDetailsViaQuery(publisherId, extensionId) {
                         const result = JSON.parse(data);
                         if (result.results && result.results.length > 0 && result.results[0].extensions && result.results[0].extensions.length > 0) {
                             const extension = result.results[0].extensions[0];
+                            const hasExpectedVersion = Array.isArray(extension.versions) &&
+                                extension.versions.some(version => version.version === expectedVersion);
+                            if (!hasExpectedVersion) {
+                                reject(new Error(`Version ${expectedVersion} is not visible in Marketplace yet`));
+                                return;
+                            }
                             displayExtensionInfo(extension);
                             resolve();
                         } else {
@@ -296,43 +252,6 @@ function getExtensionDetailsViaQuery(publisherId, extensionId) {
 
         req.on('error', (err) => reject(err));
         req.write(payload);
-        req.end();
-    });
-}
-
-/**
- * Gets extension details from public API (fallback)
- */
-function getExtensionDetailsPublic(publisherId, extensionId) {
-    return new Promise((resolve, reject) => {
-        const options = {
-            hostname: 'marketplace.visualstudio.com',
-            path: `/_apis/public/gallery/publishers/${publisherId}/extensions/${extensionId}?api-version=7.1-preview&includeVersions=true`,
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => { data += chunk; });
-            res.on('end', () => {
-                try {
-                    if (res.statusCode >= 200 && res.statusCode < 300) {
-                        const extension = JSON.parse(data);
-                        displayExtensionInfo(extension);
-                        resolve();
-                    } else {
-                        reject(new Error(`HTTP ${res.statusCode}`));
-                    }
-                } catch (err) {
-                    reject(err);
-                }
-            });
-        });
-
-        req.on('error', (err) => reject(err));
         req.end();
     });
 }

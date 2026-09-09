@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -425,7 +425,7 @@
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
     "typescript": "^5.3.3"
