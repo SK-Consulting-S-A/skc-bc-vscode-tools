@@ -4,6 +4,9 @@
   "minimumExpectedRecall": 1.0,
   "minimumCleanRate": 1.0,
   "overrides": {
+    "agents": {
+      "article": "wire-all-three-agent-interfaces"
+    },
     "appsource": {
       "context": "AppSourceCop mandatoryAffixes is configured to ABC."
     },
@@ -11,7 +14,7 @@
       "article": "do-not-expose-sensitive-data-through-public-api"
     },
     "events": {
-      "article": "initialize-ishandled-to-false-before-publishing"
+      "article": "reset-ishandled-only-when-the-value-can-carry-over"
     },
     "interfaces": {
       "article": "set-defaultimplementation-on-enum"
@@ -27,6 +30,9 @@
     },
     "telemetry": {
       "article": "telemetry-event-id-stable-unique"
+    },
+    "testing": {
+      "article": "ui-handlers-in-tests"
     },
     "upgrade": {
       "article": "initvalue-does-not-update-existing-rows",

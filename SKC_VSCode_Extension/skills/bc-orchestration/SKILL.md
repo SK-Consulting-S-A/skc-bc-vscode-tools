@@ -29,7 +29,7 @@ The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Integration
 
-During the Review phase, route AL pr-diff and file-path reviews through the official vendored bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md. The bridge owns Entry → dispatch → DO JSON semantics; this orchestration skill must not duplicate its knowledge catalog. Keep index refresh best-effort, preserve exact verified references, and treat no-match or failed dispatch records as explicit outcomes. Continue to use the existing AL build, analyzer, security, AppSource, and dashboard review checks alongside BCQuality.
+During the Review phase, route AL pr-diff and file-path reviews through the official vendored bridge at skills/bcquality/skills/al-code-review/SKILL.md. The bridge owns Entry → dispatch → DO JSON semantics; this orchestration skill must not duplicate its knowledge catalog. Keep index refresh best-effort, preserve exact verified references, and treat no-match or failed dispatch records as explicit outcomes. Continue to use the existing AL build, analyzer, security, AppSource, and dashboard review checks alongside BCQuality.
 <!-- SKC BCQUALITY INTEGRATION: END -->
 
 ### Orchestration Phases

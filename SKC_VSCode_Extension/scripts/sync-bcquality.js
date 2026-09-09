@@ -12,13 +12,17 @@ const REQUIRED_FILES = [
     "skills/entry.md",
     "skills/read.md",
     "skills/do.md",
-    "skills/bcquality-al-review/SKILL.md",
     "tools/Build-KnowledgeIndex.ps1"
+];
+const REVIEW_SKILL_PATHS = [
+    "skills/al-code-review/SKILL.md",
+    "skills/bcquality-al-review/SKILL.md"
 ];
 const REQUIRED_DIRECTORIES = ["microsoft", "community", "custom"];
 const EXCLUDED_NAMES = new Set([".git", "node_modules", "__pycache__"]);
 const ROOT_ADAPTER_NAME = "SKILL.md";
-const ROOT_ADAPTER_CONTENT = `---
+function rootAdapterContent(reviewSkillPath) {
+    return `---
 name: bcquality
 description: Official Microsoft BCQuality review bridge for Business Central AL code quality checks.
 ---
@@ -28,7 +32,7 @@ description: Official Microsoft BCQuality review bridge for Business Central AL 
 # BCQuality
 
 Use the official BCQuality review bridge at
-skills/bcquality/skills/bcquality-al-review/SKILL.md. It owns the Entry -> dispatch -> DO
+skills/bcquality/${reviewSkillPath}. It owns the Entry -> dispatch -> DO
 workflow over the vendored Microsoft, community, and custom knowledge layers.
 
 For AL reviews, execute Entry first from skills/bcquality/skills/entry.md with the
@@ -40,6 +44,7 @@ The complete official plugin root is the directory containing plugin.json. The
 bundled root adapter is only a discovery entry point and does not duplicate the
 official knowledge catalog.
 `;
+}
 
 function parseArguments() {
     const args = process.argv.slice(2);
@@ -47,7 +52,7 @@ function parseArguments() {
         live: args.includes("--live"),
         source: valueAfter(args, "--source"),
         target: valueAfter(args, "--target"),
-        ref: valueAfter(args, "--ref") || "main",
+        ref: valueAfter(args, "--ref"),
         upstreamUrl: valueAfter(args, "--upstream-url")
     };
 }
@@ -94,6 +99,10 @@ function copyDirectory(source, target) {
 
 function validatePluginRoot(pluginRoot) {
     const missingFiles = REQUIRED_FILES.filter((relativePath) => !pathExists(path.join(pluginRoot, relativePath)));
+    const reviewSkillPath = findReviewSkillPath(pluginRoot);
+    if (!reviewSkillPath) {
+        missingFiles.push(`one of: ${REVIEW_SKILL_PATHS.join(", ")}`);
+    }
     const missingDirectories = REQUIRED_DIRECTORIES.filter((relativePath) => {
         try {
             return !fs.statSync(path.join(pluginRoot, relativePath)).isDirectory();
@@ -107,6 +116,9 @@ function validatePluginRoot(pluginRoot) {
 function validateSourceStructure(pluginRoot) {
     const requiredFiles = REQUIRED_FILES.filter((relativePath) => relativePath !== "knowledge-index.json");
     const missingFiles = requiredFiles.filter((relativePath) => !pathExists(path.join(pluginRoot, relativePath)));
+    if (!findReviewSkillPath(pluginRoot)) {
+        missingFiles.push(`one of: ${REVIEW_SKILL_PATHS.join(", ")}`);
+    }
     const missingDirectories = REQUIRED_DIRECTORIES.filter((relativePath) => {
         try {
             return !fs.statSync(path.join(pluginRoot, relativePath)).isDirectory();
@@ -115,6 +127,10 @@ function validateSourceStructure(pluginRoot) {
         }
     });
     return { valid: missingFiles.length === 0 && missingDirectories.length === 0, missingFiles, missingDirectories };
+}
+
+function findReviewSkillPath(pluginRoot) {
+    return REVIEW_SKILL_PATHS.find((relativePath) => pathExists(path.join(pluginRoot, relativePath)));
 }
 
 function describeValidation(pluginRoot, validation) {
@@ -160,8 +176,8 @@ function runKnowledgeIndexBuild(pluginRoot) {
 function createDefaultSourceCandidates(repoRoot) {
     return [
         process.env.SKC_BCQUALITY_SOURCE,
-        path.join(os.homedir(), ".vscode-insiders", "agent-plugins", "github.com", "microsoft", "BCQuality"),
-        path.join(repoRoot, "skills", "bcquality")
+        path.join(repoRoot, "skills", "bcquality"),
+        path.join(os.homedir(), ".vscode-insiders", "agent-plugins", "github.com", "microsoft", "BCQuality")
     ].filter(Boolean).map((candidate) => path.resolve(candidate));
 }
 
@@ -190,8 +206,6 @@ function syncPlugin(source, target) {
     removeDirectory(staging);
     copyDirectory(source, staging);
 
-    const existingAdapter = path.join(target, ROOT_ADAPTER_NAME);
-    const adapterContent = pathExists(existingAdapter) ? fs.readFileSync(existingAdapter, "utf8") : undefined;
     removeDirectory(target);
     try {
         fs.renameSync(staging, target);
@@ -204,24 +218,60 @@ function syncPlugin(source, target) {
         copyDirectory(staging, target);
         removeDirectory(staging);
     }
-    fs.writeFileSync(
-        path.join(target, ROOT_ADAPTER_NAME),
-        adapterContent?.includes("SKC BCQuality root adapter") ? adapterContent : ROOT_ADAPTER_CONTENT,
-        "utf8"
-    );
+    fs.writeFileSync(path.join(target, ROOT_ADAPTER_NAME), rootAdapterContent(findReviewSkillPath(source)), "utf8");
 }
 
 function ensureRootAdapter(target) {
     const adapterPath = path.join(target, ROOT_ADAPTER_NAME);
-    if (!pathExists(adapterPath) || !fs.readFileSync(adapterPath, "utf8").includes("SKC BCQuality root adapter")) {
+    const reviewSkillPath = findReviewSkillPath(target) || REVIEW_SKILL_PATHS[0];
+    const expectedContent = rootAdapterContent(reviewSkillPath);
+    if (!pathExists(adapterPath) || fs.readFileSync(adapterPath, "utf8") !== expectedContent) {
         fs.mkdirSync(target, { recursive: true });
-        fs.writeFileSync(adapterPath, ROOT_ADAPTER_CONTENT, "utf8");
+        fs.writeFileSync(adapterPath, expectedContent, "utf8");
     }
 }
 
-function buildUpstreamUrl(options) {
-    return options.upstreamUrl || process.env.SKC_BCQUALITY_UPSTREAM_URL ||
-        `https://github.com/microsoft/BCQuality/archive/refs/heads/${encodeURIComponent(options.ref)}.tar.gz`;
+function fetchLatestTagName() {
+    return new Promise((resolve, reject) => {
+        const request = https.get("https://api.github.com/repos/microsoft/BCQuality/tags?per_page=1", {
+            headers: {
+                Accept: "application/vnd.github+json",
+                "User-Agent": "SKC-AL-Tools-BCQuality-Sync"
+            }
+        }, (response) => {
+            let body = "";
+            response.setEncoding("utf8");
+            response.on("data", (chunk) => { body += chunk; });
+            response.on("end", () => {
+                if (response.statusCode !== 200) {
+                    reject(new Error(`GitHub tags API returned HTTP ${response.statusCode}`));
+                    return;
+                }
+                try {
+                    const tags = JSON.parse(body);
+                    const name = Array.isArray(tags) ? tags[0]?.name : undefined;
+                    if (typeof name !== "string" || !name) {
+                        reject(new Error("GitHub tags API did not return a release tag."));
+                        return;
+                    }
+                    resolve(name);
+                } catch (error) {
+                    reject(new Error(`Could not parse GitHub tags response: ${error instanceof Error ? error.message : String(error)}`));
+                }
+            });
+        });
+        request.setTimeout(30000, () => request.destroy(new Error("GitHub tags API request timed out after 30000 ms")));
+        request.on("error", reject);
+    });
+}
+
+async function buildUpstreamUrl(options) {
+    if (options.upstreamUrl || process.env.SKC_BCQUALITY_UPSTREAM_URL) {
+        return options.upstreamUrl || process.env.SKC_BCQUALITY_UPSTREAM_URL;
+    }
+
+    const tag = options.ref || await fetchLatestTagName();
+    return `https://github.com/microsoft/BCQuality/archive/refs/tags/${encodeURIComponent(tag)}.tar.gz`;
 }
 
 function download(url, targetPath) {
@@ -303,9 +353,9 @@ async function main() {
 
     try {
         if (options.live) {
-            const url = buildUpstreamUrl(options);
-            console.log(`[BCQuality] Downloading explicit live update from ${url}.`);
             try {
+                const url = await buildUpstreamUrl(options);
+                console.log(`[BCQuality] Downloading explicit live update from ${url}.`);
                 const upstream = await fetchUpstream(url);
                 source = upstream.root;
                 tempRoot = upstream.tempRoot;

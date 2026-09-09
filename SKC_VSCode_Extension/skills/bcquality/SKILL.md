@@ -8,7 +8,7 @@ description: Official Microsoft BCQuality review bridge for Business Central AL 
 # BCQuality
 
 Use the official BCQuality review bridge at
-skills/bcquality/skills/bcquality-al-review/SKILL.md. It owns the Entry -> dispatch -> DO
+skills/bcquality/skills/al-code-review/SKILL.md. It owns the Entry -> dispatch -> DO
 workflow over the vendored Microsoft, community, and custom knowledge layers.
 
 For AL reviews, execute Entry first from skills/bcquality/skills/entry.md with the
