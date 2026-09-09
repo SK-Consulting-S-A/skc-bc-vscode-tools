@@ -2,6 +2,11 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
+## [3.0.6] - 2026-09-09
+
+### Fixed
+- Prevented global content synchronization from overwriting the SKC/Azure-only translator agent and orchestration workflow.
+
 ## [3.0.5] - 2026-09-09
 
 ### Fixed
