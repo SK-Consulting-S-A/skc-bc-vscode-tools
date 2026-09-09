@@ -49,9 +49,15 @@ function mergeSection(filePath, section, anchors) {
     );
     const withoutOldSection = original.replace(markerPattern, "");
     const anchor = anchors.find((candidate) => withoutOldSection.includes(candidate));
-    const updated = anchor
-        ? withoutOldSection.replace(anchor, `${section}\n\n${anchor}`)
-        : `${withoutOldSection.trimEnd()}\n\n${section}\n`;
+    let updated;
+    if (anchor) {
+        const anchorIndex = withoutOldSection.indexOf(anchor);
+        const prefix = withoutOldSection.slice(0, anchorIndex).replace(/\n+$/, "\n\n\n");
+        const suffix = withoutOldSection.slice(anchorIndex);
+        updated = `${prefix}${section}\n\n${suffix}`;
+    } else {
+        updated = `${withoutOldSection.trimEnd()}\n\n${section}\n`;
+    }
 
     if (updated !== original) {
         fs.writeFileSync(filePath, updated, "utf8");
