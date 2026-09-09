@@ -74,6 +74,12 @@ If the user's original message already clearly states the task type and scope, s
 2. Read `AppSourceCop.json` for: `mandatoryAffixes` (object suffix).
 3. Use these values in all subsequent subagent instructions.
 
+<!-- SKC BCQUALITY INTEGRATION: START -->
+## BCQuality Review Gate
+
+The Review phase must invoke bc-reviewer with the actual pr-diff or file-path inputs and require the official BCQuality bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md (the installed plugin root is the directory containing plugin.json). The reviewer must refresh the knowledge index best-effort, execute Entry before any dispatched action skill, and return the official DO JSON contract unchanged. Orchestration must preserve exact verified references, keep no-match/failed dispatch records visible, and never accept fabricated citations. BCQuality findings are additive to the normal compiler, analyzer, security, AppSource, and dashboard-specialist review.
+<!-- SKC BCQUALITY INTEGRATION: END -->
+
 ## Orchestration Phases
 
 ### Phase 0 — CAL-to-AL Migration

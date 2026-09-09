@@ -1,0 +1,18 @@
+{
+  "sqlServer": ".\\NAVDEMO",
+  "nav2017BaseDb": "NAV2017_BASE",
+  "nav2017CustomerDb": "NAV2017 CUSTOMER",
+  "exportRoot": "C:\\NAV2017Upgrade",
+  "bcWorkspace": "C:\\BC2027Extension",
+  "bcTargetVersion": "BC27",
+  "appName": "MyCompany Extension",
+  "appPublisher": "MyCompany",
+  "appIdRangeStart": 84000,
+  "appIdRangeEnd": 84999,
+  "customObjectRangeStart": 50000,
+  "customObjectRangeEnd": 59999,
+  "prefix": "021SKC",
+  "finsqlPath": "C:\\Program Files (x86)\\Microsoft Dynamics NAV\\100\\RoleTailored Client\\finsql.exe",
+  "modelToolsPath": "C:\\Program Files (x86)\\Microsoft Dynamics NAV\\100\\RoleTailored Client\\Microsoft.Dynamics.Nav.Model.Tools.psd1",
+  "txt2alPath": ""
+}

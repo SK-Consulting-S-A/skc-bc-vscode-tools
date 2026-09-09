@@ -1,8 +1,8 @@
 # SKC AL Tools - Extension Summary
 
-**Marketplace (public):** [https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools)  
-**Repository (public):** [https://github.com/SK-Consulting-S-A/skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools)  
-**Issues:** [https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools/issues)  
+**Marketplace (public):** [https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools)
+**Repository (public):** [https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools)
+**Issues:** [https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues)
 **Homepage:** [https://www.skc.lu](https://www.skc.lu)
 
 ## Overview
@@ -176,6 +176,6 @@ All settings are prefixed with `skc.*`:
 ---
 
 **Publisher:** SK Consulting SA  
-**Version:** 1.0.0  
+**Version:** 2.5.1
 **License:** [End-User License Agreement (EULA)](https://skc.lu/eula/)
 

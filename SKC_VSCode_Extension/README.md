@@ -2,12 +2,13 @@
 
 AL tools for Business Central from [SK Consulting S.A.](https://www.skc.lu): Copilot AI agents, workspace presets, recommended extensions, and XLF translation.
 
-Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-internal-tools](https://github.com/SK-Consulting-S-A/skc-bc-internal-tools).
+Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools).
 
 ## What you get
 
 - **@bc in Copilot Chat** — type `@bc how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
-- **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
+- **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
+- **BCQuality reviews** — the official Microsoft BCQuality plugin snapshot is bundled offline and used additively by the reviewer/orchestrator. Live refresh is explicit or opt-in.
 - **Workspace presets** — AL settings, CodeCop and UICop, recommended extensions, and MCP servers applied with **SKC: Apply Presets**.
 - **SKC Dark** — color theme from the [skc.lu](https://www.skc.lu) dark design system (applied with presets; also in the Color Theme picker).
 - **XLF translation** — sidebar to preview and translate `.g.xlf` files with Azure AI.
@@ -19,6 +20,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - `presets/extensions.json` — extension pack to install
 - `themes/skc-dark.json` — **SKC Dark** color theme (skc.lu palette)
 - `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
+- `skills/bcquality/` — official BCQuality plugin snapshot, knowledge index, layers, bridge, and tools
 - `agents/` — BC Copilot subagents
 - **Translations** view — `.g.xlf` files and Azure AI translation
 
@@ -74,6 +76,7 @@ Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 | **SKC: Apply Presets** | Install extensions and apply settings and MCP servers |
 | **SKC: Install Copilot Skills** | Install bundled skills (`~/.copilot/skills/`) |
 | **SKC: Install Copilot Agents** | Install BC subagents (`~/.copilot/agents/`) |
+| **SKC: Update BCQuality Snapshot** | Refresh the bundled BCQuality snapshot offline or explicitly from official upstream |
 | **SKC: Configure MCP Auth** | Store GitHub token and Context7 API key |
 | **SKC: Configure Translation URL** | Set Azure Translation Function endpoint |
 | **Translate File** | Translate the selected XLF file |
@@ -93,3 +96,5 @@ npx vsce package
 ```
 
 This is a **public** Marketplace listing. See [PUBLISHING.md](PUBLISHING.md).
+
+BCQuality live downloads are disabled by default. Set `skc.bcQualityUpdateOnApply` to `true` only when an online refresh during preset application is desired; otherwise the bundled snapshot and validated offline fallback are used.

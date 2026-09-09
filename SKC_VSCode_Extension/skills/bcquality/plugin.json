@@ -1,0 +1,21 @@
+{
+  "name": "bcquality",
+  "description": "Quality skills and knowledge for Business Central development. Exposes a review bridge skill that drives the BCQuality Entry protocol over the installed knowledge base.",
+  "version": "0.1.0",
+  "author": {
+    "name": "microsoft/BCQuality",
+    "url": "https://github.com/microsoft/BCQuality"
+  },
+  "repository": "https://github.com/microsoft/BCQuality",
+  "license": "MIT",
+  "keywords": [
+    "bc",
+    "al",
+    "business-central",
+    "code-review",
+    "quality"
+  ],
+  "skills": [
+    "./skills/bcquality-al-review/"
+  ]
+}

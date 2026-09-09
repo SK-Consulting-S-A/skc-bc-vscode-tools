@@ -25,6 +25,12 @@ After running setup, restart Cursor to pick up the new agents and rule.
 
 The orchestrator rule (`bc-orchestrator.mdc`) teaches the main agent to delegate BC tasks to 8 specialist subagents. Each subagent consults BC Knowledge MCP specialists for guidance, then converts legacy code, researches, implements, tests, reviews, or translates code.
 
+<!-- SKC BCQUALITY INTEGRATION: START -->
+## BCQuality Review Integration
+
+During the Review phase, route AL pr-diff and file-path reviews through the official vendored bridge at skills/bcquality/skills/bcquality-al-review/SKILL.md. The bridge owns Entry → dispatch → DO JSON semantics; this orchestration skill must not duplicate its knowledge catalog. Keep index refresh best-effort, preserve exact verified references, and treat no-match or failed dispatch records as explicit outcomes. Continue to use the existing AL build, analyzer, security, AppSource, and dashboard review checks alongside BCQuality.
+<!-- SKC BCQUALITY INTEGRATION: END -->
+
 ### Orchestration Phases
 
 **CAL-to-AL migration** (triggered by "convert", "migrate", "upgrade from NAV", "CAL to AL", or presence of `.txt`/`.DELTA` files):

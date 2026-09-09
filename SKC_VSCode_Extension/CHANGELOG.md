@@ -2,6 +2,18 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
+## [2.5.1] - 2026-09-09
+
+### Added
+- Bundled the official Microsoft BCQuality plugin snapshot, including its knowledge index, layers, bridge, and validation tools.
+- Added the **SKC: Update BCQuality Snapshot** command with bundled offline refresh and explicit live-update choices.
+- Added additive BCQuality review integration to the reviewer and orchestration agents/skills while preserving existing review paths.
+- Restored standalone first-party migration, document, presentation, branding, and UI skill bundles.
+
+### Changed
+- Corrected repository and issue links to `SK-Consulting-S-A/skc-bc-vscode-tools`.
+- Live BCQuality refresh during preset application is opt-in and defaults to off; offline fallback remains available.
+
 ## [2.5.0] - 2026-09-08
 
 ### Added
