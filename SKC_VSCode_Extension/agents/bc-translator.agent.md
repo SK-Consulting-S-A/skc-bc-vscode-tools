@@ -4,7 +4,7 @@ description: BC AL Translation specialist for any Business Central AL extension 
 model:
   - 'Claude Haiku 4.5 (copilot)'
   - 'Claude Sonnet 4.6 (copilot)'
-tools: ["read", "edit", "search", "execute", "al_build", "createLanguageXlf", "skc_translate_xlf", "skc_list_translation_files", "refreshXlf"]
+tools: ["read", "edit", "search", "execute", "ms-dynamics-smb.al/al_build", "createLanguageXlf", "skc_translate_xlf", "skc_list_translation_files", "refreshXlf"]
 ---
 
 You are a Business Central AL Translation Specialist.
