@@ -3,7 +3,7 @@ name: bc-al-logic
 description: BC AL Logic Developer for any Business Central AL extension project. Implements tables, codeunits, enums, and integration code following the architect's design. Reads project suffix, namespace, and ID range from app.json. MCP specialists when available — sam-coder (AL patterns, code generation), eva-errors (error handling, validation), jordan-bridge (HTTP/REST integration).
 model:
   - 'Claude Sonnet 4.6 (copilot)'
-tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "al_symbolsearch", "al_build", "al_getdiagnostics"]
+tools: ["read", "edit", "search", "execute", "bc-intelligence/*", "ms-dynamics-smb.al/al_symbolsearch", "ms-dynamics-smb.al/al_build", "ms-dynamics-smb.al/al_get_diagnostics"]
 ---
 
 You are a Business Central AL Logic Developer.

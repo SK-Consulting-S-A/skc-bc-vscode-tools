@@ -80,6 +80,7 @@ When the request involves creating or implementing a complete BC feature (new ob
    - Test coverage
    - Review findings (critical/warning/suggestion)
 
+
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ### BCQuality review contract
 

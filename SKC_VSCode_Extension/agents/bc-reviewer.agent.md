@@ -4,7 +4,7 @@ description: BC AL Reviewer for any Business Central AL extension project. Revie
 model:
   - 'Claude Opus 4.6 (copilot)'
   - 'Claude Sonnet 4.6 (copilot)'
-tools: ["execute/runInTerminal", "read", "edit", "search", "web", "bc-intelligence/*", "al_symbolsearch", "al_build", "al_downloadsymbols", "al_getdiagnostics"]
+tools: ["execute/runInTerminal", "read", "edit", "search", "web", "bc-intelligence/*", "ms-dynamics-smb.al/al_symbolsearch", "ms-dynamics-smb.al/al_build", "ms-dynamics-smb.al/al_downloadsymbols", "ms-dynamics-smb.al/al_get_diagnostics"]
 ---
 
 You are a Business Central AL Code Reviewer.
@@ -17,6 +17,7 @@ You are a Business Central AL Code Reviewer.
 2. Run automated analysis via MCP tool `analyze_al_code` if available (pass `analysis_type: "comprehensive"`).
 3. Consult MCP specialists if available: `roger-reviewer` for code quality, `seth-security` for security, `morgan-market` for AppSource readiness.
 4. Use `get_errors` to check for any existing compiler or analyzer diagnostics.
+
 
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Integration

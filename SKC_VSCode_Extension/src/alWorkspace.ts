@@ -37,7 +37,7 @@ export async function searchLocalAlSymbols(
     const toolToken = (request as vscode.ChatRequest & { toolInvocationToken?: unknown }).toolInvocationToken;
     try {
         const result = await lm.invokeTool(
-            "al_symbolsearch",
+            "ms-dynamics-smb.al/al_symbolsearch",
             {
                 toolInvocationToken: toolToken,
                 input: {
