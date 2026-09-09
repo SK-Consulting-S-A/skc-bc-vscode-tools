@@ -26,7 +26,7 @@ function stripXmlMarkup(value: string): string {
         .trim();
 }
 
-function hasSourceText(unitContent: string): boolean {
+export function hasTranslatableSource(unitContent: string): boolean {
     const match = SOURCE_REGEX.exec(unitContent);
     return stripXmlMarkup(match?.[1] ?? "").length > 0;
 }
@@ -86,7 +86,7 @@ export function getTranslationStatsFromContent(content: string): { total: number
 
     TRANS_UNIT_REGEX.lastIndex = 0;
     while ((match = TRANS_UNIT_REGEX.exec(content)) !== null) {
-        if (!hasSourceText(match[1] ?? "")) {
+        if (!hasTranslatableSource(match[1] ?? "")) {
             continue;
         }
 

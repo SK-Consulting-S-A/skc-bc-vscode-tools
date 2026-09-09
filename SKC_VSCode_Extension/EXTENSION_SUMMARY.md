@@ -41,32 +41,34 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 3. Click the play button next to any `.g.xlf` file to translate it
 4. Select the target language and the translated file is saved automatically
 
-### 2. **Installs AL Development Extensions** (17 extensions)
+### 2. **Installs AL Development Extensions**
 
-The extension automatically installs a comprehensive set of VS Code extensions required for Business Central AL development:
+The extension automatically installs the configured set of VS Code extensions required for Business Central AL development:
 
 #### Core AL Extensions:
 - **ms-dynamics-smb.al** - Official Microsoft AL Language extension
-- **waldo.al-extension-pack** - AL Extension Pack by Waldo
-- **365businessdevelopment.365businessdev-alget** - AL development utilities
-
-#### AL Productivity Tools:
+- **davidfeldhoff.al-codeactions** - AL code actions
 - **rasmus.al-var-helper** - AL variable helper
 - **BartPermentier.al-toolbox** - AL toolbox utilities
-- **andrzejzwierzchowski.al-code-outline** - Code outline for AL files
+- **andrzejzwierzchowski.al-code-outline** - AL code outline
 - **wbrakowski.al-navigator** - AL code navigator
+- **waldo.crs-al-language-extension** - AL language utilities
+- **vjeko.vjeko-al-objid** - AL object ID helper
+
+#### AL Productivity Tools:
+- **ms-vscode.vscode-typescript-next** - TypeScript support
+- **redhat.vscode-xml** - XML language support
 
 #### Supporting Extensions:
 - **usernamehw.errorlens** - Inline error highlighting
 - **GitHub.vscode-pull-request-github** - GitHub PR integration
-- **vstirbu.vscode-mermaid-preview** - Mermaid diagram preview
 - **ms-azuretools.vscode-azurefunctions** - Azure Functions support
 - **ms-azuretools.vscode-azureappservice** - Azure App Service support
-- **ms-vscode.azure-account** - Azure account management
-- **ms-vscode.vscode-typescript-next** - TypeScript support
-- **redhat.vscode-xml** - XML language support
 - **ms-vscode.PowerShell** - PowerShell support
-- **idered.npm** - npm integration
+- **ms-azuretools.vscode-azureresourcegroups** - Azure resource group support
+- **vscode-icons-team.vscode-icons** - File icons
+- **ms-python.python** - Python support
+- **ms-python.debugpy** - Python debugging
 
 ### 2. **Configures MCP Servers** (6 servers)
 
