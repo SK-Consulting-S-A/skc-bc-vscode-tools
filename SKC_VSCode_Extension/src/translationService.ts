@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as https from "https";
 import * as http from "http";
+import { getTranslationStatsFromContent } from "./xlfStatus";
 
 export interface TranslationResult {
     translatedContent: string;
@@ -281,11 +282,7 @@ export async function createTranslationFile(
  */
 export async function getTranslationStats(filePath: string): Promise<{ total: number; translated: number }> {
     const content = await fs.readFile(filePath, "utf8");
-    const transUnitMatches = content.match(/<trans-unit/g);
-    const total = transUnitMatches ? transUnitMatches.length : 0;
-    const translatedMatches = content.match(/<target[^>]*\sstate\s*=\s*["']translated["'][^>]*>/g);
-    const translated = translatedMatches ? translatedMatches.length : 0;
-    return { total, translated };
+    return getTranslationStatsFromContent(content);
 }
 
 /**

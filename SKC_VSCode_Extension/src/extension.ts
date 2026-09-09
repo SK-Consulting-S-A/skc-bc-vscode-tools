@@ -211,8 +211,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
             const document = await workspace.openTextDocument(item.resourceUri);
             await window.showTextDocument(document);
             await commands.executeCommand("editor.actions.findWithArgs", {
-              searchString: 'state="needs-translation"',
-              isRegex: false,
+              searchString: '(?:state\\s*=\\s*["\'](?:needs-translation|needs-review-translation|needs-adaptation|new)["\']|\\[NAB\\s*:\\s*(?:NOT\\s+TRANSLATED|SUGGESTION|REVIEW)\\]|<target(?:\\s[^>]*)?\\s*/>|<target(?:\\s[^>]*)?>\\s*</target>)',
+              isRegex: true,
               matchWholeWord: false,
               isCaseSensitive: false
             });

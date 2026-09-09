@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { getTranslationStatsFromContent, getTranslationUnitStatus, isCompletedTranslation } from "./xlfStatus";
 
 export interface TranslationStats {
     total: number;
@@ -82,13 +83,14 @@ export class TransUnitItem extends vscode.TreeItem {
         public readonly source: string,
         public readonly target: string,
         public readonly state: string,
-        public readonly parentFile: TargetLanguageItem
+        public readonly parentFile: TargetLanguageItem,
+        translatedOverride?: boolean
     ) {
         // Truncate source for label if too long
         const displaySource = source.length > 50 ? source.substring(0, 47) + "..." : source;
         super(displaySource, vscode.TreeItemCollapsibleState.None);
 
-        const isTranslated = state === "translated";
+        const isTranslated = translatedOverride ?? isCompletedTranslation(target, state);
         const displayTarget = target || "(empty)";
         const truncatedTarget = displayTarget.length > 50 ? displayTarget.substring(0, 47) + "..." : displayTarget;
 
@@ -358,16 +360,7 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
     private async getTranslationStats(filePath: string): Promise<TranslationStats> {
         const content = await fs.readFile(filePath, "utf8");
-
-        // Count total trans-units
-        const transUnitMatches = content.match(/<trans-unit/g);
-        const total = transUnitMatches ? transUnitMatches.length : 0;
-
-        // Count translated units (target with state="translated")
-        const translatedMatches = content.match(/<target[^>]*\sstate\s*=\s*["']translated["'][^>]*>/g);
-        const translated = translatedMatches ? translatedMatches.length : 0;
-
-        return { total, translated };
+        return getTranslationStatsFromContent(content);
     }
 
     /**
@@ -393,37 +386,23 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
                 const unitContent = match[2] || "";
 
                 // Extract source content
-                const sourceMatch = unitContent.match(/<source>([\s\S]*?)<\/source>/);
+                const sourceMatch = unitContent.match(/<source\b[^>]*>([\s\S]*?)<\/source>/);
                 const source = sourceMatch ? sourceMatch[1].trim() : "";
 
-                // Extract target content and state - handle both self-closing and regular tags
-                let target = "";
-                let state = "";
-                
-                // First try to match a regular target tag with content
-                const targetMatch = unitContent.match(/<target([^>]*)>([\s\S]*?)<\/target>/);
-                if (targetMatch) {
-                    const targetAttrs = targetMatch[1] || "";
-                    target = targetMatch[2].trim();
-                    
-                    // Extract state from attributes
-                    const stateMatch = targetAttrs.match(/state\s*=\s*["']([^"']+)["']/);
-                    state = stateMatch ? stateMatch[1] : "";
-                } else {
-                    // Check for empty/self-closing target
-                    const emptyTargetMatch = unitContent.match(/<target([^>]*)\/>/);
-                    if (emptyTargetMatch) {
-                        const targetAttrs = emptyTargetMatch[1] || "";
-                        const stateMatch = targetAttrs.match(/state\s*=\s*["']([^"']+)["']/);
-                        state = stateMatch ? stateMatch[1] : "";
-                    }
+                // NAB ignores units without source text because there is nothing translatable.
+                if (!source) {
+                    continue;
                 }
+
+                const status = getTranslationUnitStatus(unitContent);
+                const target = status.targetText;
+                const state = status.state;
 
                 // Only show units that need translation:
                 // - state is NOT "translated"
                 // - OR target is empty
-                const isTranslated = state === "translated" && target !== "";
-                
+                const isTranslated = status.isTranslated;
+
                 if (isTranslated) {
                     skippedCount++;
                     continue;
@@ -431,7 +410,7 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
                 // Only add up to MAX_UNITS_IN_TREE
                 if (count < MAX_UNITS_IN_TREE) {
-                    items.push(new TransUnitItem(unitId, source, target, state, targetFile));
+                    items.push(new TransUnitItem(unitId, source, target, state, targetFile, isTranslated));
                     count++;
                 }
             }

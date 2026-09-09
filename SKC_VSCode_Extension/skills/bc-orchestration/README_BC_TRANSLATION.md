@@ -88,19 +88,19 @@ Subagent automatically:
 al_build
 
 # Step 2: Create target language file
-createLanguageXlf(
-  generatedXlfFilePath: "Translations/MyApp.g.xlf",
-  targetLanguageCode: "fr-FR"
-)
-
-# Step 3: Translate
-skc_translate_xlf(
+createXlfLanguage({
   sourceFilePath: "Translations/MyApp.g.xlf",
   targetLanguage: "fr-FR"
-)
+})
+
+# Step 3: Translate
+translateXlf({
+  sourceFilePath: "Translations/MyApp.g.xlf",
+  targetLanguage: "fr-FR"
+})
 
 # Step 4: Check status
-skc_list_translation_files()
+listTranslations()
 
 # Step 5: Rebuild with translations
 al_build
@@ -299,7 +299,7 @@ If you don't have Azure Translation:
 
 ### 1. Create XLF File:
 ```
-createLanguageXlf → Creates empty template
+createXlfLanguage (`skc_create_xlf_language`) → Creates a target template
 ```
 
 ### 2. Edit XLF Manually:
@@ -382,9 +382,9 @@ Users can now select:
 ### Tools Available:
 - **bc-translator** - Complete workflow subagent
 - **al_build** - Generate XLF and package
-- **createLanguageXlf** - Create language files
-- **skc_translate_xlf** - Auto-translate
-- **skc_list_translation_files** - Check progress
+- **createXlfLanguage** (`skc_create_xlf_language`) - Create language files
+- **translateXlf** (`skc_translate_xlf`) - Auto-translate via Azure
+- **listTranslations** (`skc_list_translation_files`) - Check progress
 
 ### Your Extension is Translation-Ready When:
 - ✅ GenerateCaptions in features
