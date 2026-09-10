@@ -95,13 +95,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
     void (async () => {
       const [
         { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass },
-        { translateFile, createTranslationFile },
+        { translateFile, createTranslationFile, configureTranslationState },
         { registerTranslationTools }
       ] = await Promise.all([
         import("./translationsView"),
         import("./translationService"),
         import("./translationTools")
       ]);
+
+      await configureTranslationState(context.workspaceState);
 
       const translationsProvider = new TranslationsProvider();
       const translationsView = window.createTreeView("skc.translationsView", {
