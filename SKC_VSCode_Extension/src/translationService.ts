@@ -25,6 +25,12 @@ export interface TrackedTranslationJob {
     targetFilePath: string;
     status: string;
     updatedAt: number;
+    progress?: {
+        completed?: number;
+        total?: number;
+        remaining?: number;
+        percentage?: number;
+    };
     result?: TranslationResult;
 }
 
@@ -57,6 +63,10 @@ class RestartTranslationError extends Error {
  */
 export function computeSourceHash(content: string): string {
     return crypto.createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+export function getTrackedJobs(): TrackedTranslationJob[] {
+    return Array.from(trackedJobs.values()).map((job) => ({ ...job }));
 }
 
 /** Load tracked jobs from VS Code workspace state so polling can resume after reload. */
@@ -92,6 +102,29 @@ export function setTrackedJob(job: TrackedTranslationJob): void {
 export function removeTrackedJob(targetFilePath: string, targetLanguage: string): void {
     trackedJobs.delete(getJobKey(targetFilePath, targetLanguage));
     persistTrackedJobs();
+}
+
+export async function refreshTrackedJobStatuses(channel?: vscode.OutputChannel): Promise<TrackedTranslationJob[]> {
+    const jobs = getTrackedJobs();
+    await Promise.all(jobs.map(async (job) => {
+        try {
+            const response = await httpGet(job.statusUrl) as Record<string, unknown>;
+            job.status = String(response.status ?? job.status);
+            const progress = response.progress as TrackedTranslationJob["progress"] | undefined;
+            if (progress) job.progress = progress;
+            job.updatedAt = Date.now();
+            setTrackedJob(job);
+        } catch (error) {
+            channel?.appendLine(`[SKC] Could not refresh job ${job.jobId}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }));
+    return getTrackedJobs();
+}
+
+export async function cancelTrackedJob(job: TrackedTranslationJob, channel: vscode.OutputChannel): Promise<boolean> {
+    const cancelled = await cancelAzureJob(job.statusUrl, channel);
+    if (cancelled) removeTrackedJob(job.targetFilePath, job.targetLanguage);
+    return cancelled;
 }
 
 interface AppJson {
@@ -437,7 +470,8 @@ export async function getTranslationStats(filePath: string): Promise<{ total: nu
 export async function translateFileHeadless(
     fileUri: vscode.Uri,
     targetLanguage: string,
-    channel: vscode.OutputChannel
+    channel: vscode.OutputChannel,
+    cancellationToken?: vscode.CancellationToken
 ): Promise<TranslateFileHeadlessResult> {
     const cfg = vscode.workspace.getConfiguration("skc");
     const azureFunctionUrl = cfg.get<string>("azureFunctionUrl", "").trim();
@@ -486,7 +520,8 @@ export async function translateFileHeadless(
             channel,
             currentSourceHash,
             outputFileName,
-            outputPath
+            outputPath,
+            cancellationToken
         );
 
         if (!result || !result.translatedContent) {
@@ -639,6 +674,37 @@ export async function deleteAzureJob(statusUrl: string, channel: vscode.OutputCh
     }
 }
 
+/** Request graceful cancellation of an active Azure job. */
+export async function cancelAzureJob(statusUrl: string, channel: vscode.OutputChannel): Promise<boolean> {
+    try {
+        const urlObj = new URL(statusUrl);
+        urlObj.searchParams.set("cancel", "true");
+        const cancelUrl = urlObj.toString();
+        channel.appendLine(`[SKC] Requesting graceful Azure job cancellation...`);
+        const isHttps = cancelUrl.startsWith("https");
+        const httpModule = isHttps ? https : http;
+        const response = await new Promise<{ statusCode: number; body: string }>((resolve, reject) => {
+            const req = httpModule.request(cancelUrl, { method: "POST", timeout: 15000 }, (res) => {
+                let data = "";
+                res.on("data", (chunk) => { data += chunk; });
+                res.on("end", () => resolve({ statusCode: res.statusCode ?? 0, body: data }));
+            });
+            req.on("error", reject);
+            req.on("timeout", () => { req.destroy(); reject(new Error("Cancellation request timed out")); });
+            req.end();
+        });
+        if (response.statusCode === 200 || response.statusCode === 404) {
+            channel.appendLine(`[SKC] Azure job cancellation requested (status ${response.statusCode})`);
+            return true;
+        }
+        channel.appendLine(`[SKC] WARNING: Azure job cancellation returned status ${response.statusCode}: ${response.body}`);
+        return false;
+    } catch (error) {
+        channel.appendLine(`[SKC] WARNING: Failed to cancel Azure job: ${error instanceof Error ? error.message : String(error)}`);
+        return false;
+    }
+}
+
 /**
  * Poll a job status URL until the job completes or fails.
  * Returns the final job result with translatedContent, translatedCount, syncInfo.
@@ -647,7 +713,8 @@ async function pollJobUntilComplete(
     statusUrl: string,
     channel: vscode.OutputChannel,
     targetFilePath?: string,
-    targetLanguage?: string
+    targetLanguage?: string,
+    cancellationToken?: vscode.CancellationToken
 ): Promise<TranslationResult> {
     const POLL_INTERVAL_MS = 3000;
     const configuredMinutes = vscode.workspace
@@ -662,6 +729,13 @@ async function pollJobUntilComplete(
     channel.appendLine(`[SKC] Async job created — polling for result...`);
 
     while (Date.now() - started < MAX_WAIT_MS) {
+        if (cancellationToken?.isCancellationRequested) {
+            if (targetFilePath && targetLanguage) {
+                await cancelAzureJob(statusUrl, channel);
+                removeTrackedJob(targetFilePath, targetLanguage);
+            }
+            throw new Error("Translation cancelled; the Azure job cleanup was requested.");
+        }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
 
         const statusResponse = await httpGet(statusUrl) as Record<string, unknown>;
@@ -672,6 +746,7 @@ async function pollJobUntilComplete(
             const currentJob = getTrackedJob(targetFilePath, targetLanguage);
             if (currentJob) {
                 currentJob.status = status;
+                currentJob.progress = progress as TrackedTranslationJob["progress"] | undefined;
                 currentJob.updatedAt = Date.now();
                 setTrackedJob(currentJob);
             }
@@ -730,7 +805,7 @@ async function pollJobUntilComplete(
 
         if (resumeChoice === "Resume existing job") {
             channel.appendLine(`[SKC] Resuming polling for existing job instead of creating a duplicate.`);
-            return pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage);
+            return pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage, cancellationToken);
         }
 
         if (resumeChoice === "Discard old job and start fresh") {
@@ -762,8 +837,12 @@ async function callAzureFunctionWithSync(
     channel: vscode.OutputChannel,
     sourceHash?: string,
     targetIdentity?: string,
-    targetFilePath?: string
+    targetFilePath?: string,
+    cancellationToken?: vscode.CancellationToken
 ): Promise<TranslationResult | null> {
+    if (cancellationToken?.isCancellationRequested) {
+        throw new Error("Translation cancelled before submission.");
+    }
     // Ensure URL has mode=direct parameter
     const urlObj = new URL(url);
     if (!urlObj.searchParams.has("mode")) {
@@ -858,14 +937,15 @@ async function callAzureFunctionWithSync(
                 targetLanguage,
                 targetFilePath,
                 status: "pending",
-                updatedAt: Date.now()
+                updatedAt: Date.now(),
+                progress: { completed: 0, total: 0, remaining: 0, percentage: 0 }
             });
         }
 
         channel.appendLine(`[SKC] Large file detected — processing asynchronously (job: ${jobInfo.jobId})`);
         let result: TranslationResult;
         try {
-            result = await pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage);
+            result = await pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage, cancellationToken);
         } catch (error) {
             if (error instanceof RestartTranslationError) {
                 channel.appendLine(`[SKC] Old job discarded. Submitting a fresh job from the current source snapshot.`);
