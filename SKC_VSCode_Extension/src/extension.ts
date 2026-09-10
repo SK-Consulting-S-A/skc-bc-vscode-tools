@@ -94,7 +94,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   setImmediate(() => {
     void (async () => {
       const [
-        { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass, TranslationJobItem },
+        { TranslationsProvider, TranslationJobsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass, TranslationJobItem },
         { translateFile, createTranslationFile, configureTranslationState, cancelTrackedJob },
         { registerTranslationTools }
       ] = await Promise.all([
@@ -106,12 +106,19 @@ export async function activate(context: ExtensionContext): Promise<void> {
       await configureTranslationState(context.workspaceState);
 
       const translationsProvider = new TranslationsProvider();
+      const jobsProvider = new TranslationJobsProvider();
       const translationsView = window.createTreeView("skc.translationsView", {
         treeDataProvider: translationsProvider,
         showCollapseAll: false
       });
       context.subscriptions.push(translationsView);
       context.subscriptions.push({ dispose: () => translationsProvider.dispose() });
+      const jobsView = window.createTreeView("skc.translationJobsView", {
+        treeDataProvider: jobsProvider,
+        showCollapseAll: false
+      });
+      context.subscriptions.push(jobsView);
+      context.subscriptions.push({ dispose: () => jobsProvider.dispose() });
 
       context.subscriptions.push(commands.registerCommand(
         "skc.translateFile",
@@ -154,6 +161,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
           const cleaned = await cancelTrackedJob(item.job, channel);
           if (cleaned) {
             translationsProvider.refresh();
+            jobsProvider.refresh();
             void window.showInformationMessage(`Azure translation job ${item.job.jobId} was cancelled and deleted.`);
           } else {
             void window.showErrorMessage(`Could not cancel Azure translation job ${item.job.jobId}.`);
@@ -207,7 +215,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
           translationsProvider.refresh();
         }
       ));
-      context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => translationsProvider.refresh()));
+      context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => {
+        translationsProvider.refresh();
+        jobsProvider.refresh();
+      }));
       context.subscriptions.push(commands.registerCommand(
         "skc.openTransUnit",
         async (fileUri: Uri, unitId: string) => {
