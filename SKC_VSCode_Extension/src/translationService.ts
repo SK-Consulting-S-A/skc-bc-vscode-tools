@@ -39,15 +39,41 @@ export interface TranslateFileHeadlessResult {
 // The server remains the source of truth; this is only the client polling window.
 const DEFAULT_POLL_TIMEOUT_MINUTES = 60;
 const INITIAL_REQUEST_TIMEOUT_MS = 120000;
+const TRACKED_JOBS_STATE_KEY = "skc.translationTrackedJobs";
 
 // Tracked in-memory/workspace jobs registry
 const trackedJobs = new Map<string, TrackedTranslationJob>();
+let trackedJobsState: vscode.Memento | undefined;
+
+class RestartTranslationError extends Error {
+    constructor() {
+        super("The previous translation job was discarded; starting a fresh job.");
+        this.name = "RestartTranslationError";
+    }
+}
 
 /**
  * Compute a SHA-256 hash of the source XLF content
  */
 export function computeSourceHash(content: string): string {
     return crypto.createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+/** Load tracked jobs from VS Code workspace state so polling can resume after reload. */
+export async function configureTranslationState(state: vscode.Memento): Promise<void> {
+    trackedJobsState = state;
+    const savedJobs = state.get<TrackedTranslationJob[]>(TRACKED_JOBS_STATE_KEY, []);
+    for (const job of savedJobs) {
+        if (job?.jobId && job.statusUrl && job.targetFilePath && job.targetLanguage) {
+            trackedJobs.set(getJobKey(job.targetFilePath, job.targetLanguage), job);
+        }
+    }
+}
+
+function persistTrackedJobs(): void {
+    if (trackedJobsState) {
+        void trackedJobsState.update(TRACKED_JOBS_STATE_KEY, Array.from(trackedJobs.values()));
+    }
 }
 
 function getJobKey(targetFilePath: string, targetLanguage: string): string {
@@ -60,10 +86,12 @@ export function getTrackedJob(targetFilePath: string, targetLanguage: string): T
 
 export function setTrackedJob(job: TrackedTranslationJob): void {
     trackedJobs.set(getJobKey(job.targetFilePath, job.targetLanguage), job);
+    persistTrackedJobs();
 }
 
 export function removeTrackedJob(targetFilePath: string, targetLanguage: string): void {
     trackedJobs.delete(getJobKey(targetFilePath, targetLanguage));
+    persistTrackedJobs();
 }
 
 interface AppJson {
@@ -691,6 +719,32 @@ async function pollJobUntilComplete(
         }
     }
 
+    if (targetFilePath && targetLanguage) {
+        const resumeChoice = await vscode.window.showWarningMessage(
+            `The translation job is still running after ${timeoutMinutes} minutes. What would you like to do?`,
+            { modal: true },
+            "Resume existing job",
+            "Discard old job and start fresh",
+            "Cancel"
+        );
+
+        if (resumeChoice === "Resume existing job") {
+            channel.appendLine(`[SKC] Resuming polling for existing job instead of creating a duplicate.`);
+            return pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage);
+        }
+
+        if (resumeChoice === "Discard old job and start fresh") {
+            const cleaned = await deleteAzureJob(statusUrl, channel);
+            if (!cleaned) {
+                throw new Error("Could not safely discard the old translation job. No new job was submitted.");
+            }
+            removeTrackedJob(targetFilePath, targetLanguage);
+            throw new RestartTranslationError();
+        }
+
+        throw new Error("Translation polling cancelled. The existing server job was left untouched.");
+    }
+
     throw new Error(`Translation job polling timed out after ${timeoutMinutes} minutes; the server may still be processing it. Re-run the translation or inspect the job status.`);
 }
 
@@ -809,7 +863,25 @@ async function callAzureFunctionWithSync(
         }
 
         channel.appendLine(`[SKC] Large file detected — processing asynchronously (job: ${jobInfo.jobId})`);
-        const result = await pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage);
+        let result: TranslationResult;
+        try {
+            result = await pollJobUntilComplete(statusUrl, channel, targetFilePath, targetLanguage);
+        } catch (error) {
+            if (error instanceof RestartTranslationError) {
+                channel.appendLine(`[SKC] Old job discarded. Submitting a fresh job from the current source snapshot.`);
+                return callAzureFunctionWithSync(
+                    url,
+                    sourceContent,
+                    targetContent,
+                    targetLanguage,
+                    channel,
+                    sourceHash,
+                    targetIdentity,
+                    targetFilePath
+                );
+            }
+            throw error;
+        }
         return {
             ...result,
             sourceHash: currentHash
