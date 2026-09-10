@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "3.0.11",
+  "version": "3.0.12",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -121,6 +121,11 @@
         "command": "skc.filterUntranslated",
         "title": "Find Untranslated Units",
         "icon": "$(search)"
+      },
+      {
+        "command": "skc.cancelTranslationJob",
+        "title": "Cancel Azure Translation Job",
+        "icon": "$(stop-circle)"
       }
     ],
     "menus": {
@@ -156,6 +161,16 @@
           "command": "skc.translateFile",
           "when": "view == skc.translationsView && viewItem == sourceFile",
           "group": "inline@2"
+        },
+        {
+          "command": "skc.cancelTranslationJob",
+          "when": "view == skc.translationsView && viewItem == translationJob",
+          "group": "inline"
+        },
+        {
+          "command": "skc.refreshTranslations",
+          "when": "view == skc.translationsView && viewItem == translationJobs",
+          "group": "inline"
         }
       ]
     },
