@@ -6,6 +6,10 @@ const { applyBcQualityIntegration } = require("./bcquality-integration");
 
 const EXCLUDED_NAMES = new Set([".git", "node_modules", "__pycache__"]);
 const BCQUALITY_SKILL_NAME = "bcquality";
+// These assets contain SKC-specific translation workflow and must not be
+// overwritten by an older copy from the user's global Copilot content.
+const SKC_MANAGED_SKILL_NAMES = new Set(["bc-orchestration"]);
+const SKC_MANAGED_AGENT_NAMES = new Set(["bc-translator.agent.md"]);
 const RENAMED_TOOL_IDS = new Map([
     ["memory", "vscode/memory"],
     ["al_build", "ms-dynamics-smb.al/al_build"],
@@ -16,8 +20,8 @@ const RENAMED_TOOL_IDS = new Map([
     ["al_snapshotdebugging", "ms-dynamics-smb.al/al_snapshotdebugging"],
     ["al_downloadsymbols", "ms-dynamics-smb.al/al_downloadsymbols"],
     ["al_getdiagnostics", "ms-dynamics-smb.al/al_get_diagnostics"],
-    ["createLanguageXlf", "nabsolutions.nab-al-tools/createLanguageXlf"],
-    ["refreshXlf", "nabsolutions.nab-al-tools/refreshXlf"]
+    ["createLanguageXlf", "skc_create_xlf_language"],
+    ["refreshXlf", "skc_list_translation_files"]
 ]);
 
 function copyDirectory(source, target) {
@@ -112,7 +116,7 @@ function syncSkills(sourceRoot, targetRoot) {
 
     fs.mkdirSync(targetSkills, { recursive: true });
     const skillDirectories = fs.readdirSync(sourceSkills, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && !EXCLUDED_NAMES.has(entry.name) && entry.name !== BCQUALITY_SKILL_NAME)
+        .filter((entry) => entry.isDirectory() && !EXCLUDED_NAMES.has(entry.name) && entry.name !== BCQUALITY_SKILL_NAME && !SKC_MANAGED_SKILL_NAMES.has(entry.name))
         .sort((left, right) => left.name.localeCompare(right.name));
 
     for (const entry of skillDirectories) {
@@ -136,12 +140,12 @@ function syncAgents(sourceRoot, targetRoot) {
 
     fs.mkdirSync(targetAgents, { recursive: true });
     const agentFiles = fs.readdirSync(sourceAgents, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md") && entry.name !== "algo-settings.agent.md")
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md") && entry.name !== "algo-settings.agent.md" && !SKC_MANAGED_AGENT_NAMES.has(entry.name))
         .sort((left, right) => left.name.localeCompare(right.name));
     const allowedNames = new Set(agentFiles.map((entry) => entry.name));
 
     for (const entry of fs.readdirSync(targetAgents, { withFileTypes: true })) {
-        if (entry.isFile() && entry.name.endsWith(".agent.md") && !allowedNames.has(entry.name)) {
+        if (entry.isFile() && entry.name.endsWith(".agent.md") && !allowedNames.has(entry.name) && !SKC_MANAGED_AGENT_NAMES.has(entry.name)) {
             fs.rmSync(path.join(targetAgents, entry.name), { force: true });
         }
     }

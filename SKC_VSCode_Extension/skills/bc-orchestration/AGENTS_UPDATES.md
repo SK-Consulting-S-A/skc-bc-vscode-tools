@@ -14,7 +14,7 @@ Complete multilanguage translation workflow for BC extensions.
 
 #### Capabilities:
 - ✅ **Generate XLF files** - Builds project to create `.g.xlf`
-- ✅ **Create target language files** - Uses `createLanguageXlf`
+- ✅ **Create target language files** - Uses SKC `createXlfLanguage` (`skc_create_xlf_language`)
 - ✅ **Auto-translate** - Uses `skc_translate_xlf` with Azure Translation
 - ✅ **Track progress** - Uses `skc_list_translation_files`
 - ✅ **Package translations** - Rebuilds with all languages
@@ -23,9 +23,9 @@ Complete multilanguage translation workflow for BC extensions.
 ```al
 // VS Code Language Model tools
 al_build                    // Generate .g.xlf and package
-createLanguageXlf          // Create target language XLF
-skc_translate_xlf          // Auto-translate via Azure
-skc_list_translation_files // Check translation status
+createXlfLanguage          // Create target language XLF (skc_create_xlf_language)
+translateXlf               // Auto-translate via Azure (skc_translate_xlf)
+listTranslations           // Check translation status (skc_list_translation_files)
 ```
 
 #### Complete Workflow:
@@ -33,13 +33,13 @@ skc_list_translation_files // Check translation status
 1. al_build (with GenerateCaptions)
    ↓ Creates Translations/AppName.g.xlf
    
-2. createLanguageXlf (per language)
+2. createXlfLanguage (skc_create_xlf_language, per language)
    ↓ Creates Translations/AppName.{lang}.xlf
    
-3. skc_translate_xlf (per language)
+3. translateXlf (skc_translate_xlf, per language)
    ↓ Auto-translates all strings
    
-4. skc_list_translation_files
+4. listTranslations (skc_list_translation_files)
    ↓ Verify 100% complete
    
 5. al_build

@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "3.0.4",
+  "version": "3.0.9",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -338,6 +338,12 @@
           "type": "string",
           "default": "",
           "description": "URL of the Azure Translation Function endpoint (e.g., https://your-function.azurewebsites.net/api/github-webhook?mode=direct)."
+        },
+        "skc.translationPollingTimeoutMinutes": {
+          "type": "number",
+          "default": 60,
+          "minimum": 10,
+          "description": "Maximum time to poll a large asynchronous translation job. The Azure Function processes the job in resumable chunks."
         }
       }
     },
@@ -369,7 +375,6 @@
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",
-      "365businessdevelopment.365businessdev-alget",
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
@@ -391,7 +396,6 @@
       "redhat.vscode-xml",
       "wbrakowski.al-navigator",
       "ms-vscode.PowerShell",
-      "365businessdevelopment.365businessdev-alget",
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
@@ -400,11 +404,11 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run sync:content && npm run build",
     "sync:extensions": "node scripts/sync-extensions.js",
     "sync:global": "node scripts/sync-global-content.js",
     "sync:bcquality": "node scripts/sync-bcquality.js",
     "sync:content": "npm run sync:extensions && npm run sync:global && npm run sync:bcquality",
+    "vscode:prepublish": "npm run sync:content && npm run build",
     "build": "node scripts/build.js --production",
     "compile": "npm run sync:content && node scripts/build.js",
     "package": "npm run build && vsce package",

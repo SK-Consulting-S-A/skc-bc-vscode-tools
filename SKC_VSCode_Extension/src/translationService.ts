@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as https from "https";
 import * as http from "http";
+import { getTranslationStatsFromContent } from "./xlfStatus";
 
 export interface TranslationResult {
     translatedContent: string;
@@ -21,8 +22,10 @@ export interface TranslateFileHeadlessResult {
     syncInfo?: { added: number; removed: number };
 }
 
-// Request timeout - Azure Function handles batching internally, may take time for large files
-const REQUEST_TIMEOUT_MS = 600000; // 10 minutes timeout for large files
+// Async jobs run across many short Consumption-plan timer invocations.
+// The server remains the source of truth; this is only the client polling window.
+const DEFAULT_POLL_TIMEOUT_MINUTES = 60;
+const INITIAL_REQUEST_TIMEOUT_MS = 120000;
 
 interface AppJson {
     supportedLocales?: string[];
@@ -281,11 +284,7 @@ export async function createTranslationFile(
  */
 export async function getTranslationStats(filePath: string): Promise<{ total: number; translated: number }> {
     const content = await fs.readFile(filePath, "utf8");
-    const transUnitMatches = content.match(/<trans-unit/g);
-    const total = transUnitMatches ? transUnitMatches.length : 0;
-    const translatedMatches = content.match(/<target[^>]*\sstate\s*=\s*["']translated["'][^>]*>/g);
-    const translated = translatedMatches ? translatedMatches.length : 0;
-    return { total, translated };
+    return getTranslationStatsFromContent(content);
 }
 
 /**
@@ -456,7 +455,13 @@ async function pollJobUntilComplete(
     channel: vscode.OutputChannel
 ): Promise<TranslationResult> {
     const POLL_INTERVAL_MS = 3000;
-    const MAX_WAIT_MS = REQUEST_TIMEOUT_MS;
+    const configuredMinutes = vscode.workspace
+        .getConfiguration("skc")
+        .get<number>("translationPollingTimeoutMinutes", DEFAULT_POLL_TIMEOUT_MINUTES);
+    const timeoutMinutes = Number.isFinite(configuredMinutes) && configuredMinutes > 0
+        ? configuredMinutes
+        : DEFAULT_POLL_TIMEOUT_MINUTES;
+    const MAX_WAIT_MS = timeoutMinutes * 60 * 1000;
     const started = Date.now();
 
     channel.appendLine(`[SKC] Async job created — polling for result...`);
@@ -468,7 +473,10 @@ async function pollJobUntilComplete(
         const status = statusResponse.status as string;
         const progress = statusResponse.progress as Record<string, unknown> | undefined;
 
-        channel.appendLine(`[SKC] Job status: ${status}${progress?.message ? ` — ${progress.message}` : ""}`);
+        const progressDetails = progress?.completed !== undefined && progress?.remaining !== undefined
+            ? ` (${progress.completed} translated, ${progress.remaining} remaining)`
+            : "";
+        channel.appendLine(`[SKC] Job status: ${status}${progress?.message ? ` — ${progress.message}` : ""}${progressDetails}`);
 
         if (status === "completed") {
             // Fetch result and clean up job in one request
@@ -496,7 +504,7 @@ async function pollJobUntilComplete(
         }
     }
 
-    throw new Error("Translation job timed out after 10 minutes");
+    throw new Error(`Translation job polling timed out after ${timeoutMinutes} minutes; the server may still be processing it. Re-run the translation or inspect the job status.`);
 }
 
 /**
@@ -540,7 +548,7 @@ async function callAzureFunctionWithSync(
                 "Content-Length": Buffer.byteLength(payload),
                 "x-translation-mode": "direct"
             },
-            timeout: REQUEST_TIMEOUT_MS
+            timeout: INITIAL_REQUEST_TIMEOUT_MS
         };
 
         const req = httpModule.request(finalUrl, options, (res) => {
