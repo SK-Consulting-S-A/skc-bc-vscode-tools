@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { getTranslationStatsFromContent, getTranslationUnitStatus, hasTranslatableSource, isCompletedTranslation } from "./xlfStatus";
+import { getTrackedJobs, refreshTrackedJobStatuses, TrackedTranslationJob } from "./translationService";
 
 export interface TranslationStats {
     total: number;
@@ -12,7 +13,45 @@ export interface TranslationStats {
 const MAX_UNITS_IN_TREE = 100;
 
 // Base tree item class
-export type TranslationTreeItem = SourceFileItem | TargetLanguageItem | AddLanguageItem | TransUnitItem | MoreUnitsItem;
+export type TranslationTreeItem = SourceFileItem | TargetLanguageItem | AddLanguageItem | TransUnitItem | MoreUnitsItem | TranslationJobsItem | TranslationJobItem;
+
+export class TranslationJobsItem extends vscode.TreeItem {
+    constructor(public readonly jobs: TrackedTranslationJob[]) {
+        super("Translation Jobs", vscode.TreeItemCollapsibleState.Expanded);
+        const active = jobs.filter((job) => !["completed", "failed", "expired"].includes(job.status)).length;
+        this.description = `${active} active${jobs.length !== active ? `, ${jobs.length - active} finished` : ""}`;
+        this.tooltip = "Azure translation jobs. Expand to view progress or cancel a job.";
+        this.contextValue = "translationJobs";
+        this.iconPath = new vscode.ThemeIcon("sync");
+    }
+}
+
+export class TranslationJobItem extends vscode.TreeItem {
+    constructor(public readonly job: TrackedTranslationJob) {
+        super(`${path.basename(job.targetFilePath)} (${job.targetLanguage})`, vscode.TreeItemCollapsibleState.None);
+        const progress = job.progress;
+        const completed = progress?.completed ?? 0;
+        const total = progress?.total ?? 0;
+        const percentage = Math.max(0, Math.min(100, progress?.percentage ?? (total > 0 ? Math.floor((completed / total) * 100) : 0)));
+        const filled = Math.round(percentage / 20);
+        const progressBar = "▰".repeat(filled) + "▱".repeat(5 - filled);
+        this.description = `${percentage}% ${progressBar} · ${job.status}`;
+        this.tooltip = [
+            `Job: ${job.jobId}`,
+            `Target: ${job.targetFilePath}`,
+            `Language: ${job.targetLanguage}`,
+            `Status: ${job.status}`,
+            `Progress: ${completed}/${total || "?"} translated${progress?.remaining !== undefined ? `, ${progress.remaining} remaining` : ""}`,
+            `Last update: ${new Date(job.updatedAt).toLocaleString()}`
+        ].join("\n");
+        this.contextValue = "translationJob";
+        this.iconPath = job.status === "completed"
+            ? new vscode.ThemeIcon("check", new vscode.ThemeColor("charts.green"))
+            : job.status === "failed" || job.status === "expired"
+                ? new vscode.ThemeIcon("error", new vscode.ThemeColor("charts.red"))
+                : new vscode.ThemeIcon("sync", new vscode.ThemeColor("charts.blue"));
+    }
+}
 
 /**
  * Source file item (*.g.xlf) - shows total units
@@ -172,10 +211,12 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     private fileWatcher: vscode.FileSystemWatcher | undefined;
+    private jobsRefreshTimer: NodeJS.Timeout | undefined;
     private sourceFiles: Map<string, SourceFileItem> = new Map();
 
     constructor() {
         this.setupFileWatcher();
+        this.jobsRefreshTimer = setInterval(() => this.refresh(), 15000);
     }
 
     private setupFileWatcher(): void {
@@ -196,6 +237,11 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
     }
 
     async getChildren(element?: TranslationTreeItem): Promise<TranslationTreeItem[]> {
+        if (element instanceof TranslationJobsItem) {
+            const jobs = await refreshTrackedJobStatuses();
+            return jobs.map((job) => new TranslationJobItem(job));
+        }
+
         // If element is a source file, return its target languages
         if (element instanceof SourceFileItem) {
             return this.getTargetLanguages(element);
@@ -214,14 +260,15 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
         return [];
     }
 
-    private async getSourceFiles(): Promise<SourceFileItem[]> {
+    private async getSourceFiles(): Promise<TranslationTreeItem[]> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             console.log("[SKC Translations] No workspace folders found");
             return [];
         }
 
-        const items: SourceFileItem[] = [];
+        const jobs = await refreshTrackedJobStatuses();
+        const items: TranslationTreeItem[] = [new TranslationJobsItem(jobs)];
 
         for (const folder of workspaceFolders) {
             const translationsPath = path.join(folder.uri.fsPath, "Translations");
@@ -430,5 +477,6 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
     dispose(): void {
         this.fileWatcher?.dispose();
+        if (this.jobsRefreshTimer) clearInterval(this.jobsRefreshTimer);
     }
 }
