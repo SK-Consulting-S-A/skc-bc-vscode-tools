@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { getTranslationStatsFromContent, getTranslationUnitStatus, hasTranslatableSource, isCompletedTranslation } from "./xlfStatus";
-import { getTrackedJobs, refreshTrackedJobStatuses, TrackedTranslationJob } from "./translationService";
+import { refreshTrackedJobStatuses, TrackedTranslationJob } from "./translationService";
 
 export interface TranslationStats {
     total: number;
@@ -13,18 +13,7 @@ export interface TranslationStats {
 const MAX_UNITS_IN_TREE = 100;
 
 // Base tree item class
-export type TranslationTreeItem = SourceFileItem | TargetLanguageItem | AddLanguageItem | TransUnitItem | MoreUnitsItem | TranslationJobsItem | TranslationJobItem;
-
-export class TranslationJobsItem extends vscode.TreeItem {
-    constructor(public readonly jobs: TrackedTranslationJob[]) {
-        super("Translation Jobs", vscode.TreeItemCollapsibleState.Expanded);
-        const active = jobs.filter((job) => !["completed", "failed", "expired"].includes(job.status)).length;
-        this.description = `${active} active${jobs.length !== active ? `, ${jobs.length - active} finished` : ""}`;
-        this.tooltip = "Azure translation jobs. Expand to view progress or cancel a job.";
-        this.contextValue = "translationJobs";
-        this.iconPath = new vscode.ThemeIcon("sync");
-    }
-}
+export type TranslationTreeItem = SourceFileItem | TargetLanguageItem | AddLanguageItem | TransUnitItem | MoreUnitsItem;
 
 export class TranslationJobItem extends vscode.TreeItem {
     constructor(public readonly job: TrackedTranslationJob) {
@@ -211,12 +200,10 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     private fileWatcher: vscode.FileSystemWatcher | undefined;
-    private jobsRefreshTimer: NodeJS.Timeout | undefined;
     private sourceFiles: Map<string, SourceFileItem> = new Map();
 
     constructor() {
         this.setupFileWatcher();
-        this.jobsRefreshTimer = setInterval(() => this.refresh(), 15000);
     }
 
     private setupFileWatcher(): void {
@@ -237,11 +224,6 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
     }
 
     async getChildren(element?: TranslationTreeItem): Promise<TranslationTreeItem[]> {
-        if (element instanceof TranslationJobsItem) {
-            const jobs = await refreshTrackedJobStatuses();
-            return jobs.map((job) => new TranslationJobItem(job));
-        }
-
         // If element is a source file, return its target languages
         if (element instanceof SourceFileItem) {
             return this.getTargetLanguages(element);
@@ -267,8 +249,7 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
             return [];
         }
 
-        const jobs = await refreshTrackedJobStatuses();
-        const items: TranslationTreeItem[] = [new TranslationJobsItem(jobs)];
+        const items: SourceFileItem[] = [];
 
         for (const folder of workspaceFolders) {
             const translationsPath = path.join(folder.uri.fsPath, "Translations");
@@ -477,6 +458,32 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
     dispose(): void {
         this.fileWatcher?.dispose();
-        if (this.jobsRefreshTimer) clearInterval(this.jobsRefreshTimer);
+    }
+}
+
+export class TranslationJobsProvider implements vscode.TreeDataProvider<TranslationJobItem> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<TranslationJobItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private refreshTimer: NodeJS.Timeout | undefined;
+
+    constructor() {
+        this.refreshTimer = setInterval(() => this.refresh(), 15000);
+    }
+
+    getTreeItem(element: TranslationJobItem): vscode.TreeItem {
+        return element;
+    }
+
+    async getChildren(): Promise<TranslationJobItem[]> {
+        const jobs = await refreshTrackedJobStatuses();
+        return jobs.map((job) => new TranslationJobItem(job));
+    }
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    dispose(): void {
+        if (this.refreshTimer) clearInterval(this.refreshTimer);
     }
 }
