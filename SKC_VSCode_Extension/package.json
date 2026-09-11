@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "3.0.13",
+  "version": "3.0.14",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -392,8 +392,7 @@
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
-      "ms-python.debugpy",
-      "vjeko.vjeko-al-objid"
+      "ms-python.debugpy"
     ],
     "extensionPack": [
       "ms-dynamics-smb.al",
@@ -413,8 +412,7 @@
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
-      "ms-python.debugpy",
-      "vjeko.vjeko-al-objid"
+      "ms-python.debugpy"
     ]
   },
   "scripts": {
