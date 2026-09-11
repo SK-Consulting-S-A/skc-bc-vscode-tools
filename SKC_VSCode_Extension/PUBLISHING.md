@@ -12,7 +12,7 @@ Keep visibility **Public** after each publish. A first-time `vsce publish` of a 
 
 ## How to publish
 
-The current patch release is version **3.0.7**. Build and package it for review, then publish it with the configured Marketplace PAT. BCQuality is bundled and validated offline; live upstream refresh is opt-in through `skc.bcQualityUpdateOnApply` or the explicit update command.
+The current patch release is version **3.0.8**. Build and package it for review, then publish it with the configured Marketplace PAT. BCQuality is bundled and validated offline; live upstream refresh is opt-in through `skc.bcQualityUpdateOnApply` or the explicit update command.
 
 - **Local:** Put your Azure DevOps PAT in `.publish-token`, then run:
   - `node scripts/publish.js` — publish current version

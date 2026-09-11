@@ -2,6 +2,14 @@
 
 All notable changes to the "SKC AL Tools" extension will be documented in this file.
 
+## [3.0.8] - 2026-09-10
+
+### Fixed
+- Retried transient asynchronous translation status and result requests with exponential backoff.
+- Used compact job-status responses and dedicated timeouts for polling and large result downloads.
+- Validated and atomically saved translated XLIFF files before requesting Azure job cleanup.
+- Included recoverable job IDs in timeout and failure messages.
+
 ## [3.0.7] - 2026-09-09
 
 ### Fixed
