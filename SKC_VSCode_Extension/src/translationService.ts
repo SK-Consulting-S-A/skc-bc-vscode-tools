@@ -451,7 +451,18 @@ async function saveTranslationResult(
     const temporaryPath = `${outputPath}.${process.pid}.${Date.now()}.tmp`;
     try {
         await fs.writeFile(temporaryPath, content, "utf8");
-        await fs.rename(temporaryPath, outputPath);
+        try {
+            await fs.rename(temporaryPath, outputPath);
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException | undefined)?.code;
+            if (code === "EPERM" || code === "EACCES" || code === "EBUSY") {
+                // Common on Windows when the destination file is open/locked.
+                await fs.writeFile(outputPath, content, "utf8");
+                await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
+            } else {
+                throw error;
+            }
+        }
     } catch (error) {
         await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
         throw error;
