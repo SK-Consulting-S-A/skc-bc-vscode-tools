@@ -20,7 +20,6 @@
     "vscode-icons-team.vscode-icons",
     "waldo.crs-al-language-extension",
     "ms-python.python",
-    "ms-python.debugpy",
-    "vjeko.vjeko-al-objid"
+    "ms-python.debugpy"
   ]
 }
