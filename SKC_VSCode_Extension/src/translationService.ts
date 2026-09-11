@@ -13,6 +13,10 @@ export interface TranslationResult {
         removed: number;
         sourceChanged?: number;
     };
+    asyncJob?: {
+        id: string;
+        statusUrl: string;
+    };
 }
 
 export interface TranslateFileHeadlessResult {
@@ -24,6 +28,9 @@ export interface TranslateFileHeadlessResult {
 
 // Request timeout - Azure Function handles batching internally, may take time for large files
 const REQUEST_TIMEOUT_MS = 600000; // 10 minutes timeout for large files
+const POLL_REQUEST_TIMEOUT_MS = 90000;
+const RESULT_REQUEST_TIMEOUT_MS = 300000;
+const POLL_MAX_ATTEMPTS = 3;
 
 interface AppJson {
     supportedLocales?: string[];
@@ -184,8 +191,7 @@ export async function translateFile(
 
                 progress.report({ increment: 60, message: "Saving translated file..." });
 
-                // Save the translated file
-                await fs.writeFile(outputPath, result.translatedContent, "utf8");
+                await saveTranslationResult(outputPath, result, targetLanguage!, channel);
 
                 progress.report({ increment: 25, message: "Done!" });
 
@@ -336,7 +342,7 @@ export async function translateFileHeadless(
             return { success: false, message: "No translated content received from Azure Function." };
         }
 
-        await fs.writeFile(outputPath, result.translatedContent, "utf8");
+        await saveTranslationResult(outputPath, result, targetLanguage, channel);
 
         const syncInfo = result.syncInfo || { added: 0, removed: 0 };
         let summary = `Translated: ${result.translatedCount}`;
@@ -422,16 +428,80 @@ export async function getTranslationStatusSummary(workspaceFolderUri?: vscode.Ur
 }
 
 /**
- * Perform a simple HTTP GET and return the parsed JSON body.
+ * Validate and atomically replace an XLIFF target, then clean up its async job.
  */
-function httpGet(url: string): Promise<unknown> {
+async function saveTranslationResult(
+    outputPath: string,
+    result: TranslationResult,
+    targetLanguage: string,
+    channel: vscode.OutputChannel
+): Promise<void> {
+    const content = result.translatedContent;
+    const targetLanguageMatch = content.match(/\btarget-language\s*=\s*["']([^"']+)["']/i);
+    const transUnitCount = (content.match(/<trans-unit\b/gi) || []).length;
+
+    if (!/<xliff\b/i.test(content) || transUnitCount === 0) {
+        throw new Error("Azure result is not a valid XLIFF document");
+    }
+
+    if (!targetLanguageMatch || targetLanguageMatch[1].toLowerCase() !== targetLanguage.toLowerCase()) {
+        throw new Error(`Azure result target language does not match ${targetLanguage}`);
+    }
+
+    const temporaryPath = `${outputPath}.${process.pid}.${Date.now()}.tmp`;
+    try {
+        await fs.writeFile(temporaryPath, content, "utf8");
+        try {
+            await fs.rename(temporaryPath, outputPath);
+        } catch (error) {
+            const code = (error as NodeJS.ErrnoException | undefined)?.code;
+            if (code === "EPERM" || code === "EACCES" || code === "EBUSY") {
+                // Common on Windows when the destination file is open/locked.
+                await fs.writeFile(outputPath, content, "utf8");
+                await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
+            } else {
+                throw error;
+            }
+        }
+    } catch (error) {
+        await fs.rm(temporaryPath, { force: true }).catch(() => undefined);
+        throw error;
+    }
+
+    channel.appendLine(`[SKC] Validated and saved ${transUnitCount} XLIFF units atomically`);
+
+    if (result.asyncJob) {
+        try {
+            const cleanupUrl = new URL(result.asyncJob.statusUrl);
+            cleanupUrl.searchParams.delete("result");
+            cleanupUrl.searchParams.delete("delete");
+            cleanupUrl.searchParams.delete("includeData");
+            cleanupUrl.searchParams.set("cleanup", "true");
+            await requestJson(cleanupUrl.toString(), POLL_REQUEST_TIMEOUT_MS, "POST");
+            channel.appendLine(`[SKC] Cleaned up async job ${result.asyncJob.id}`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            channel.appendLine(`[SKC] WARNING: File saved, but async job cleanup failed: ${message}`);
+        }
+    }
+}
+
+/**
+ * Perform an HTTP request and return the parsed JSON body.
+ */
+function requestJson(url: string, timeoutMs: number, method: "GET" | "POST" = "GET"): Promise<unknown> {
     return new Promise((resolve, reject) => {
         const isHttps = url.startsWith("https");
         const httpModule = isHttps ? https : http;
-        const req = httpModule.get(url, { timeout: 30000 }, (res) => {
+        const req = httpModule.request(url, { method, timeout: timeoutMs }, (res) => {
             let data = "";
             res.on("data", (chunk) => { data += chunk; });
             res.on("end", () => {
+                const statusCode = res.statusCode ?? 0;
+                if (statusCode < 200 || statusCode >= 300) {
+                    reject(new Error(`HTTP ${statusCode}: ${data.substring(0, 200)}`));
+                    return;
+                }
                 try {
                     resolve(JSON.parse(data));
                 } catch {
@@ -440,8 +510,38 @@ function httpGet(url: string): Promise<unknown> {
             });
         });
         req.on("error", reject);
-        req.on("timeout", () => { req.destroy(); reject(new Error("Poll request timed out")); });
+        req.on("timeout", () => req.destroy(new Error(`Request timed out after ${Math.round(timeoutMs / 1000)} seconds`)));
+        req.end();
     });
+}
+
+async function requestJsonWithRetry(
+    url: string,
+    timeoutMs: number,
+    channel: vscode.OutputChannel,
+    operation: string,
+    maxAttempts = POLL_MAX_ATTEMPTS
+): Promise<unknown> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            return await requestJson(url, timeoutMs);
+        } catch (error) {
+            lastError = error;
+            if (attempt === maxAttempts) {
+                break;
+            }
+
+            const delayMs = 1000 * Math.pow(2, attempt - 1);
+            const message = error instanceof Error ? error.message : String(error);
+            channel.appendLine(`[SKC] ${operation} failed (${message}); retrying ${attempt + 1}/${maxAttempts}...`);
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+
+    const message = lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(`${operation} failed after ${maxAttempts} attempts: ${message}`);
 }
 
 /**
@@ -450,7 +550,8 @@ function httpGet(url: string): Promise<unknown> {
  */
 async function pollJobUntilComplete(
     statusUrl: string,
-    channel: vscode.OutputChannel
+    channel: vscode.OutputChannel,
+    jobId: string
 ): Promise<TranslationResult> {
     const POLL_INTERVAL_MS = 3000;
     const MAX_WAIT_MS = REQUEST_TIMEOUT_MS;
@@ -461,16 +562,27 @@ async function pollJobUntilComplete(
     while (Date.now() - started < MAX_WAIT_MS) {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
 
-        const statusResponse = await httpGet(statusUrl) as Record<string, unknown>;
+        const statusResponse = await requestJsonWithRetry(
+            statusUrl,
+            POLL_REQUEST_TIMEOUT_MS,
+            channel,
+            `Status poll for job ${jobId}`
+        ) as Record<string, unknown>;
         const status = statusResponse.status as string;
         const progress = statusResponse.progress as Record<string, unknown> | undefined;
 
         channel.appendLine(`[SKC] Job status: ${status}${progress?.message ? ` — ${progress.message}` : ""}`);
 
         if (status === "completed") {
-            // Fetch result and clean up job in one request
-            const resultUrl = `${statusUrl}&result=true&delete=true`;
-            const resultResponse = await httpGet(resultUrl) as Record<string, unknown>;
+            const resultUrl = new URL(statusUrl);
+            resultUrl.searchParams.set("result", "true");
+            resultUrl.searchParams.delete("delete");
+            const resultResponse = await requestJsonWithRetry(
+                resultUrl.toString(),
+                RESULT_REQUEST_TIMEOUT_MS,
+                channel,
+                `Result download for job ${jobId}`
+            ) as Record<string, unknown>;
             const result = resultResponse.result as Record<string, unknown> | undefined;
 
             if (!result?.translatedContent) {
@@ -480,20 +592,25 @@ async function pollJobUntilComplete(
             return {
                 translatedContent: result.translatedContent as string,
                 translatedCount: (result.translatedCount as number) ?? 0,
-                syncInfo: result.syncInfo as TranslationResult["syncInfo"]
+                syncInfo: result.syncInfo as TranslationResult["syncInfo"],
+                asyncJob: { id: jobId, statusUrl }
             };
         }
 
         if (status === "failed") {
-            throw new Error(`Translation job failed: ${(statusResponse.error as string) ?? "unknown error"}`);
+            const jobError = statusResponse.error;
+            const errorMessage = typeof jobError === "string"
+                ? jobError
+                : ((jobError as Record<string, unknown> | undefined)?.message as string) || "unknown error";
+            throw new Error(`Translation job ${jobId} failed: ${errorMessage}`);
         }
 
         if (status === "expired") {
-            throw new Error("Translation job expired before completing");
+            throw new Error(`Translation job ${jobId} expired before completing`);
         }
     }
 
-    throw new Error("Translation job timed out after 10 minutes");
+    throw new Error(`Translation job ${jobId} is still running after 10 minutes. It can be resumed using this job ID.`);
 }
 
 /**
@@ -583,7 +700,7 @@ async function callAzureFunctionWithSync(
         }
 
         channel.appendLine(`[SKC] Large file detected — processing asynchronously (job: ${jobInfo.jobId})`);
-        return await pollJobUntilComplete(statusUrl, channel);
+        return await pollJobUntilComplete(statusUrl, channel, jobInfo.jobId as string);
     }
 
     throw new Error(`Azure Function returned status ${statusCode}: ${body.substring(0, 200)}`);
