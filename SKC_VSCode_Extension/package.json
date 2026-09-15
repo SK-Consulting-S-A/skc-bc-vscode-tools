@@ -399,9 +399,8 @@
   },
   "scripts": {
     "sync:extensions": "node scripts/sync-extensions.js",
-    "sync:global": "node scripts/sync-global-content.js",
     "sync:bcquality": "node scripts/sync-bcquality.js",
-    "sync:content": "npm run sync:extensions && npm run sync:global && npm run sync:bcquality",
+    "sync:content": "npm run sync:extensions && npm run sync:bcquality",
     "vscode:prepublish": "npm run sync:content && npm run build",
     "build": "node scripts/build.js --production",
     "compile": "npm run sync:content && node scripts/build.js",
