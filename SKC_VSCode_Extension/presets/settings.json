@@ -68,7 +68,6 @@
     "editor.language.brackets": [],
     "git.autofetch": true,
     "git.enableSmartCommit": true,
-    "git.confirmSync": false,
     "git.openRepositoryInParentFolders": "always",
     "settingsSync.ignoredSettings": [],
     "settingsSync.ignoredExtensions": [],
@@ -89,7 +88,6 @@
       "al.inlayhints.parameterNames.enabled"
     ],
     "workbench.activityBar.orientation": "vertical",
-    "security.workspace.trust.untrustedFiles": "open",
     "vsicons.dontShowNewVersionMessage": true,
     "window.commandCenter": true,
     "editor.experimentalGpuAcceleration": "on",
@@ -102,9 +100,6 @@
     "extensions.gallery.serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",
     "objectIdNinja.backEndUrl": "objectninja-backend.azurewebsites.net",
     "objectIdNinja.backEndUrlPoll": "objectninja-pool.azurewebsites.net",
-    "al.showHomeAtStartup": "Always",
-    "github.copilot.enable": {
-      "*": false
-    }
+    "al.showHomeAtStartup": "Always"
   }
 }

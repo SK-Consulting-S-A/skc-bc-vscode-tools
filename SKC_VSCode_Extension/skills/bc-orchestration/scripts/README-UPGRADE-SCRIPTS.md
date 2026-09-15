@@ -50,7 +50,7 @@ This creates `upgrade-config.json` with default values. Edit it with your settin
   "appIdRangeEnd": 84999,
   "customObjectRangeStart": 50000,
   "customObjectRangeEnd": 59999,
-  "prefix": "021SKC",
+  "prefix": "001ABC",
   "finsqlPath": "C:\\Program Files (x86)\\Microsoft Dynamics NAV\\100\\RoleTailored Client\\finsql.exe",
   "modelToolsPath": "C:\\Program Files (x86)\\Microsoft Dynamics NAV\\100\\RoleTailored Client\\Microsoft.Dynamics.Nav.Model.Tools.psd1",
   "txt2alPath": ""
@@ -289,12 +289,12 @@ Create test coverage for the converted AL code.
 ### Naming Convention
 
 ```json
-"prefix": "021SKC"
+"prefix": "001ABC"
 ```
 
 Applied to all generated objects:
-- `Customer Ext 021SKC` (extensions)
-- `Custom Table 021SKC` (new objects)
+- `Customer Ext 001ABC` (extensions)
+- `Custom Table 001ABC` (new objects)
 
 ### Tool Paths
 

@@ -28,13 +28,13 @@ You are a Business Central AL UI Developer. Your job is to implement pages, repo
 
 ### List Page
 ```al
-page 84000 "MyList021SKC"
+page 84000 "MyList001ABC"
 {
     PageType = List;
     ApplicationArea = All;
     UsageCategory = Lists;
-    SourceTable = "MyTable021SKC";
-    CardPageId = "MyCard021SKC";
+    SourceTable = "MyTable001ABC";
+    CardPageId = "MyCard001ABC";
     Editable = false;
     Caption = 'My List';
 

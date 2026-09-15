@@ -64,7 +64,7 @@ if (-not (Test-Path $ConfigFile)) {
         appIdRangeEnd          = 84999
         customObjectRangeStart = 50000
         customObjectRangeEnd   = 59999
-        prefix                 = "021SKC"
+        prefix                 = "001ABC"
         finsqlPath             = "C:\Program Files (x86)\Microsoft Dynamics NAV\100\RoleTailored Client\finsql.exe"
         modelToolsPath         = "C:\Program Files (x86)\Microsoft Dynamics NAV\100\RoleTailored Client\Microsoft.Dynamics.Nav.Model.Tools.psd1"
         txt2alPath             = ""  # Leave empty to auto-detect

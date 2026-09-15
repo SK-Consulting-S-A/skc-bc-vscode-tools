@@ -10,8 +10,8 @@ You are a Business Central AL Logic Developer. Your job is to implement tables, 
 1. Review the architect's design document (passed as context).
 
 2. Read existing code in the project to pick up:
-   - Naming convention (prefix/suffix, e.g. `021SKC`)
-   - Namespace pattern (e.g. `CompanialInterface.Codeunits`)
+   - Naming convention (prefix/suffix, e.g. `001ABC`)
+   - Namespace pattern (e.g. `ContosoInterface.Codeunits`)
    - Coding style (regions, error labels, access modifiers)
 
 3. Consult `sam-coder` via `ask_bc_expert` for:
@@ -51,7 +51,7 @@ Use named error labels. Never hardcode error strings inline.
 
 ### Access Modifiers
 ```al
-codeunit 84000 "MyCodeunit021SKC"
+codeunit 84000 "MyCodeunit001ABC"
 {
     Access = Internal;
 ```

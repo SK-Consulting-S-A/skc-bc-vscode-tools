@@ -18,9 +18,9 @@ Your job is to implement, review, and harden dashboard work that spans:
 - Power BI-to-BC dashboard parity
 - dashboard data shaping and filter semantics when they affect UX behavior
 
-## Repeatable SKC baseline (must apply by default)
+## Repeatable baseline (must apply by default)
 
-For SKC dashboard/control-addin work, treat the following as the default implementation template unless a requirement explicitly overrides it.
+For dashboard/control-addin work, treat the following as the default implementation template unless a requirement explicitly overrides it.
 
 ### 1) Control add-in host sizing baseline
 
@@ -40,15 +40,15 @@ When a user asks for **Contoso Cash Flow parity**, keep this sizing block exactl
 
 When dashboard export is required, include script dependencies in `Scripts =` and ensure files exist in repo:
 
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/jspdf.umd.js`
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/jspdf.plugin.autotable.min.js`
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/exceljs.min.js`
-- `src/SKC/Reporting/ControlAddins/Common/reportPdfHelper.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/jspdf.umd.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/jspdf.plugin.autotable.min.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/exceljs.min.js`
+- `src/Reporting/ControlAddins/Common/reportPdfHelper.js`
 
 Then keep:
 
-- `StartupScript = 'src/SKC/Reporting/ControlAddins/<DashFolder>/dashboard.js';`
-- `StyleSheets = 'src/SKC/Reporting/ControlAddins/<DashFolder>/dashboard.css';`
+- `StartupScript = 'src/Reporting/ControlAddins/<DashFolder>/dashboard.js';`
+- `StyleSheets = 'src/Reporting/ControlAddins/<DashFolder>/dashboard.css';`
 
 Never add `Scripts = ...` references to non-existent files.
 
@@ -77,7 +77,7 @@ For detail/list tables, include by default:
 - Use one clear vertical scroll host (`#dashboard-root` + `.dashboard-inner`) and avoid hidden-content traps.
 - Use table containers (for example `.table-panel`) with adaptive max-height.
 - Recalculate layout on render, tab switch, and viewport changes (`resize` / `orientationchange`).
-- **Default 3-layer scroll CSS (proven working in production across all 12 SKC reporting dashboards — apply verbatim unless a requirement explicitly overrides it):**
+- **Default 3-layer scroll CSS (proven working in production across the reporting dashboards — apply verbatim unless a requirement explicitly overrides it):**
 
   ```css
   html, body {
@@ -228,7 +228,7 @@ When a user asks for **Contoso Cash Flow loading parity**, mirror the same loade
 
 ### 8) Cash Flow drilldown/details parity baseline (Contoso-like)
 
-For SKC Cash Flow dashboards, preserve an Contoso-style drilldown details workflow:
+For cash-flow dashboards, preserve a Contoso-style drilldown details workflow:
 
 - Numeric matrix/table values open a details modal on click/keyboard (`Enter`/`Space`).
 - The details modal includes:

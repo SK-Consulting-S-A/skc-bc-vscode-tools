@@ -219,10 +219,10 @@ Task(bc-reviewer) → {
 
 ### 1. Hardcoded Messages → Labels
 Fixed 20+ hardcoded user-facing messages:
-- **CompanialSetup021SKC.Page.al**: 7 messages
-- **CompanialSubsCardExt021SKC.PageExt.al**: 7 messages
-- **CompanialSubsListExt021SKC.PageExt.al**: 7 messages
-- **CompanialMSHelper021SKC.Codeunit.al**: 4 error messages
+- **ContosoSetup001ABC.Page.al**: 7 messages
+- **ContosoSubsCardExt001ABC.PageExt.al**: 7 messages
+- **ContosoSubsListExt001ABC.PageExt.al**: 7 messages
+- **ContosoMSHelper001ABC.Codeunit.al**: 4 error messages
 
 ### 2. Subagent Enhanced
 Updated **bc-reviewer.md** to:

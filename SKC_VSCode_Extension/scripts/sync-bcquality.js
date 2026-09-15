@@ -5,6 +5,7 @@ const http = require("http");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { applyBcQualityIntegration } = require("./bcquality-integration");
 
 const REQUIRED_FILES = [
     "plugin.json",
@@ -422,7 +423,13 @@ async function main() {
     }
 }
 
-main().catch((error) => {
-    console.error(`[BCQuality] ${error instanceof Error ? error.message : String(error)}`);
-    process.exitCode = 1;
-});
+main()
+    .then(() => {
+        // Must run after the snapshot lands, since it wires the plugin into the
+        // repo's reviewer and orchestration assets.
+        applyBcQualityIntegration(path.resolve(__dirname, ".."));
+    })
+    .catch((error) => {
+        console.error(`[BCQuality] ${error instanceof Error ? error.message : String(error)}`);
+        process.exitCode = 1;
+    });

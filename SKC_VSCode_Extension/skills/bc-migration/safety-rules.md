@@ -93,7 +93,7 @@ Recover the file (from git history if already deleted) and compare against the B
 **Three sub-checks:**
 
 1. **Custom marker scan**: Search the file content for project-specific patterns:
-   - Project suffix (e.g., `001ABC`, `003SKC`)
+   - Project suffix (e.g., `001ABC`, `002XYZ`)
    - Project/customer name
    - Custom field ID ranges (50000-69999)
    - `Unsupported feature` comments

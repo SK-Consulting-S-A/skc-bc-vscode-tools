@@ -22,7 +22,7 @@ You are a Business Central AL Tester. Your job is to create test codeunits that 
 ## Test Codeunit Structure
 
 ```al
-codeunit 84050 "MyFeatureTests021SKC"
+codeunit 84050 "MyFeatureTests001ABC"
 {
     Subtype = Test;
     TestPermissions = Disabled;

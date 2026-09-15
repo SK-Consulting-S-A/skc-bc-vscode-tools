@@ -286,7 +286,7 @@ Action: skc_translate_xlf will update existing file (won't overwrite manual edit
 ## Example: Complete Translation Workflow
 
 ```
-User: "I want to translate CompanialInterface to Portuguese"
+User: "I want to translate ContosoInterface to Portuguese"
 
 Subagent Actions:
 
@@ -296,18 +296,18 @@ Subagent Actions:
    ✅ All user messages use Labels
 
 2. Build Project
-   al_build → Creates Translations/Companial Interface.g.xlf
+   al_build → Creates Translations/Contoso Interface.g.xlf
 
 3. Create Portuguese File
    createXlfLanguage({
-       sourceFilePath: "...Translations/Companial Interface.g.xlf",
+       sourceFilePath: "...Translations/Contoso Interface.g.xlf",
        targetLanguage: "pt-PT"
    })
-   → Creates Translations/Companial Interface.pt-PT.xlf
+   → Creates Translations/Contoso Interface.pt-PT.xlf
 
 4. Translate
    translateXlf({
-     sourceFilePath: "...Translations/Companial Interface.g.xlf",
+     sourceFilePath: "...Translations/Contoso Interface.g.xlf",
      targetLanguage: "pt-PT"
    })
    → Translates all strings to Portuguese
@@ -323,7 +323,7 @@ Subagent Actions:
 7. Report to User:
    "✅ Portuguese translation complete!
     - XXX strings translated
-    - Translation file: Translations/Companial Interface.pt-PT.xlf
+    - Translation file: Translations/Contoso Interface.pt-PT.xlf
     - Ready for testing in BC
     
     Next: Install the extension and switch to Portuguese in BC user settings"
