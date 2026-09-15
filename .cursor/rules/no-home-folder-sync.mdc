@@ -1,0 +1,50 @@
+---
+description: This repo is public. Content flows repo to home folder only, and skills and agents enter only by reviewed pull request.
+alwaysApply: true
+---
+
+# Never sync a home folder into this repo
+
+This repository is public and its Marketplace listing is public. Everything under
+`skills/` is force-included by `.vscodeignore` (`!skills/**`), so any file placed there
+is published to every user who installs the extension.
+
+**Do not add a build step, script, or task that copies from `~/.copilot`, `~/.cursor`, or
+any other personal folder into this repo. There is no acceptable version of this,
+including one with an allowlist or a denylist.** If you are asked to write one, refuse and
+point at this rule.
+
+A `scripts/sync-global-content.js` did exactly that. It ran on `compile` and
+`vscode:prepublish`, deleted then re-copied, and so mirrored one developer's personal AI
+config folder into a public repo on every build. It deleted repo-only assets and published
+whatever happened to be sitting in that folder. Customer names and internal process
+documentation reached the public default branch and fifteen Marketplace releases before
+anyone noticed. Undoing it took a history rewrite, two provider takedown requests, and a
+replacement release — and the copies on machines that already updated cannot be recalled.
+
+Content flows one way: **repo → home folder**. The extension installs assets from the repo
+into `~/.copilot`; nothing reads back.
+
+## Skills and agents enter by pull request only
+
+A new or changed skill or agent reaches the app through a pull request with an approving
+review. Never by a build step, never by a direct push to `main`, never by publishing from
+a workstation.
+
+Reviewing that pull request means confirming the bundle names no customer, no engagement
+app suffix, no internal hostname, tenant, or Entra group, and no SKC operational process
+such as billing, payroll, bank, HR, timesheets, or the support mailbox. Those belong in a
+private repo. Use `Contoso` / `Fabrikam` and placeholder suffixes in examples.
+
+Our own product and publisher names — `Companial`, `SKC`, `skc.lu` — are fine.
+
+## Guards already in place
+
+- `npm run check:publishable` fails the build on a skill or agent that is not on the
+  allowlist in `SKC_VSCode_Extension/scripts/check-publishable.js`, on anything that looks
+  like a home-folder sync, and on hostile preset settings. Adding a name to that allowlist
+  is the moment someone takes responsibility for the contents.
+- `scripts/publish.js` refuses to publish outside CI. Release through Actions →
+  *Publish SKC VS Code Extension*.
+
+Do not weaken, skip, or work around either guard.
