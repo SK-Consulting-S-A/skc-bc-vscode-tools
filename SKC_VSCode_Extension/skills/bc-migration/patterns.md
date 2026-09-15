@@ -254,7 +254,7 @@ and the following character determines the actual diacritical mark. When fixing:
 Corrupted French in field names should be replaced with clean ASCII equivalents (no diacritics):
 - `"Dur"e d'amortissement"` → `"DepreciationDuration<Suffix>"`
 - `"Code Tra"ºabilit""` → `"TraceabilityCode<Suffix>"`
-- `"Exon"ration Diplomatique"` → `"DiplomaticExemption<Suffix>"`
+- `"Special Handling Flag"` → `"SpecialHandlingFlag<Suffix>"`
 - `"Texte Liber""` → `"FreeText<Suffix>"`
 
 ### For Label Values — Use Proper French UTF-8
@@ -341,12 +341,12 @@ In AL, field names only require quotes when they contain spaces, special charact
 // Before (txt2al output — unnecessary quotes)
 field(50000; "BuyFromVendorNoPROJ"; Code[20]) { }
 field(50001; "OrderNoPROJ"; Code[20]) { }
-field(50002; "ExonerationDiplomatiquePROJ"; Boolean) { }
+field(50002; "SpecialHandlingFlagPROJ"; Boolean) { }
 
 // After (clean — no quotes needed)
 field(50000; BuyFromVendorNoPROJ; Code[20]) { }
 field(50001; OrderNoPROJ; Code[20]) { }
-field(50002; ExonerationDiplomatiquePROJ; Boolean) { }
+field(50002; SpecialHandlingFlagPROJ; Boolean) { }
 ```
 
 **When to keep quotes:**

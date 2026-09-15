@@ -74,7 +74,7 @@ User: "Translate to French"
 
 Subagent automatically:
 1. Builds project → Creates .g.xlf
-2. Creates French XLF → Companial Interface.fr-FR.xlf
+2. Creates French XLF → Contoso Interface.fr-FR.xlf
 3. Translates → 100% via Azure Translator
 4. Verifies → Checks all strings translated
 5. Rebuilds → Package includes French
@@ -340,7 +340,7 @@ al_build → Package includes translation
 
 ---
 
-## Example: CompanialInterface Translation
+## Example: ContosoInterface Translation
 
 ### Current Status:
 - ✅ app.json has GenerateCaptions
@@ -350,14 +350,14 @@ al_build → Package includes translation
 
 ### To Translate:
 ```
-"Translate CompanialInterface to Portuguese and French"
+"Translate ContosoInterface to Portuguese and French"
 ```
 
 ### What Happens:
 ```
-1. Builds → Creates Companial Interface.g.xlf (247 strings)
-2. Creates → Companial Interface.pt-PT.xlf
-3. Creates → Companial Interface.fr-FR.xlf
+1. Builds → Creates Contoso Interface.g.xlf (247 strings)
+2. Creates → Contoso Interface.pt-PT.xlf
+3. Creates → Contoso Interface.fr-FR.xlf
 4. Translates → Both to 100%
 5. Rebuilds → Package with 3 languages (EN, PT, FR)
 6. Reports → "✅ Translation complete!"

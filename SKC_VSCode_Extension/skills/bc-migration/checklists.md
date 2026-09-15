@@ -309,8 +309,8 @@ For each page or report in `CustomAL/` with a standard-range ID (99000xxx, 2000x
 
 **Step 3: Pass 2 — BC25 source code comparison** (for files with no DELTA)
 - [ ] **Custom marker scan**: Search file content for project-specific patterns:
-  - [ ] Project suffix (e.g., `002CGD`, `003SKC`)
-  - [ ] Project/customer name (`CGDIS`, `CGIDIS`, etc.)
+  - [ ] Project suffix (e.g., `001ABC`, `002XYZ`)
+  - [ ] Project/customer name (`Contoso`, `Fabrikam`, etc.)
   - [ ] Custom field ID ranges: `field(5[0-9]{4}` or `field(6[0-9]{4}`
   - [ ] `Unsupported feature` comments
   - [ ] Custom procedure naming patterns

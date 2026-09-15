@@ -166,7 +166,7 @@ $txt2al = ".\bin\Txt2Al.exe"  # or from AL extension
    Glob: **/*.al
    ```
 3. Use `Read` on a few existing AL files to understand:
-   - Prefix/suffix pattern (e.g., `021SKC`)
+   - Prefix/suffix pattern (e.g., `001ABC`)
    - Namespace structure
    - Code style (regions, access modifiers, documentation)
 
@@ -189,7 +189,7 @@ For each DELTA file, apply the following logic:
 **Example**:
 ```
 Input: TAB18.DELTA (Table 18 "Customer" with custom fields 50000..50002)
-Output: tableextension 84000 "Customer Ext 021SKC" extends Customer
+Output: tableextension 84000 "Customer Ext 001ABC" extends Customer
 ```
 
 #### Object ID >= 50000 (Fully Custom Object)
@@ -204,7 +204,7 @@ Output: tableextension 84000 "Customer Ext 021SKC" extends Customer
 **Example**:
 ```
 Input: TAB50000.txt (Table 50000 "Custom Integration Log")
-Output: table 50000 "Custom Integration Log 021SKC"
+Output: table 50000 "Custom Integration Log 001ABC"
 ```
 
 #### Field ID Detection in Delta Files
@@ -608,8 +608,8 @@ Produce a comprehensive conversion report covering BOTH modes:
 ### Generated Files
 | File | Object Type | Object ID | Mode | Source File | Notes |
 |------|-------------|-----------|------|-------------|-------|
-| Tab-Ext18.CustomerExt021SKC.al | tableextension | 84000 | 1 | TAB18.DELTA | 3 custom fields, 1 procedure |
-| Pag-Ext42.SalesOrderExt021SKC.al | pageextension | 84001 | 1 | PAG42.DELTA | 2 custom actions |
+| Tab-Ext18.CustomerExt001ABC.al | tableextension | 84000 | 1 | TAB18.DELTA | 3 custom fields, 1 procedure |
+| Pag-Ext42.SalesOrderExt001ABC.al | pageextension | 84001 | 1 | PAG42.DELTA | 2 custom actions |
 | Tab50000.CustomIntegrationLog.al | table | 50000 | 2 | TAB50000.txt | Txt2Al.exe conversion |
 | Pag50100.CustomSetup.al | page | 50100 | 2 | PAG50100.txt | Txt2Al.exe conversion |
 | Cod50000.IntegrationManager.al | codeunit | 50000 | 2 | COD50000.txt | Txt2Al.exe conversion |
@@ -617,9 +617,9 @@ Produce a comprehensive conversion report covering BOTH modes:
 ### Manual Review Items
 | File | Line | Pattern | Recommendation |
 |------|------|---------|----------------|
-| Tab50000.CustomIntegrationLog021SKC.al | 45 | .NET interop (HttpClient) | Replace with AL HttpClient codeunit |
-| Cod50000.CustomIntegration021SKC.al | 120 | BLOB field handling | Migrate to Media/MediaSet based on usage |
-| Pag50100.CustomSetup021SKC.al | 67 | Option field | Create separate Enum type |
+| Tab50000.CustomIntegrationLog001ABC.al | 45 | .NET interop (HttpClient) | Replace with AL HttpClient codeunit |
+| Cod50000.CustomIntegration001ABC.al | 120 | BLOB field handling | Migrate to Media/MediaSet based on usage |
+| Pag50100.CustomSetup001ABC.al | 67 | Option field | Create separate Enum type |
 
 ### Upgrade Warnings (from logan-legacy)
 - **Breaking Change**: NAV 2017 `FORM` references must be changed to `Page` references
@@ -691,7 +691,7 @@ Produce a comprehensive conversion report covering BOTH modes:
 2. Parse DELTA: Extract custom fields 50000, 50001, 50002
 3. Verify target: `al_symbolsearch(query: "Customer", filters: {kinds: ["Table"]})`
 4. Consult logan-legacy for upgrade patterns
-5. Generate: `tableextension 84000 "Customer Ext 021SKC" extends Customer`
+5. Generate: `tableextension 84000 "Customer Ext 001ABC" extends Customer`
 
 **Time**: ~2 minutes (parsing + specialist consultation)
 

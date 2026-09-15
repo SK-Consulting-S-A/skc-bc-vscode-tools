@@ -323,7 +323,7 @@ This is the single most dangerous mistake in the entire migration workflow:
 **Detection — 5 signs that "standard" source isn't standard:**
 
 1. **Object ID is in the custom range** (50000+ or 54xxx) — standard CUs have IDs < 50000
-2. **Custom field names appear** — fields like `"Free Text"`, `"Custom Vendor Code"`, or `"Diplomatic Exemption"` are never part of standard BC
+2. **Custom field names appear** — fields like `"Free Text"`, `"Custom Vendor Code"`, or `"Special Handling"` are never part of standard BC
 3. **Developer comments with dates/initials** — `//130618:SSC:`, `//-->20220328-NEM01`, `//PR20/00264:ServItemApprov` are custom change-tracking tags
 4. **`// Replaces standard Codeunit NNN` header** — this is the traceability comment from the migration itself
 5. **Custom procedures exist** — procedures not found in standard BC documentation (e.g., `CreateServItemOnPurchLineRcpt`, `UnApplyCodaStatementCustLedgerEntry`)

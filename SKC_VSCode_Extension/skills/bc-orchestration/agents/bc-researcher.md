@@ -165,7 +165,7 @@ Always analyze the current project to ensure consistency:
 2. Use `Grep` to find specific event subscribers, table references, integration patterns
 3. Use `Glob` to understand the project's folder structure and naming conventions
 4. Identify:
-   - Naming convention (prefix/suffix, e.g., `021SKC`)
+   - Naming convention (prefix/suffix, e.g., `001ABC`)
    - Existing error handling patterns (Label variables, telemetry)
    - Integration patterns already in use
    - Code style (regions, access modifiers, documentation comments)

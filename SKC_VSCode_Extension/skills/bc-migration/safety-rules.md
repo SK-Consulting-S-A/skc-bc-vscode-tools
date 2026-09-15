@@ -41,7 +41,7 @@ Check EVERY file claimed to be "standard source" for these red flags:
 | # | Check | Standard | Custom copy |
 |---|---|---|---|
 | 1 | **Object ID** | < 50000 (e.g., 1535, 80, 226) | 50000+ or 54xxx (e.g., 54038, 54010) |
-| 2 | **Field references** | Only standard BC field names | Custom fields like `"Free Text"`, `"Diplomatic Exemption"` |
+| 2 | **Field references** | Only standard BC field names | Custom fields like `"Free Text"`, `"Special Handling"` |
 | 3 | **Developer comments** | None, or Microsoft's standardized comments | Date-tagged comments: `//130618:DEV:`, `//-->20220328-FEAT01` |
 | 4 | **Traceability header** | None | `// Replaces standard Codeunit NNN "Name"` |
 | 5 | **Custom procedures** | Only procedures documented in MS Learn | Procedures like `CreateServItemOnPurchLineRcpt`, `UnApplyCodaStatementCustLedgerEntry` |
@@ -93,7 +93,7 @@ Recover the file (from git history if already deleted) and compare against the B
 **Three sub-checks:**
 
 1. **Custom marker scan**: Search the file content for project-specific patterns:
-   - Project suffix (e.g., `002CGD`, `003SKC`)
+   - Project suffix (e.g., `001ABC`, `002XYZ`)
    - Project/customer name
    - Custom field ID ranges (50000-69999)
    - `Unsupported feature` comments

@@ -176,7 +176,7 @@ if (tabCf) {
 
 *Panel structure* (`position: fixed`, appended to `document.body`):
 1. Header row — column name + `×` close button (dark primary background)
-2. Summary line — e.g. `"13 of 14 selected"` or `"is Afarak Group SE, Carbomax AB"`
+2. Summary line — e.g. `"13 of 14 selected"` or `"is Contoso Ltd, Fabrikam Inc"`
 3. "FILTER TYPE" label + `"Basic filtering"` chip (static, no interaction needed)
 4. Search `<input>` — real-time substring filter on the value list
 5. Select-all `<label><input type="checkbox">` — supports `indeterminate` state when partially selected

@@ -10,6 +10,43 @@ const BCQUALITY_SKILL_NAME = "bcquality";
 // overwritten by an older copy from the user's global Copilot content.
 const SKC_MANAGED_SKILL_NAMES = new Set(["bc-orchestration"]);
 const SKC_MANAGED_AGENT_NAMES = new Set(["bc-translator.agent.md"]);
+
+// This extension is published to the public Marketplace and its source repo is
+// public, so the sync is an allowlist: a bundle in the developer's ~/.copilot
+// folder ships only if it is named here. Anything else is skipped and reported.
+// Adding a name is the point at which someone must confirm the bundle contains
+// no customer names, internal hostnames, or private-repo workflows.
+const PUBLIC_SKILL_NAMES = new Set([
+    "anthropic-skills",
+    "applying-brand-guidelines",
+    "bc-agent-sdk",
+    "bc-control-addin",
+    "bc-migration",
+    "bc-word-layout",
+    "docx",
+    "frontend-slides",
+    "loop",
+    "mermaid-to-word",
+    "pbi-to-bc-dashboard",
+    "pptx",
+    "ui-ux-pro-max",
+    "web-artifacts-builder",
+    "xlsx",
+]);
+const PUBLIC_AGENT_NAMES = new Set([
+    "al-development.agent.md",
+    "bc-agent-sdk.agent.md",
+    "bc-al-logic.agent.md",
+    "bc-al-ui.agent.md",
+    "bc-architect.agent.md",
+    "bc-cal-converter.agent.md",
+    "bc-control-addin.agent.md",
+    "bc-orchestration.agent.md",
+    "bc-researcher.agent.md",
+    "bc-reviewer.agent.md",
+    "bc-tester.agent.md",
+    "dashboard-addin-specialist.agent.md",
+]);
 const RENAMED_TOOL_IDS = new Map([
     ["memory", "vscode/memory"],
     ["al_build", "ms-dynamics-smb.al/al_build"],
@@ -113,9 +150,12 @@ function syncSkills(sourceRoot, targetRoot) {
     }
 
     fs.mkdirSync(targetSkills, { recursive: true });
-    const skillDirectories = fs.readdirSync(sourceSkills, { withFileTypes: true })
+    const candidates = fs.readdirSync(sourceSkills, { withFileTypes: true })
         .filter((entry) => entry.isDirectory() && !EXCLUDED_NAMES.has(entry.name) && entry.name !== BCQUALITY_SKILL_NAME && !SKC_MANAGED_SKILL_NAMES.has(entry.name))
         .sort((left, right) => left.name.localeCompare(right.name));
+
+    const skillDirectories = candidates.filter((entry) => PUBLIC_SKILL_NAMES.has(entry.name));
+    const skipped = candidates.filter((entry) => !PUBLIC_SKILL_NAMES.has(entry.name));
 
     for (const entry of skillDirectories) {
         replaceDirectory(
@@ -125,6 +165,7 @@ function syncSkills(sourceRoot, targetRoot) {
     }
 
     console.log(`[SKC] Synchronized ${skillDirectories.length} global skill bundle(s) from ${sourceSkills}.`);
+    reportSkipped("skill bundle", skipped.map((entry) => entry.name));
     return skillDirectories.length;
 }
 
@@ -137,9 +178,12 @@ function syncAgents(sourceRoot, targetRoot) {
     }
 
     fs.mkdirSync(targetAgents, { recursive: true });
-    const agentFiles = fs.readdirSync(sourceAgents, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md") && entry.name !== "algo-settings.agent.md" && !SKC_MANAGED_AGENT_NAMES.has(entry.name))
+    const agentCandidates = fs.readdirSync(sourceAgents, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md") && !SKC_MANAGED_AGENT_NAMES.has(entry.name))
         .sort((left, right) => left.name.localeCompare(right.name));
+
+    const agentFiles = agentCandidates.filter((entry) => PUBLIC_AGENT_NAMES.has(entry.name));
+    const skippedAgents = agentCandidates.filter((entry) => !PUBLIC_AGENT_NAMES.has(entry.name));
     const allowedNames = new Set(agentFiles.map((entry) => entry.name));
 
     for (const entry of fs.readdirSync(targetAgents, { withFileTypes: true })) {
@@ -154,8 +198,18 @@ function syncAgents(sourceRoot, targetRoot) {
         normalizeAgentFrontmatter(targetPath);
     }
 
-    console.log(`[SKC] Synchronized ${agentFiles.length} global agent(s), excluding algo-settings.agent.md.`);
+    console.log(`[SKC] Synchronized ${agentFiles.length} global agent(s).`);
+    reportSkipped("agent", skippedAgents.map((entry) => entry.name));
     return agentFiles.length;
+}
+
+function reportSkipped(kind, names) {
+    if (!names.length) {
+        return;
+    }
+
+    console.log(`[SKC] Skipped ${names.length} ${kind}(s) not on the public allowlist: ${names.join(", ")}.`);
+    console.log(`[SKC] To publish one, add it to the allowlist in scripts/sync-global-content.js after confirming it contains nothing internal.`);
 }
 
 function main() {

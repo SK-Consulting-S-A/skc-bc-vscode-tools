@@ -18,9 +18,9 @@ Your job is to implement, review, and harden dashboard work that spans:
 - Power BI-to-BC dashboard parity
 - dashboard data shaping and filter semantics when they affect UX behavior
 
-## Repeatable SKC baseline (must apply by default)
+## Repeatable baseline (must apply by default)
 
-For SKC dashboard/control-addin work, treat the following as the default implementation template unless a requirement explicitly overrides it.
+For dashboard/control-addin work, treat the following as the default implementation template unless a requirement explicitly overrides it.
 
 ### 1) Control add-in host sizing baseline
 
@@ -34,21 +34,21 @@ In `*.controladdin.al`, keep this standard block:
 
 Do not add `RequestedWidth`/`MaximumHeight`/`MaximumWidth` unless a dashboard has an explicit requirement for them.
 
-When a user asks for **Afarak Cash Flow parity**, keep this sizing block exactly as in Afarak Cash Flow and prefer direct page hosting (`area(Content)` -> `usercontrol(...)`) instead of wrapping the add-in in extra layout groups that change effective host space.
+When a user asks for **Contoso Cash Flow parity**, keep this sizing block exactly as in Contoso Cash Flow and prefer direct page hosting (`area(Content)` -> `usercontrol(...)`) instead of wrapping the add-in in extra layout groups that change effective host space.
 
 ### 2) Export library scripts baseline (for dashboards with PDF/Excel export)
 
 When dashboard export is required, include script dependencies in `Scripts =` and ensure files exist in repo:
 
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/jspdf.umd.js`
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/jspdf.plugin.autotable.min.js`
-- `src/SKC/Reporting/ControlAddins/<DashFolder>/lib/exceljs.min.js`
-- `src/SKC/Reporting/ControlAddins/Common/reportPdfHelper.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/jspdf.umd.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/jspdf.plugin.autotable.min.js`
+- `src/Reporting/ControlAddins/<DashFolder>/lib/exceljs.min.js`
+- `src/Reporting/ControlAddins/Common/reportPdfHelper.js`
 
 Then keep:
 
-- `StartupScript = 'src/SKC/Reporting/ControlAddins/<DashFolder>/dashboard.js';`
-- `StyleSheets = 'src/SKC/Reporting/ControlAddins/<DashFolder>/dashboard.css';`
+- `StartupScript = 'src/Reporting/ControlAddins/<DashFolder>/dashboard.js';`
+- `StyleSheets = 'src/Reporting/ControlAddins/<DashFolder>/dashboard.css';`
 
 Never add `Scripts = ...` references to non-existent files.
 
@@ -77,7 +77,7 @@ For detail/list tables, include by default:
 - Use one clear vertical scroll host (`#dashboard-root` + `.dashboard-inner`) and avoid hidden-content traps.
 - Use table containers (for example `.table-panel`) with adaptive max-height.
 - Recalculate layout on render, tab switch, and viewport changes (`resize` / `orientationchange`).
-- **Default 3-layer scroll CSS (proven working in production across all 12 SKC reporting dashboards — apply verbatim unless a requirement explicitly overrides it):**
+- **Default 3-layer scroll CSS (proven working in production across the reporting dashboards — apply verbatim unless a requirement explicitly overrides it):**
 
   ```css
   html, body {
@@ -221,14 +221,14 @@ For detail/list tables, include by default:
 - Keep loading visually centered within the dashboard frame and avoid full-screen takeover panels.
 - Keep error state separate from loading state (for example `setErrorState(msg)`).
 
-When a user asks for **Afarak Cash Flow loading parity**, mirror the same loader structure and style:
+When a user asks for **Contoso Cash Flow loading parity**, mirror the same loader structure and style:
 - `setLoadingState` renders `#dashboard-root > .placeholder.loading-placeholder` (no extra wrapper around placeholder in loading state),
 - `.placeholder` keeps `min-height: 100%` for host-height centering,
-- `.loading-placeholder` uses the Cash Flow gradient card treatment (border radius, shadow, and border values consistent with Afarak Cash Flow).
+- `.loading-placeholder` uses the Cash Flow gradient card treatment (border radius, shadow, and border values consistent with Contoso Cash Flow).
 
-### 8) Cash Flow drilldown/details parity baseline (Afarak-like)
+### 8) Cash Flow drilldown/details parity baseline (Contoso-like)
 
-For SKC Cash Flow dashboards, preserve an Afarak-style drilldown details workflow:
+For cash-flow dashboards, preserve a Contoso-style drilldown details workflow:
 
 - Numeric matrix/table values open a details modal on click/keyboard (`Enter`/`Space`).
 - The details modal includes:
@@ -315,7 +315,7 @@ Keep dashboard work aligned with repository conventions:
 - Verify toolbar/button styles match the Cash Flow visual pattern (hover/active/focus/disabled)
 - Verify sheet/tab buttons follow Cash Flow `tab-btn` behavior/appearance when parity is requested
 - Verify animated loading appears on initial dashboard load and during refreshes triggered by filters
-- For Afarak parity requests, verify loading DOM/CSS matches Afarak Cash Flow pattern (structure + visual styling)
+- For Contoso parity requests, verify loading DOM/CSS matches Contoso Cash Flow pattern (structure + visual styling)
 - Verify loading panel is centered in-frame and does not visually fill/take over the entire screen
 - Verify Cash Flow drilldown opens from numeric cells and shows labeled explanation notes
 - Verify details export action is present in the drilldown modal and produces a file

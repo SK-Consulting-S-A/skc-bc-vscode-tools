@@ -414,7 +414,7 @@ txt2al batch conversion often includes **full copies of standard pages and repor
 
 **Pass 2 — BC25 source comparison details:**
 
-1. **Custom marker scan**: Search the file for project-specific patterns — project suffix (e.g., `002CGD`), project name, custom field ID ranges (50000-69999), `Unsupported feature` comments, custom procedure naming patterns. Any hit means the file has custom content.
+1. **Custom marker scan**: Search the file for project-specific patterns — project suffix (e.g., `001ABC`), project name, custom field ID ranges (50000-69999), `Unsupported feature` comments, custom procedure naming patterns. Any hit means the file has custom content.
 2. **Structural procedure comparison**: Extract all `procedure` and `trigger` names from the file. Verify each exists in the BC25 standard counterpart. Procedures missing from BC25 need individual investigation — they may be standard BC14 code refactored in later versions (common for helper methods like `GetLastViewedJournalBatchName`, `ShowTracking`, `MATRIX_GenerateColumnCaptions`) or actual customizations.
 3. **Line count comparison**: The copy should have **fewer or equal** lines compared to BC25 (BC25 adds namespaces, copyright headers, modern features). A copy with significantly **more** lines than BC25 likely contains custom code.
 
@@ -429,7 +429,7 @@ txt2al batch conversion often includes **full copies of standard pages and repor
 
 **When renumbering (objects with DELTAs):**
 - Assign a new ID in your custom range (e.g., 53xxx for reports)
-- Add project suffix to the object name (e.g., `"Payment Journal Post002CGD"`)
+- Add project suffix to the object name (e.g., `"Payment Journal Post001ABC"`)
 - Update the file name to match your naming convention
 - The DELTA content tells you what customizations exist — plan cleanup for a later wave
 
