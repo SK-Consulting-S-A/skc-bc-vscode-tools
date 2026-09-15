@@ -70,6 +70,33 @@ npm start                # spawns .NET binary via cross-spawn, reads appsettings
 - Skills in `SKC_VSCode_Extension/skills/` are installed to `~/.copilot/skills/`.
 - The `bc-orchestration` skill coordinates a phased multi-agent BC development workflow (researcher → architect → logic dev → UI dev → tester → reviewer → translator).
 
+#### Content flows one way only: repo → home folder
+
+The repo is the source of truth. Agents and skills are edited here, committed, reviewed,
+and shipped. **Never add a build step that copies from `~/.copilot` (or `~/.cursor`) back
+into the repo.**
+
+A `scripts/sync-global-content.js` used to do exactly that. It ran on `compile` and
+`vscode:prepublish`, did `rmSync` then copy, and so mirrored one maintainer's personal
+Copilot folder into this public repo on every build — deleting repo-only assets and
+publishing whatever happened to be in that folder. Customer names and internal process
+documentation reached the public default branch that way, and removing them required a
+history rewrite. The script is gone; do not reintroduce it in any form, including a
+version with an allowlist.
+
+Consequences worth remembering before adding anything under `skills/` or `agents/`:
+
+- `.vscodeignore` contains `!skills/**`, so anything under `skills/` **is packaged and
+  published** to the Marketplace. A stray directory ships.
+- This repo is public and the Marketplace listing is public. Assume every file here is
+  world-readable.
+- Anything naming a customer, a real engagement's app suffix, an internal hostname,
+  tenant, Entra group, or an SKC operational process (billing, payroll, bank, HR,
+  timesheets, support mailbox) does not belong here. Those live in a private repo.
+
+Use `Contoso` / `Fabrikam` and placeholder suffixes in examples, the way the existing
+skills do.
+
 ## Key Files
 
 | File | Purpose |
