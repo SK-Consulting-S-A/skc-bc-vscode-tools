@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC AL Tools",
   "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and the SKC Dark theme.",
-  "version": "3.0.8",
+  "version": "3.0.15",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -17,7 +17,7 @@
   "bugs": {
     "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues"
   },
-  "_comment": "Public listing: https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools — keep visibility Public. Publisher ID SKConsultingSA must not change.",
+  "_comment": "Public listing: https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools â€” keep visibility Public. Publisher ID SKConsultingSA must not change.",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -62,6 +62,11 @@
           "id": "skc.translationsView",
           "name": "Translations",
           "contextualTitle": "SKC Translations"
+        },
+        {
+          "id": "skc.translationJobsView",
+          "name": "Translation Jobs",
+          "contextualTitle": "SKC Translation Jobs"
         }
       ]
     },
@@ -121,6 +126,11 @@
         "command": "skc.filterUntranslated",
         "title": "Find Untranslated Units",
         "icon": "$(search)"
+      },
+      {
+        "command": "skc.cancelTranslationJob",
+        "title": "Cancel Azure Translation Job",
+        "icon": "$(stop-circle)"
       }
     ],
     "menus": {
@@ -128,6 +138,11 @@
         {
           "command": "skc.refreshTranslations",
           "when": "view == skc.translationsView",
+          "group": "navigation"
+        },
+        {
+          "command": "skc.refreshTranslations",
+          "when": "view == skc.translationJobsView",
           "group": "navigation"
         },
         {
@@ -156,6 +171,11 @@
           "command": "skc.translateFile",
           "when": "view == skc.translationsView && viewItem == sourceFile",
           "group": "inline@2"
+        },
+        {
+          "command": "skc.cancelTranslationJob",
+          "when": "view == skc.translationJobsView && viewItem == translationJob",
+          "group": "inline"
         }
       ]
     },
@@ -189,7 +209,7 @@
       {
         "name": "skc_create_xlf_language",
         "displayName": "Create XLF Language File",
-        "modelDescription": "Creates a new target-language XLF translation file from an existing Business Central source file (*.g.xlf). All translation units are copied with state='needs-translation' so they can be translated afterwards. Use before calling skc_translate_xlf when the target language file does not yet exist. Returns the path of the created file or an error if the file already exists.\n\nExamples:\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'de-DE' → creates MyApp.de-DE.xlf\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'pt-PT' → creates MyApp.pt-PT.xlf",
+        "modelDescription": "Creates a new target-language XLF translation file from an existing Business Central source file (*.g.xlf). All translation units are copied with state='needs-translation' so they can be translated afterwards. Use before calling skc_translate_xlf when the target language file does not yet exist. Returns the path of the created file or an error if the file already exists.\n\nExamples:\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'de-DE' â†’ creates MyApp.de-DE.xlf\n- sourceFilePath: 'C:/MyProject/Translations/MyApp.g.xlf', targetLanguage: 'pt-PT' â†’ creates MyApp.pt-PT.xlf",
         "userDescription": "Create a new XLF language file from a source .g.xlf.",
         "canBeReferencedInPrompt": true,
         "toolReferenceName": "createXlfLanguage",
@@ -372,8 +392,7 @@
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
-      "ms-python.debugpy",
-      "vjeko.vjeko-al-objid"
+      "ms-python.debugpy"
     ],
     "extensionPack": [
       "ms-dynamics-smb.al",
@@ -393,18 +412,18 @@
       "vscode-icons-team.vscode-icons",
       "waldo.crs-al-language-extension",
       "ms-python.python",
-      "ms-python.debugpy",
-      "vjeko.vjeko-al-objid"
+      "ms-python.debugpy"
     ]
   },
   "scripts": {
     "sync:extensions": "node scripts/sync-extensions.js",
     "sync:bcquality": "node scripts/sync-bcquality.js",
     "sync:content": "npm run sync:extensions && npm run sync:bcquality",
-    "vscode:prepublish": "npm run sync:content && npm run build",
+    "check:publishable": "node scripts/check-publishable.js",
+    "vscode:prepublish": "npm run check:publishable && npm run sync:content && npm run build",
     "build": "node scripts/build.js --production",
     "compile": "npm run sync:content && node scripts/build.js",
-    "package": "npm run build && vsce package",
+    "package": "npm run check:publishable && npm run build && vsce package",
     "publish": "npm run compile && node scripts/publish.js",
     "publish:patch": "npm run compile && node scripts/publish.js patch",
     "publish:minor": "npm run compile && node scripts/publish.js minor",

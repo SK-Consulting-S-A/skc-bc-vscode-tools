@@ -94,8 +94,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
   setImmediate(() => {
     void (async () => {
       const [
-        { TranslationsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass },
-        { translateFile, createTranslationFile },
+        { TranslationsProvider, TranslationJobsProvider, SourceFileItem: SourceFileItemClass, TargetLanguageItem: TargetLanguageItemClass, TranslationJobItem },
+        { translateFile, createTranslationFile, configureTranslationState, cancelTrackedJob },
         { registerTranslationTools }
       ] = await Promise.all([
         import("./translationsView"),
@@ -103,13 +103,22 @@ export async function activate(context: ExtensionContext): Promise<void> {
         import("./translationTools")
       ]);
 
+      await configureTranslationState(context.workspaceState);
+
       const translationsProvider = new TranslationsProvider();
+      const jobsProvider = new TranslationJobsProvider();
       const translationsView = window.createTreeView("skc.translationsView", {
         treeDataProvider: translationsProvider,
         showCollapseAll: false
       });
       context.subscriptions.push(translationsView);
       context.subscriptions.push({ dispose: () => translationsProvider.dispose() });
+      const jobsView = window.createTreeView("skc.translationJobsView", {
+        treeDataProvider: jobsProvider,
+        showCollapseAll: false
+      });
+      context.subscriptions.push(jobsView);
+      context.subscriptions.push({ dispose: () => jobsProvider.dispose() });
 
       context.subscriptions.push(commands.registerCommand(
         "skc.translateFile",
@@ -131,6 +140,31 @@ export async function activate(context: ExtensionContext): Promise<void> {
           if (sourceFile && language) {
             await createTranslationFile(sourceFile.resourceUri, language, channel);
             translationsProvider.refresh();
+          }
+        }
+      ));
+      context.subscriptions.push(commands.registerCommand(
+        "skc.cancelTranslationJob",
+        async (item?: InstanceType<typeof TranslationJobItem>) => {
+          if (!(item instanceof TranslationJobItem)) {
+            void window.showWarningMessage("Please select a translation job from the Translation Jobs section.");
+            return;
+          }
+
+          const choice = await window.showWarningMessage(
+            `Cancel and delete Azure job ${item.job.jobId}? The local XLF file will not be changed.`,
+            { modal: true },
+            "Cancel Azure Job"
+          );
+          if (choice !== "Cancel Azure Job") return;
+
+          const cleaned = await cancelTrackedJob(item.job, channel);
+          if (cleaned) {
+            translationsProvider.refresh();
+            jobsProvider.refresh();
+            void window.showInformationMessage(`Azure translation job ${item.job.jobId} was cancelled and deleted.`);
+          } else {
+            void window.showErrorMessage(`Could not cancel Azure translation job ${item.job.jobId}.`);
           }
         }
       ));
@@ -181,7 +215,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
           translationsProvider.refresh();
         }
       ));
-      context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => translationsProvider.refresh()));
+      context.subscriptions.push(commands.registerCommand("skc.refreshTranslations", () => {
+        translationsProvider.refresh();
+        jobsProvider.refresh();
+      }));
       context.subscriptions.push(commands.registerCommand(
         "skc.openTransUnit",
         async (fileUri: Uri, unitId: string) => {

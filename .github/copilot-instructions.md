@@ -79,17 +79,26 @@ into the repo.**
 A `scripts/sync-global-content.js` used to do exactly that. It ran on `compile` and
 `vscode:prepublish`, did `rmSync` then copy, and so mirrored one maintainer's personal
 Copilot folder into this public repo on every build — deleting repo-only assets and
-publishing whatever happened to be in that folder. Customer names and internal process
-documentation reached the public default branch that way, and removing them required a
-history rewrite. The script is gone; do not reintroduce it in any form, including a
-version with an allowlist.
+publishing whatever happened to be in that folder. Internal material reached the public
+default branch that way, and because publishing was also being done from a workstation,
+it reached the Marketplace and every installed copy before anyone noticed. Cleaning up
+took a history rewrite and a replacement release. The script is gone; do not reintroduce
+it in any form, including a version with an allowlist.
+
+Two guards now stand in the way, and both should be left in place:
+
+- `npm run check:publishable` fails the build on an unlisted skill or agent, on a
+  home-folder sync, and on hostile preset settings. See
+  [PUBLISHING.md](../SKC_VSCode_Extension/PUBLISHING.md#the-publish-gate).
+- `scripts/publish.js` refuses to publish outside CI, so a release cannot bypass review.
 
 Consequences worth remembering before adding anything under `skills/` or `agents/`:
 
 - `.vscodeignore` contains `!skills/**`, so anything under `skills/` **is packaged and
   published** to the Marketplace. A stray directory ships.
 - This repo is public and the Marketplace listing is public. Assume every file here is
-  world-readable.
+  world-readable, and that publishing is irreversible: a version cannot be un-shipped
+  from machines that already updated.
 - Anything naming a customer, a real engagement's app suffix, an internal hostname,
   tenant, Entra group, or an SKC operational process (billing, payroll, bank, HR,
   timesheets, support mailbox) does not belong here. Those live in a private repo.

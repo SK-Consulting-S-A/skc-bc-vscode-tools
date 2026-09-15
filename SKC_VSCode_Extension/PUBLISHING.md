@@ -12,15 +12,41 @@ Keep visibility **Public** after each publish. A first-time `vsce publish` of a 
 
 ## How to publish
 
-The current patch release is version **3.0.8**. Build and package it for review, then publish it with the configured Marketplace PAT. BCQuality is bundled and validated offline; live upstream refresh is opt-in through `skc.bcQualityUpdateOnApply` or the explicit update command.
+**CI is the only publish path.** Actions → **Publish SKC VS Code Extension** → *Run workflow*
+(see [.github/workflows/publish-extension.yml](.github/workflows/publish-extension.yml)). The
+workflow takes an optional version bump and a pre-release flag, and authenticates with the
+repository secret **`VSCE_PAT`**.
 
-- **Local:** Put your Azure DevOps PAT in `.publish-token`, then run:
-  - `node scripts/publish.js` — publish current version
-  - `node scripts/publish.js minor` — bump minor version and publish
-  - `node scripts/publish.js patch --pre-release` — bump patch and publish as pre-release
-- **CI:** Use the **Publish Extension** GitHub Action (see [.github/workflows/publish-extension.yml](.github/workflows/publish-extension.yml)). Add repository secret **`VSCE_PAT`** (your Azure DevOps PAT with Marketplace → Manage). Run the workflow manually or on GitHub release.
+`node scripts/publish.js` refuses to run outside CI and no longer reads a `.publish-token` file.
+That is deliberate. Publishing from a workstation skips the pull request, the review, and the
+publish gate, and it leaves no trace in the repo — so the Marketplace can move ahead of `main`
+without anyone noticing, and unreviewed files reach every installed copy. It has happened.
+
+To build a `.vsix` locally for inspection, without publishing: `npm run package`.
+
+BCQuality is bundled and validated offline; live upstream refresh is opt-in through
+`skc.bcQualityUpdateOnApply` or the explicit update command.
 
 PAT: [Azure DevOps → User settings → Personal access tokens](https://dev.azure.com) — scope **Marketplace (Manage)**.
+
+### The publish gate
+
+`npm run check:publishable` runs in CI, on every pull request, and from `vscode:prepublish` and
+`npm run package`. It fails the build when:
+
+- a directory under `skills/` or a file under `agents/` is not on the allowlist in
+  [scripts/check-publishable.js](scripts/check-publishable.js);
+- a script looks like a home-folder content sync, or a `package.json` script reads `~/.copilot`
+  or `~/.cursor`;
+- `presets/settings.json` sets a workstation preference that Apply Presets would write globally
+  on the user's machine (disabling Copilot, weakening the workspace trust prompt, and the like);
+- a file matches a pattern from the optional `PUBLISH_DENY_PATTERNS` repository secret. Those
+  patterns are supplied by the environment rather than committed, so the strings being screened
+  for are not themselves published here. Failures report the file only, never the match.
+
+Adding a name to an allowlist is the moment someone confirms the bundle holds nothing internal.
+Everything under `skills/` is force-included by `.vscodeignore` (`!skills/**`), so a stray
+directory ships to the Marketplace.
 
 Hub: [publisher management](https://marketplace.visualstudio.com/manage/publishers/SKConsultingSA/extensions/skc-vs-tools/hub)
 

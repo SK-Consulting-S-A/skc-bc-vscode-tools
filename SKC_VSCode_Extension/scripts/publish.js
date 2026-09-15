@@ -26,18 +26,37 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-// Read token from .publish-token file or from environment (e.g. GitHub Actions secret VSCE_PAT)
-const tokenPath = path.join(__dirname, '..', '.publish-token');
-let token = process.env.VSCE_PAT || process.env.VSCODE_MARKETPLACE_TOKEN || '';
+// Publishing runs in CI only.
+//
+// A workstation publish skips the pull request, the review, and the publish gate,
+// and it leaves no trace in the repo: the Marketplace can silently move ahead of
+// main. That is how unreviewed content reached the Marketplace once already, so
+// the local path is closed rather than documented.
+//
+// Release via Actions -> "Publish SKC VS Code Extension" -> Run workflow.
+const isCI = process.env.GITHUB_ACTIONS === 'true' || process.env.CI === 'true';
 
-if (!token && fs.existsSync(tokenPath)) {
-    token = fs.readFileSync(tokenPath, 'utf8').trim();
+if (!isCI) {
+    console.error('Error: publishing from a workstation is disabled.');
+    console.error('');
+    console.error('  Publish through GitHub Actions instead:');
+    console.error('    Actions -> "Publish SKC VS Code Extension" -> Run workflow');
+    console.error('');
+    console.error('  That path runs the publish gate, uses the VSCE_PAT repository secret,');
+    console.error('  and keeps the Marketplace in step with main.');
+    console.error('');
+    console.error('  To build a .vsix locally without publishing: npm run package');
+    process.exit(1);
 }
+
+// In CI the token comes from the VSCE_PAT repository secret. The old
+// .publish-token file fallback is deliberately gone: an on-disk token is what
+// made an unreviewed workstation publish possible.
+const token = process.env.VSCE_PAT || process.env.VSCODE_MARKETPLACE_TOKEN || '';
 
 if (!token) {
     console.error('Error: No publish token found.');
-    console.error('  Local: create a .publish-token file in the project root with your Personal Access Token.');
-    console.error('  CI (e.g. GitHub Actions): add the token as a repository secret named VSCE_PAT.');
+    console.error('  Add the token as a repository secret named VSCE_PAT.');
     process.exit(1);
 }
 

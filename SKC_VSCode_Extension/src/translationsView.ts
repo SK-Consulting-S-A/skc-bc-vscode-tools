@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { getTranslationStatsFromContent, getTranslationUnitStatus, hasTranslatableSource, isCompletedTranslation } from "./xlfStatus";
+import { refreshTrackedJobStatuses, TrackedTranslationJob } from "./translationService";
 
 export interface TranslationStats {
     total: number;
@@ -13,6 +14,33 @@ const MAX_UNITS_IN_TREE = 100;
 
 // Base tree item class
 export type TranslationTreeItem = SourceFileItem | TargetLanguageItem | AddLanguageItem | TransUnitItem | MoreUnitsItem;
+
+export class TranslationJobItem extends vscode.TreeItem {
+    constructor(public readonly job: TrackedTranslationJob) {
+        super(`${path.basename(job.targetFilePath)} (${job.targetLanguage})`, vscode.TreeItemCollapsibleState.None);
+        const progress = job.progress;
+        const completed = progress?.completed ?? 0;
+        const total = progress?.total ?? 0;
+        const percentage = Math.max(0, Math.min(100, progress?.percentage ?? (total > 0 ? Math.floor((completed / total) * 100) : 0)));
+        const filled = Math.round(percentage / 20);
+        const progressBar = "▰".repeat(filled) + "▱".repeat(5 - filled);
+        this.description = `${percentage}% ${progressBar} · ${job.status}`;
+        this.tooltip = [
+            `Job: ${job.jobId}`,
+            `Target: ${job.targetFilePath}`,
+            `Language: ${job.targetLanguage}`,
+            `Status: ${job.status}`,
+            `Progress: ${completed}/${total || "?"} translated${progress?.remaining !== undefined ? `, ${progress.remaining} remaining` : ""}`,
+            `Last update: ${new Date(job.updatedAt).toLocaleString()}`
+        ].join("\n");
+        this.contextValue = "translationJob";
+        this.iconPath = job.status === "completed"
+            ? new vscode.ThemeIcon("check", new vscode.ThemeColor("charts.green"))
+            : job.status === "failed" || job.status === "expired"
+                ? new vscode.ThemeIcon("error", new vscode.ThemeColor("charts.red"))
+                : new vscode.ThemeIcon("sync", new vscode.ThemeColor("charts.blue"));
+    }
+}
 
 /**
  * Source file item (*.g.xlf) - shows total units
@@ -214,7 +242,7 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
         return [];
     }
 
-    private async getSourceFiles(): Promise<SourceFileItem[]> {
+    private async getSourceFiles(): Promise<TranslationTreeItem[]> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) {
             console.log("[SKC Translations] No workspace folders found");
@@ -430,5 +458,32 @@ export class TranslationsProvider implements vscode.TreeDataProvider<Translation
 
     dispose(): void {
         this.fileWatcher?.dispose();
+    }
+}
+
+export class TranslationJobsProvider implements vscode.TreeDataProvider<TranslationJobItem> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<TranslationJobItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+    private refreshTimer: NodeJS.Timeout | undefined;
+
+    constructor() {
+        this.refreshTimer = setInterval(() => this.refresh(), 15000);
+    }
+
+    getTreeItem(element: TranslationJobItem): vscode.TreeItem {
+        return element;
+    }
+
+    async getChildren(): Promise<TranslationJobItem[]> {
+        const jobs = await refreshTrackedJobStatuses();
+        return jobs.map((job) => new TranslationJobItem(job));
+    }
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+    }
+
+    dispose(): void {
+        if (this.refreshTimer) clearInterval(this.refreshTimer);
     }
 }

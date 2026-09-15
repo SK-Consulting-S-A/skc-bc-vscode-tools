@@ -30,10 +30,10 @@ export function createTranslateXlfTool(channel: OutputChannel): vscode.LanguageM
                 }
             };
         },
-        async invoke(options, _token) {
+        async invoke(options, token) {
             const { sourceFilePath, targetLanguage } = options.input;
             const fileUri = vscode.Uri.file(sourceFilePath);
-            const result = await translateFileHeadless(fileUri, targetLanguage, channel);
+            const result = await translateFileHeadless(fileUri, targetLanguage, channel, token);
             return textResult(result.success ? result.message : `Error: ${result.message}`);
         }
     };
