@@ -1,0 +1,62 @@
+name: Delete Marketplace Versions
+
+# Removes specific published versions from the Visual Studio Marketplace.
+#
+# This exists because per-version deletion in the publisher portal requires an
+# account that is a member of the publisher, and the portal 403s for everyone
+# else. The VSCE_PAT used for releases already has the necessary rights, so the
+# work can happen here instead.
+#
+# Deletion is irreversible and a deleted version number can never be published
+# again. The run is a dry run unless "confirm" is exactly DELETE.
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Comma-separated versions to delete, e.g. 3.0.0,3.0.1'
+        required: true
+        type: string
+      confirm:
+        description: 'Type DELETE to actually delete. Anything else is a dry run.'
+        required: false
+        default: 'dry-run'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-version-deletion
+  cancel-in-progress: false
+
+jobs:
+  delete:
+    name: Delete versions
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SKC_VSCode_Extension
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      - name: Check token is present
+        run: |
+          if [ -z "${{ secrets.VSCE_PAT }}" ]; then
+            echo "::error::VSCE_PAT secret is not set."
+            exit 1
+          fi
+
+      - name: Delete versions
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          node scripts/delete-marketplace-versions.js \
+            --versions "${{ inputs.versions }}" \
+            --confirm "${{ inputs.confirm }}"
