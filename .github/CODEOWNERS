@@ -1,0 +1,24 @@
+# This repo is public and its Marketplace listing is public. Everything under skills/ is
+# force-included by .vscodeignore, so a file added there is published to every installed
+# copy. The paths below therefore need a second pair of eyes before they ship.
+#
+# See .cursor/rules/no-home-folder-sync.mdc.
+
+# What gets published to users
+/SKC_VSCode_Extension/skills/                   @SK-Consulting-S-A/developers
+/SKC_VSCode_Extension/agents/                   @SK-Consulting-S-A/developers
+
+# Settings written onto a user's machine by Apply Presets
+/SKC_VSCode_Extension/presets/                  @SK-Consulting-S-A/developers
+
+# Build, packaging, and the publish gate
+/SKC_VSCode_Extension/scripts/                  @SK-Consulting-S-A/developers
+/SKC_VSCode_Extension/package.json              @SK-Consulting-S-A/developers
+/SKC_VSCode_Extension/.vscodeignore             @SK-Consulting-S-A/developers
+
+# Release and CI paths
+/.github/workflows/                             @SK-Consulting-S-A/developers
+
+# The rules that keep the above honest
+/.cursor/rules/                                 @SK-Consulting-S-A/developers
+/.github/CODEOWNERS                             @SK-Consulting-S-A/developers
