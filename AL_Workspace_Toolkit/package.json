@@ -10,11 +10,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools"
+    "url": "https://github.com/SK-Consulting-S-A/skc-vscode-al-workspace-toolkit"
   },
   "homepage": "https://www.skc.lu",
   "bugs": {
-    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues"
+    "url": "https://github.com/SK-Consulting-S-A/skc-vscode-al-workspace-toolkit/issues"
   },
   "license": "MIT",
   "icon": "assets/Small_Logo.png",
@@ -196,7 +196,8 @@
     "watch": "node scripts/build.js --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "package": "npm run typecheck && npm test && npm run build && vsce package --no-dependencies",
+    "check:public": "node scripts/check-public-release.js",
+    "package": "npm run check:public && npm run typecheck && npm test && npm run build && vsce package --no-dependencies",
     "publish": "node scripts/publish.js"
   },
   "devDependencies": {

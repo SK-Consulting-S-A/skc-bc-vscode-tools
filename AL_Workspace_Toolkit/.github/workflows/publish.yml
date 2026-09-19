@@ -1,0 +1,43 @@
+name: Publish to VS Code Marketplace
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: marketplace-production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Public release safety check
+        env:
+          PUBLIC_DENY_PATTERNS: ${{ secrets.PUBLIC_DENY_PATTERNS }}
+        run: npm run check:public
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npm run publish
