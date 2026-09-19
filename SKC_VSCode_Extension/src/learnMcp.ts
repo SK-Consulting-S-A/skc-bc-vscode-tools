@@ -14,7 +14,7 @@ interface McpSession {
 }
 
 /**
- * Calls Microsoft Learn MCP over HTTP only when @bc needs it.
+ * Calls Microsoft Learn MCP over HTTP only when @harold needs it.
  * Does not register or start VS Code MCP servers.
  */
 export async function searchLearnDocs(query: string, token: CancellationToken): Promise<LearnDocHit[]> {

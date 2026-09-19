@@ -7,28 +7,36 @@ import {
 } from "./alWorkspace";
 import { fetchLearnPage, searchLearnAlSamples, searchLearnDocs, type LearnDocHit } from "./learnMcp";
 
-export const BC_CHAT_PARTICIPANT_ID = "skc.bc";
+export const HAROLD_CHAT_PARTICIPANT_ID = "skc.harold";
+export const BC_CHAT_PARTICIPANT_ID = HAROLD_CHAT_PARTICIPANT_ID;
 
 interface BcChatResult extends vscode.ChatResult {
     metadata?: { command?: string };
+}
+
+export function registerHaroldChatParticipant(
+    context: vscode.ExtensionContext,
+    channel: vscode.OutputChannel
+): void {
+    if (!vscode.chat?.createChatParticipant) {
+        channel.appendLine("[SKC] Chat Participant API is not available in this VS Code version; @harold was not registered.");
+        return;
+    }
+
+    const participant = vscode.chat.createChatParticipant(HAROLD_CHAT_PARTICIPANT_ID, createHandler(channel));
+    const icon = vscode.Uri.joinPath(context.extensionUri, "assets", "skc-icon.svg");
+    participant.iconPath = icon;
+    participant.followupProvider = { provideFollowups };
+
+    context.subscriptions.push(participant);
+    channel.appendLine("[SKC] Registered @harold chat participant (docs, object, how).");
 }
 
 export function registerBcChatParticipant(
     context: vscode.ExtensionContext,
     channel: vscode.OutputChannel
 ): void {
-    if (!vscode.chat?.createChatParticipant) {
-        channel.appendLine("[SKC] Chat Participant API is not available in this VS Code version; @bc was not registered.");
-        return;
-    }
-
-    const participant = vscode.chat.createChatParticipant(BC_CHAT_PARTICIPANT_ID, createHandler(channel));
-    const icon = vscode.Uri.joinPath(context.extensionUri, "assets", "skc-icon.svg");
-    participant.iconPath = icon;
-    participant.followupProvider = { provideFollowups };
-
-    context.subscriptions.push(participant);
-    channel.appendLine("[SKC] Registered @bc chat participant (docs, object, how).");
+    registerHaroldChatParticipant(context, channel);
 }
 
 function createHandler(channel: vscode.OutputChannel): vscode.ChatRequestHandler {
@@ -53,7 +61,7 @@ function createHandler(channel: vscode.OutputChannel): vscode.ChatRequestHandler
             await answerQuestion(question, command, hasAl, request, chatContext, stream, token, channel);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : String(error);
-            channel.appendLine(`[SKC] @bc failed: ${message}`);
+            channel.appendLine(`[SKC] @harold failed: ${message}`);
             stream.markdown(
                 `I could not finish that lookup (${message}).\n\n` +
                 `Try [Microsoft Learn for Business Central](https://learn.microsoft.com/dynamics365/business-central/) ` +
@@ -96,7 +104,7 @@ async function answerQuestion(
                 pageMarkdown = await fetchLearnPage(topUrl, token);
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
-                channel.appendLine(`[SKC] @bc Learn fetch skipped: ${message}`);
+                channel.appendLine(`[SKC] @harold Learn fetch skipped: ${message}`);
             }
         }
     }
@@ -113,7 +121,7 @@ async function answerQuestion(
                 alSamples = await searchLearnAlSamples(question, token);
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : String(error);
-                channel.appendLine(`[SKC] @bc AL sample search skipped: ${message}`);
+                channel.appendLine(`[SKC] @harold AL sample search skipped: ${message}`);
             }
         }
     }
@@ -223,7 +231,7 @@ async function streamLanguageModel(
         return true;
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        channel.appendLine(`[SKC] @bc language model fallback: ${message}`);
+        channel.appendLine(`[SKC] @harold language model fallback: ${message}`);
         return false;
     }
 }
@@ -242,7 +250,7 @@ async function resolveChatModel(request: vscode.ChatRequest): Promise<vscode.Lan
 
 function systemPrompt(): string {
     return [
-        "You are the @bc assistant in Visual Studio Code for Microsoft Dynamics 365 Business Central.",
+        "You are the @harold assistant in Visual Studio Code for Microsoft Dynamics 365 Business Central.",
         "The reader may not be a programmer. Lead with plain-language steps they can do in the Business Central web client.",
         "Use Tell Me (Alt+Q) page names, buttons, and fields from the Microsoft Learn excerpts. Do not invent pages or fields.",
         "Always cite the Learn URLs you used as markdown links.",
@@ -285,10 +293,10 @@ function welcomeMarkdown(): string {
         "Ask me anything about **Business Central**. You do not need an AL project or an Agent.",
         "",
         "Examples:",
-        "- `@bc how do I post a sales invoice?`",
-        "- `@bc /how warehouse shipment`",
-        "- `@bc /object Customer`",
-        "- `@bc /docs VAT posting groups`",
+        "- `@harold how do I post a sales invoice?`",
+        "- `@harold /how warehouse shipment`",
+        "- `@harold /object Customer`",
+        "- `@harold /docs VAT posting groups`",
         "",
         "I look up Microsoft Learn first. If you have an AL project open, `/object` can also use local symbols."
     ].join("\n");
