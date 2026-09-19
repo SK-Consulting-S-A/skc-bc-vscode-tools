@@ -82,6 +82,7 @@
     "workbench.iconTheme": "vscode-icons",
     "workbench.colorTheme": "SKC Dark",
     "workbench.preferredDarkColorTheme": "SKC Dark",
+    "workbench.preferredLightColorTheme": "SKC Light",
     "workbench.startupEditor": "none",
     "workbench.settings.applyToAllProfiles": [
       "al.inlayhints.functionReturnTypes.enabled",

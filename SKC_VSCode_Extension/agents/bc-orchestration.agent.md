@@ -75,6 +75,9 @@ If the user's original message already clearly states the task type and scope, s
 3. Use these values in all subsequent subagent instructions.
 
 
+
+
+
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Gate
 

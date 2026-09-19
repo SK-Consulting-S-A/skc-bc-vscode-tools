@@ -10,7 +10,13 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
 - **BCQuality reviews** — the official Microsoft BCQuality plugin snapshot is bundled offline and used additively by the reviewer/orchestrator. Live refresh is explicit or opt-in.
 - **Workspace presets** — AL settings, CodeCop and UICop, recommended extensions, and MCP servers applied with **SKC: Apply Presets**.
-- **SKC Dark** — color theme from the [skc.lu](https://www.skc.lu) dark design system (applied with presets; also in the Color Theme picker).
+- **Four AL-tuned themes** — one family, four working situations, all structurally identical so switching never moves meaning:
+  - **SKC Dark** — the daily driver, from the [skc.lu](https://www.skc.lu) dark design system (applied with presets).
+  - **SKC Light** — daylight and bright-office work, from the skc.lu website palette.
+  - **SKC Presentation** — high contrast for demos, workshops and screen sharing: loud cursor, bordered find matches and selections that survive a projector or video compression.
+  - **SKC Beach** — warm and low blue light, for long or late sessions.
+
+  Every variant colors what AL work actually touches: analyzer diagnostics (CodeCop, UICop, AppSourceCop) and Error Lens, diff **and merge-conflict** surfaces for delta and upgrade work, six-level bracket pairs for deep `begin`/`end` nesting, the parameter-name and return-type inlay hints the presets switch on, sticky scroll for long codeunits, and Test Explorer states for BC test codeunits.
 - **XLF translation** — sidebar to preview and translate `.g.xlf` files with Azure AI.
 
 ## What's included
@@ -18,7 +24,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - `presets/settings.json` — user settings applied to User scope
 - `presets/mcp.json` — MCP servers written to `mcp.servers` (secrets come from VS Code secret storage)
 - `presets/extensions.json` — extension pack to install
-- `themes/skc-dark.json` — **SKC Dark** color theme (skc.lu palette)
+- `themes/*.json` — the four SKC color themes. These are **generated**: edit the palettes in `scripts/build-themes.js` and run `npm run build:themes`, then commit the result. Hand-editing a single theme file makes the variants drift apart.
 - `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
 - `skills/bcquality/` — official BCQuality plugin snapshot, knowledge index, layers, bridge, and tools
 - `agents/` — BC Copilot subagents
