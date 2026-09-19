@@ -9,6 +9,7 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 - Broadened the description, keywords and categories to cover Business Central, Power Platform, Azure and Office document work rather than AL alone.
 
 ### Added
+- A guarded **SKC: Fork Copilot Chat at Focused Message** command that exposes VS Code's native session fork without reading Copilot's private storage.
 - Power Platform tooling in the preset: Power Platform Tools (PAC CLI, solutions, Power Pages), Dataverse DevTools, PCF Builder, Copilot Studio, TMDL, Power BI Modeling MCP Server and Power BI Studio.
 - ESLint and Prettier, required by the Vite/React stack behind Power Apps code apps.
 - A `dataverse` MCP server entry in `presets/mcp.json`, pointing at the environment `/api/mcp` endpoint.
