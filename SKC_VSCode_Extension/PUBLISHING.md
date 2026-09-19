@@ -1,6 +1,6 @@
-# Publishing SKC AL Tools to the Marketplace
+# Publishing SKC Workstation Tools to the Marketplace
 
-SKC AL Tools is a **public** product:
+SKC Workstation Tools is a **public** product:
 
 - Source: [SK-Consulting-S-A/skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools) (public)
 - Marketplace: [SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (public, searchable)

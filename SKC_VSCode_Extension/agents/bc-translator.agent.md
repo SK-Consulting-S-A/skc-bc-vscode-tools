@@ -26,7 +26,7 @@ You are a Business Central AL Translation Specialist.
 ## Translation Workflow
 
 The workflow is SKC/Azure-only. Use the language-model tool IDs and references
-contributed by SKC AL Tools:
+contributed by SKC Workstation Tools:
 
 | Tool ID | Tool reference | Inputs |
 |---|---|---|

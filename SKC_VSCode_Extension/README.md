@@ -1,6 +1,6 @@
-# SKC AL Tools
+# SKC Workstation Tools
 
-AL tools for Business Central from [SK Consulting S.A.](https://www.skc.lu): Copilot AI agents, workspace presets, recommended extensions, and XLF translation.
+Modern workstation tooling for SK Consulting employees and contractors, from [SK Consulting S.A.](https://www.skc.lu). It standardises one development machine across everything we actually build on: Dynamics 365 Business Central AL, Power Platform, Azure, and the Office documents that come out of both.
 
 Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools).
 
@@ -8,6 +8,8 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 - **@bc in Copilot Chat** — type `@bc how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
+- **Power Platform tooling** — the preset installs the stack for model-driven apps and solutions, PCF code components, Power Pages, Power Apps code apps, Copilot Studio agents, and Power BI semantic models as code. See [Power Platform](#power-platform) below.
+- **Office and document work** — `docx`, `pptx` and `xlsx` skills plus `mermaid-to-word`, `applying-brand-guidelines` and `frontend-slides` for reports, decks and workbooks.
 - **BCQuality reviews** — the official Microsoft BCQuality plugin snapshot is bundled offline and used additively by the reviewer/orchestrator. Live refresh is explicit or opt-in.
 - **Workspace presets** — AL settings, CodeCop and UICop, recommended extensions, and MCP servers applied with **SKC: Apply Presets**.
 - **Four AL-tuned themes** — one family, four working situations, all structurally identical so switching never moves meaning:
@@ -48,16 +50,33 @@ Examples:
 
 ### Presets, extensions, and AI
 
-1. Install **SKC AL Tools** from the Marketplace.
+1. Install **SKC Workstation Tools** from the Marketplace.
 2. Run **SKC: Configure MCP Auth** to store your GitHub token and Context7 API key in VS Code secrets.
 3. Run **SKC: Apply Presets** (or rely on auto-run on first activation) to install extensions, apply settings, and register MCP servers.
 4. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
 
 Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 
+## Power Platform
+
+The preset covers the four ways we build on Power Platform. Everything routes through the Power Apps CLI (`pac`), which ships with the Power Platform Tools extension, so there is nothing separate to install.
+
+| Workload | What the preset installs | Activates on |
+|---|---|---|
+| Model-driven apps and solutions | `microsoft-IsvExpTools.powerplatform-vscode`, `danish-naglekar.dataverse-devtools` | `*.cdsproj` |
+| PCF code components | `danish-naglekar.pcf-builder` | `*.pcfproj` |
+| Power Apps code apps | Power Platform Tools plus the TypeScript, ESLint and Prettier stack a Vite/React app needs | `power.config.json` |
+| Power Pages | Power Platform Tools (site download, edit, upload) | `powerpages.config.json` |
+| Power BI | `analysis-services.tmdl`, `analysis-services.powerbi-modeling-mcp`, `GerhardBrueckl.powerbi-vscode` | `*.tmdl` |
+| Copilot Studio agents | `ms-copilotstudio.vscode-copilotstudio` | — |
+
+Code apps additionally need Node.js LTS and Git on the machine; the extension does not install those.
+
+The preset registers a `dataverse` MCP server pointing at `https://<YOUR_DATAVERSE_ORG>.crm4.dynamics.com/api/mcp`. Replace the placeholder with your environment URL. The server must also be enabled per environment in the Power Platform admin center, with **Microsoft GitHub Copilot** allowed as an MCP client — otherwise the endpoint refuses the connection.
+
 ### Translations
 
-1. Click the **SKC AL Tools** icon in the activity bar.
+1. Click the **SKC Workstation Tools** icon in the activity bar.
 2. Run **SKC: Configure Translation URL** and set your Azure Translation Function endpoint.
 3. The Translations view lists `.g.xlf` files in a `Translations` folder:
    - `MyFile.g.xlf (45/120)` — 45 of 120 units translated
@@ -91,7 +110,7 @@ Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 
 ## Copilot and language-model tools
 
-SKC AL Tools contributes the **@bc** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
+SKC Workstation Tools contributes the **@bc** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
 
 ## Build and publish
 

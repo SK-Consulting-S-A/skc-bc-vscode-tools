@@ -35,12 +35,26 @@ function main() {
     const extensions = Array.from(new Set(preset.extensions.map(extractId)));
 
     const pkg = readJson(packagePath);
-    pkg.contributes = pkg.contributes ?? {};
-    pkg.contributes.extensionDependencies = extensions;
-    pkg.contributes.extensionPack = extensions;
 
-    fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
-    console.log(`Synced ${extensions.length} extensions into package.json`);
+    // extensionPack is a top-level manifest field; VS Code ignores it under "contributes".
+    // Deliberately not extensionDependencies: those cannot be uninstalled individually,
+    // and this extension's code requires none of them.
+    delete pkg.extensionDependencies;
+    if (pkg.contributes) {
+        delete pkg.contributes.extensionDependencies;
+        delete pkg.contributes.extensionPack;
+    }
+
+    const ordered = {};
+    for (const [key, value] of Object.entries(pkg)) {
+        if (key === "extensionPack") continue;
+        ordered[key] = value;
+        if (key === "contributes") ordered.extensionPack = extensions;
+    }
+    if (!ordered.extensionPack) ordered.extensionPack = extensions;
+
+    fs.writeFileSync(packagePath, `${JSON.stringify(ordered, null, 2)}\n`);
+    console.log(`Synced ${extensions.length} extensions into package.json (top-level extensionPack)`);
 }
 
 main();

@@ -1,4 +1,4 @@
-# SKC AL Tools - Extension Summary
+# SKC Workstation Tools - Extension Summary
 
 **Marketplace (public):** [https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools)
 **Repository (public):** [https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools)
@@ -7,7 +7,7 @@
 
 ## Overview
 
-**SKC AL Tools** is a VS Code extension pack for **Business Central AL**: Copilot AI agents and skills, recommended extensions, workspace presets, and XLF translation.
+**SKC Workstation Tools** is a VS Code extension pack for SK Consulting employees and contractors: Business Central AL, Power Platform, Azure, and Office document work, with Copilot AI agents and skills, recommended extensions, workspace presets, and XLF translation.
 
 ## What It Does
 
@@ -36,14 +36,14 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 - **app.json Integration**: Reads target languages from `supportedLocales` or `features[].languages`
 
 #### How to Use:
-1. Click the **SKC AL Tools** icon in the activity bar
+1. Click the **SKC Workstation Tools** icon in the activity bar
 2. Run "SKC: Configure Translation URL" to set your Azure Function endpoint
 3. Click the play button next to any `.g.xlf` file to translate it
 4. Select the target language and the translated file is saved automatically
 
-### 2. **Installs AL Development Extensions**
+### 2. **Installs the Development Extensions**
 
-The extension automatically installs the configured set of VS Code extensions required for Business Central AL development:
+The extension automatically installs the configured set of VS Code extensions. `presets/extensions.json` is the single source of truth; `npm run sync:extensions` regenerates the manifest arrays from it.
 
 #### Core AL Extensions:
 - **ms-dynamics-smb.al** - Official Microsoft AL Language extension
@@ -53,11 +53,21 @@ The extension automatically installs the configured set of VS Code extensions re
 - **andrzejzwierzchowski.al-code-outline** - AL code outline
 - **wbrakowski.al-navigator** - AL code navigator
 - **waldo.crs-al-language-extension** - AL language utilities
-- **vjeko.vjeko-al-objid** - AL object ID helper
 
-#### AL Productivity Tools:
+#### Power Platform Extensions:
+- **microsoft-IsvExpTools.powerplatform-vscode** - Power Apps CLI (`pac`), solutions, model-driven apps, Power Pages
+- **danish-naglekar.dataverse-devtools** - Dataverse connections and TypeScript definitions
+- **danish-naglekar.pcf-builder** - PCF code component init, build and test
+- **ms-copilotstudio.vscode-copilotstudio** - Copilot Studio agent editing
+- **analysis-services.tmdl** - TMDL language support for Power BI semantic models
+- **analysis-services.powerbi-modeling-mcp** - Power BI Modeling MCP Server
+- **GerhardBrueckl.powerbi-vscode** - Power BI Studio
+
+#### Productivity Tools:
 - **ms-vscode.vscode-typescript-next** - TypeScript support
 - **redhat.vscode-xml** - XML language support
+- **dbaeumer.vscode-eslint** - ESLint, used by Power Apps code apps
+- **esbenp.prettier-vscode** - Prettier, used by Power Apps code apps
 
 #### Supporting Extensions:
 - **usernamehw.errorlens** - Inline error highlighting
@@ -70,16 +80,17 @@ The extension automatically installs the configured set of VS Code extensions re
 - **ms-python.python** - Python support
 - **ms-python.debugpy** - Python debugging
 
-### 2. **Configures MCP Servers** (6 servers)
+### 2. **Configures MCP Servers**
 
 Sets up Model Context Protocol (MCP) servers for AI-powered development assistance:
 
 1. **Playwright MCP** - Browser automation and testing
 2. **Context7 MCP** - Code documentation and library references (requires API key)
 3. **MS Learn Docs MCP** - Microsoft Learn documentation access
-4. **GitHub MCP** - GitHub integration and repository management (requires GitHub token)
+4. **Dataverse MCP** - Dataverse tables and records (requires the environment URL, and an admin must allow Microsoft GitHub Copilot as an MCP client)
 5. **BC Intelligence MCP** - Business Central-specific AI assistance
-6. **MCP Pandoc** - Document conversion utilities
+6. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
+7. **MCP Pandoc** and **markitdown** - Document conversion utilities
 
 ### 3. **Applies AL-Optimized Settings**
 

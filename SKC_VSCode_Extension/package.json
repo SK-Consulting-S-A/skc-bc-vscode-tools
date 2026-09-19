@@ -1,7 +1,7 @@
 {
   "name": "skc-vs-tools",
-  "displayName": "SKC AL Tools",
-  "description": "AL tools for Business Central: Copilot AI agents, workspace presets, recommended extensions, XLF translation, and SKC themes.",
+  "displayName": "SKC Workstation Tools",
+  "description": "Modern workstation tooling for SK Consulting employees and contractors: Dynamics 365 Business Central AL, Power Platform (Power Apps, Power Pages, Power BI, Copilot Studio), Azure, and Office document work. Copilot agents and skills, workspace presets, XLF translation, and SKC themes.",
   "version": "3.0.15",
   "publisher": "SKConsultingSA",
   "author": {
@@ -26,15 +26,23 @@
     "Programming Languages",
     "AI",
     "Chat",
+    "Azure",
     "Themes"
   ],
   "keywords": [
-    "al",
     "business central",
+    "power platform",
+    "power apps",
+    "power bi",
+    "power pages",
+    "al",
+    "dynamics 365",
+    "dataverse",
+    "copilot studio",
+    "azure",
     "copilot",
     "ai",
     "xlf",
-    "dynamics 365",
     "theme",
     "dark theme",
     "light theme",
@@ -44,6 +52,11 @@
   "activationEvents": [
     "onView:skcTranslationsView",
     "workspaceContains:**/app.json",
+    "workspaceContains:**/*.cdsproj",
+    "workspaceContains:**/*.pcfproj",
+    "workspaceContains:**/power.config.json",
+    "workspaceContains:**/powerpages.config.json",
+    "workspaceContains:**/*.tmdl",
     "onChatParticipant:skc.bc"
   ],
   "main": "./out/extension.js",
@@ -53,7 +66,7 @@
       "activitybar": [
         {
           "id": "skc-tools",
-          "title": "SKC AL Tools",
+          "title": "SKC Workstation Tools",
           "icon": "assets/skc-icon.svg"
         }
       ]
@@ -294,7 +307,7 @@
       }
     ],
     "configuration": {
-      "title": "SKC Presets",
+      "title": "SKC Workstation Tools",
       "properties": {
         "skc.skipInstalledExtensions": {
           "type": "boolean",
@@ -304,7 +317,7 @@
         "skc.uninstallExtensionsRemovedFromPreset": {
           "type": "boolean",
           "default": true,
-          "description": "When applying presets, uninstall any installed extension that is not in the preset list. The preset list is the only allowed set; all other extensions (except SKC AL Tools) are removed."
+          "description": "When applying presets, uninstall any installed extension that is not in the preset list. The preset list is the only allowed set; all other extensions (except SKC Workstation Tools) are removed."
         },
         "skc.presetFilePath": {
           "type": "string",
@@ -390,48 +403,37 @@
         "uiTheme": "vs",
         "path": "./themes/skc-beach.json"
       }
-    ],
-    "extensionDependencies": [
-      "ms-dynamics-smb.al",
-      "davidfeldhoff.al-codeactions",
-      "usernamehw.errorlens",
-      "GitHub.vscode-pull-request-github",
-      "rasmus.al-var-helper",
-      "BartPermentier.al-toolbox",
-      "andrzejzwierzchowski.al-code-outline",
-      "ms-azuretools.vscode-azurefunctions",
-      "ms-azuretools.vscode-azureappservice",
-      "ms-azuretools.vscode-azureresourcegroups",
-      "ms-vscode.vscode-typescript-next",
-      "redhat.vscode-xml",
-      "wbrakowski.al-navigator",
-      "ms-vscode.PowerShell",
-      "vscode-icons-team.vscode-icons",
-      "waldo.crs-al-language-extension",
-      "ms-python.python",
-      "ms-python.debugpy"
-    ],
-    "extensionPack": [
-      "ms-dynamics-smb.al",
-      "davidfeldhoff.al-codeactions",
-      "usernamehw.errorlens",
-      "GitHub.vscode-pull-request-github",
-      "rasmus.al-var-helper",
-      "BartPermentier.al-toolbox",
-      "andrzejzwierzchowski.al-code-outline",
-      "ms-azuretools.vscode-azurefunctions",
-      "ms-azuretools.vscode-azureappservice",
-      "ms-azuretools.vscode-azureresourcegroups",
-      "ms-vscode.vscode-typescript-next",
-      "redhat.vscode-xml",
-      "wbrakowski.al-navigator",
-      "ms-vscode.PowerShell",
-      "vscode-icons-team.vscode-icons",
-      "waldo.crs-al-language-extension",
-      "ms-python.python",
-      "ms-python.debugpy"
     ]
   },
+  "extensionPack": [
+    "ms-dynamics-smb.al",
+    "davidfeldhoff.al-codeactions",
+    "usernamehw.errorlens",
+    "GitHub.vscode-pull-request-github",
+    "rasmus.al-var-helper",
+    "BartPermentier.al-toolbox",
+    "andrzejzwierzchowski.al-code-outline",
+    "ms-azuretools.vscode-azurefunctions",
+    "ms-azuretools.vscode-azureappservice",
+    "ms-azuretools.vscode-azureresourcegroups",
+    "ms-vscode.vscode-typescript-next",
+    "redhat.vscode-xml",
+    "wbrakowski.al-navigator",
+    "ms-vscode.PowerShell",
+    "vscode-icons-team.vscode-icons",
+    "waldo.crs-al-language-extension",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "microsoft-IsvExpTools.powerplatform-vscode",
+    "ms-copilotstudio.vscode-copilotstudio",
+    "danish-naglekar.dataverse-devtools",
+    "danish-naglekar.pcf-builder",
+    "analysis-services.tmdl",
+    "analysis-services.powerbi-modeling-mcp",
+    "GerhardBrueckl.powerbi-vscode",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ],
   "scripts": {
     "sync:extensions": "node scripts/sync-extensions.js",
     "sync:bcquality": "node scripts/sync-bcquality.js",

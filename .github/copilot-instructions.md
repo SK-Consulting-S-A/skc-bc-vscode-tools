@@ -1,6 +1,6 @@
 # SKC VSCode Extension Workspace
 
-Public repo. SKC AL Tools is listed on the Visual Studio Marketplace (`SKConsultingSA.skc-vs-tools`); keep that listing Public.
+Public repo. SKC Workstation Tools is listed on the Visual Studio Marketplace (`SKConsultingSA.skc-vs-tools`); keep that listing Public.
 
 Two companion packages for Business Central AL development tooling:
 

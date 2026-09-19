@@ -127,7 +127,7 @@ commandArguments.push('--allow-star-activation');
         console.log('='.repeat(70));
 
         console.log('\n🌍 Visibility:');
-        console.log('   SKC AL Tools is a public listing. Keep Marketplace visibility Public.');
+        console.log('   SKC Workstation Tools is a public listing. Keep Marketplace visibility Public.');
         console.log(`   ${manageUrl}`);
 
         // Get and display extension details (with retry since marketplace needs time to index)

@@ -1,10 +1,35 @@
-# 📰 SKC AL Tools - What's New
+# 📰 SKC Workstation Tools - What's New
 
-## Version 2.5.1 - Latest Release
+## Version 3.1.0 - Latest Release
+
+### 🏷️ New name: SKC Workstation Tools
+
+The extension stopped being AL-only a long time ago, so the name now says what it is: modern workstation tooling for SKC employees and contractors, covering Business Central, Power Platform, Azure, and the Office documents that come out of that work.
+
+Nothing to reinstall — the Marketplace identity is unchanged and this is an in-place update.
+
+### ⚡ Power Platform is now part of the preset
+
+**SKC: Apply Presets** now installs the stack for all four ways we build on Power Platform:
+
+- **Model-driven apps and solutions** — Power Platform Tools (PAC CLI) and Dataverse DevTools.
+- **PCF code components** — PCF Builder.
+- **Power Apps code apps** — PAC CLI plus the TypeScript, ESLint and Prettier stack a Vite/React app needs. Node.js LTS and Git still have to be on the machine.
+- **Power Pages** — site download, edit and upload through Power Platform Tools.
+
+Plus **Power BI** as code (TMDL, Power BI Modeling MCP Server, Power BI Studio) and **Copilot Studio** agent editing.
+
+A `dataverse` MCP server is registered with a placeholder org URL. Replace it with your environment, and have an admin allow **Microsoft GitHub Copilot** as an MCP client for that environment — the endpoint refuses the connection otherwise.
+
+VS Code now also activates the extension in Power Platform workspaces (`*.cdsproj`, `*.pcfproj`, `power.config.json`, `powerpages.config.json`, `*.tmdl`), not just where an `app.json` is present.
+
+---
+
+## Version 2.5.1
 
 ### ✅ Official Microsoft BCQuality integration
 
-SKC AL Tools now bundles the official Microsoft **BCQuality** review plugin for Business Central AL quality checks.
+SKC Workstation Tools bundles the official Microsoft **BCQuality** review plugin for Business Central AL quality checks.
 
 - `bc-reviewer` uses the Entry → READ → DO workflow for `pr-diff` and `file-path` reviews.
 - The complete offline snapshot includes the official knowledge index, Microsoft/community/custom knowledge layers, tools, and strict JSON findings.

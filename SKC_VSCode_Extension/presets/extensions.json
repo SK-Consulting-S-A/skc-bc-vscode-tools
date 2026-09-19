@@ -20,6 +20,15 @@
     "vscode-icons-team.vscode-icons",
     "waldo.crs-al-language-extension",
     "ms-python.python",
-    "ms-python.debugpy"
+    "ms-python.debugpy",
+    "microsoft-IsvExpTools.powerplatform-vscode",
+    "ms-copilotstudio.vscode-copilotstudio",
+    "danish-naglekar.dataverse-devtools",
+    "danish-naglekar.pcf-builder",
+    "analysis-services.tmdl",
+    "analysis-services.powerbi-modeling-mcp",
+    "GerhardBrueckl.powerbi-vscode",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
   ]
 }

@@ -23,6 +23,11 @@
       "url": "https://learn.microsoft.com/api/mcp",
       "headers": {}
     },
+    "dataverse": {
+      "type": "http",
+      "url": "https://<YOUR_DATAVERSE_ORG>.crm4.dynamics.com/api/mcp",
+      "headers": {}
+    },
     "bc-intelligence": {
       "type": "stdio",
       "command": "npx",

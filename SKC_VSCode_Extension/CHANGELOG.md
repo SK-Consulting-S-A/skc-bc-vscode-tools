@@ -1,6 +1,22 @@
 # Change Log
 
-All notable changes to the "SKC AL Tools" extension will be documented in this file.
+All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
+
+## [3.1.0] - 2026-09-19
+
+### Changed
+- Renamed the extension to **SKC Workstation Tools**. The Marketplace identity (`SKConsultingSA.skc-vs-tools`) is unchanged, so existing installs update in place.
+- Broadened the description, keywords and categories to cover Business Central, Power Platform, Azure and Office document work rather than AL alone.
+
+### Added
+- Power Platform tooling in the preset: Power Platform Tools (PAC CLI, solutions, Power Pages), Dataverse DevTools, PCF Builder, Copilot Studio, TMDL, Power BI Modeling MCP Server and Power BI Studio.
+- ESLint and Prettier, required by the Vite/React stack behind Power Apps code apps.
+- A `dataverse` MCP server entry in `presets/mcp.json`, pointing at the environment `/api/mcp` endpoint.
+- Activation on Power Platform workspaces: `*.cdsproj`, `*.pcfproj`, `power.config.json`, `powerpages.config.json` and `*.tmdl`.
+
+### Fixed
+- `extensionPack` is now a top-level manifest field. It sat under `contributes`, where VS Code ignores it, so the extension pack had never installed anything — only **SKC: Apply Presets** did.
+- Dropped `extensionDependencies`. It duplicated the same list, and a hard dependency cannot be uninstalled on its own; the extension's own code requires none of these. Pack members stay independently removable, which is what an extension pack is for.
 
 ## [3.0.8] - 2026-09-10
 
