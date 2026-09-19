@@ -7,7 +7,7 @@
 
 ## Overview
 
-**SKC Workstation Tools** is a VS Code extension pack for SK Consulting employees and contractors: Business Central AL, Power Platform, Azure, and Office document work, with Copilot AI agents and skills, recommended extensions, workspace presets, and XLF translation.
+**SKC Workstation Tools** configures isolated VS Code profiles for SK Consulting employees and contractors: Business Central AL, Web/Python, and Power Platform/BI, with Copilot AI agents and skills, workspace presets, and XLF translation.
 
 ## What It Does
 
@@ -41,21 +41,16 @@ The extension provides a dedicated **Translations** sidebar for managing and tra
 3. Click the play button next to any `.g.xlf` file to translate it
 4. Select the target language and the translated file is saved automatically
 
-### 2. **Installs the Development Extensions**
+### 2. **Creates Isolated Development Profiles**
 
-The extension automatically installs the configured set of VS Code extensions. `presets/extensions.json` is the single source of truth; `npm run sync:extensions` regenerates the manifest arrays from it.
+`presets/profiles.json` is the single source of truth for `SKC AL`, `SKC Web/Python`, and `SKC Power Platform/BI`. The extension has no manifest extension pack and does not install tools automatically on activation.
 
 #### Core AL Extensions:
 - **ms-dynamics-smb.al** - Official Microsoft AL Language extension
-- **davidfeldhoff.al-codeactions** - AL code actions
+- **SKConsultingSA.skc-al-workspace** - Agent-ready AL file naming and workspace organization
 - **rasmus.al-var-helper** - AL variable helper
-- **BartPermentier.al-toolbox** - AL toolbox utilities
-- **andrzejzwierzchowski.al-code-outline** - AL code outline
-- **wbrakowski.al-navigator** - AL code navigator
-- **waldo.crs-al-language-extension** - AL language utilities
 
 #### Power Platform Extensions:
-- **microsoft-IsvExpTools.powerplatform-vscode** - Power Apps CLI (`pac`), solutions, model-driven apps, Power Pages
 - **danish-naglekar.dataverse-devtools** - Dataverse connections and TypeScript definitions
 - **danish-naglekar.pcf-builder** - PCF code component init, build and test
 - **ms-copilotstudio.vscode-copilotstudio** - Copilot Studio agent editing
@@ -114,9 +109,9 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 ## Key Features
 
 ### Automatic Setup
-- **One-click installation** - Installs all required extensions and applies settings automatically
-- **Auto-run on activation** - Configures environment on first use (configurable)
-- **Version tracking** - Re-applies presets when extension updates
+- **One-click profile creation** - Creates or updates three isolated profiles
+- **Explicit presets** - Settings and MCP changes happen only when Apply Presets is run
+- **No cross-workload language servers** - Pylance stays in Web/Python; AL and Power BI stay in their profiles
 
 ### MCP Authentication
 - **Secure credential storage** - Uses VS Code secret storage for API keys and tokens
@@ -128,6 +123,7 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 - **Workspace-aware** - Presets can be customized per workspace
 
 ### Commands
+- **SKC: Create or Update Workstation Profiles** - Create the three isolated extension profiles
 - **SKC: Apply Presets** - Manually apply all presets
 - **SKC: Install Cursor Skills** - Install bundled skills (Cursor: `~/.cursor/skills/`, VS Code: `~/.copilot/skills/`)
 - **SKC: Install Cursor Agents** - Install BC subagents (Cursor: `~/.cursor/agents/`, VS Code: `~/.copilot/agents/`)
@@ -160,15 +156,15 @@ code --install-extension skc-vs-tools-1.0.0.vsix
 2. **Configure MCP Auth** - Run "SKC: Configure MCP Auth" command to set up:
    - GitHub Personal Access Token (for GitHub MCP)
    - Context7 API Key (for Context7 MCP)
-3. **Apply Presets** - Run "SKC: Apply Presets" (or wait for auto-run)
-4. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
-5. **Start developing** - Your AL development environment is ready!
+3. **Create Profiles** - Run "SKC: Create or Update Workstation Profiles"
+4. **Apply AL Presets** - In the SKC AL profile, run "SKC: Apply Presets"
+5. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
 
 ## Technical Details
 
 - **Activation**: Activates on AL language files or manual commands
 - **Settings Scope**: User-level settings (applies globally)
-- **Extension Pack**: Installs as an extension pack (all extensions install together)
+- **Profiles**: Installs extension sets into three named VS Code profiles
 - **Dependencies**: Requires VS Code 1.90.0 or higher
 
 ## Configuration Options

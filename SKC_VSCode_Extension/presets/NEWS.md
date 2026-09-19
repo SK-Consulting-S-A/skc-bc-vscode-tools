@@ -2,20 +2,29 @@
 
 ## Version 3.1.0 - Latest Release
 
+### Isolated workstation profiles
+
+Run **SKC: Create or Update Workstation Profiles** to create three focused VS Code profiles:
+
+- **SKC AL** — Microsoft AL and essential AL helpers.
+- **SKC Web/Python** — TypeScript, ESLint, Prettier, Python, Pylance, and Azure web tooling.
+- **SKC Power Platform/BI** — standalone Dataverse, PCF, Copilot Studio, Power BI, and TMDL tooling.
+
+The extension no longer ships a manifest extension pack or auto-installs every tool on activation. Power Platform Tools, CodeQL, and SARIF are intentionally excluded.
+
 ### 🏷️ New name: SKC Workstation Tools
 
 The extension stopped being AL-only a long time ago, so the name now says what it is: modern workstation tooling for SKC employees and contractors, covering Business Central, Power Platform, Azure, and the Office documents that come out of that work.
 
 Nothing to reinstall — the Marketplace identity is unchanged and this is an in-place update.
 
-### ⚡ Power Platform is now part of the preset
+### Power Platform and BI tooling
 
-**SKC: Apply Presets** now installs the stack for all four ways we build on Power Platform:
+The Power Platform/BI profile installs the standalone tools SKC uses:
 
-- **Model-driven apps and solutions** — Power Platform Tools (PAC CLI) and Dataverse DevTools.
+- **Dataverse development** — Dataverse DevTools.
 - **PCF code components** — PCF Builder.
-- **Power Apps code apps** — PAC CLI plus the TypeScript, ESLint and Prettier stack a Vite/React app needs. Node.js LTS and Git still have to be on the machine.
-- **Power Pages** — site download, edit and upload through Power Platform Tools.
+- **Power Apps code apps** — TypeScript, ESLint and Prettier. Node.js LTS and Git still have to be on the machine.
 
 Plus **Power BI** as code (TMDL, Power BI Modeling MCP Server, Power BI Studio) and **Copilot Studio** agent editing.
 

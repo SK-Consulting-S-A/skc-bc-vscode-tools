@@ -1,0 +1,210 @@
+{
+  "name": "skc-al-workspace",
+  "displayName": "AL Workspace Toolkit",
+  "description": "Safe AL file naming and workspace organization for developers and coding agents.",
+  "version": "0.1.0",
+  "publisher": "SKConsultingSA",
+  "author": {
+    "name": "SK Consulting S.A.",
+    "url": "https://www.skc.lu"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools"
+  },
+  "homepage": "https://www.skc.lu",
+  "bugs": {
+    "url": "https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/Small_Logo.png",
+  "galleryBanner": {
+    "color": "#0060A0",
+    "theme": "dark"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": false
+  },
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Other"
+  ],
+  "keywords": [
+    "business central",
+    "al",
+    "file naming",
+    "namespace",
+    "copilot",
+    "agent"
+  ],
+  "activationEvents": [
+    "onLanguage:al",
+    "workspaceContains:**/app.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "alWorkspace.inspectCurrentFile",
+        "title": "AL Workspace: Inspect Current File"
+      },
+      {
+        "command": "alWorkspace.renameCurrentFile",
+        "title": "AL Workspace: Rename Current File"
+      },
+      {
+        "command": "alWorkspace.reorganizeCurrentFile",
+        "title": "AL Workspace: Reorganize Current File"
+      },
+      {
+        "command": "alWorkspace.organizeWorkspace",
+        "title": "AL Workspace: Organize All AL Files"
+      }
+    ],
+    "configuration": {
+      "title": "AL Workspace Toolkit",
+      "properties": {
+        "alWorkspace.onSaveAction": {
+          "type": "string",
+          "enum": [
+            "Nothing",
+            "Rename",
+            "Reorganize"
+          ],
+          "default": "Nothing",
+          "description": "Action applied to the exact AL document emitted by the save event.",
+          "scope": "resource"
+        },
+        "alWorkspace.fileNamePattern": {
+          "type": "string",
+          "default": "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+          "description": "File-name pattern. Supported tokens: <ObjectName>, <ObjectNameShort>, <ObjectType>, <ObjectTypeShort>, <ObjectTypeShortPascalCase>, <ObjectId>, and <Namespace>.",
+          "scope": "resource"
+        },
+        "alWorkspace.organizationMode": {
+          "type": "string",
+          "enum": [
+            "Namespace",
+            "ObjectType",
+            "None"
+          ],
+          "default": "Namespace",
+          "description": "Folder structure used by reorganize actions.",
+          "scope": "resource"
+        },
+        "alWorkspace.sourceRoot": {
+          "type": "string",
+          "default": "src",
+          "description": "Workspace-relative root for reorganized AL files.",
+          "scope": "resource"
+        },
+        "alWorkspace.namespacePrefixToIgnore": {
+          "type": "string",
+          "default": "",
+          "description": "Optional namespace prefix removed before namespace folders are calculated.",
+          "scope": "resource"
+        },
+        "alWorkspace.affixesToRemove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Prefixes or suffixes removed when rendering <ObjectNameShort>.",
+          "scope": "resource"
+        }
+      }
+    },
+    "languageModelTools": [
+      {
+        "name": "skc_al_inspect_file",
+        "displayName": "Inspect AL File Naming",
+        "modelDescription": "Parses an AL object from an explicit file path and reports its expected file name and organization path without changing files.",
+        "userDescription": "Inspect an AL file and report its expected path.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "inspectAlFile",
+        "icon": "$(search)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Absolute path to an AL file in the workspace."
+            }
+          },
+          "required": [
+            "filePath"
+          ]
+        }
+      },
+      {
+        "name": "skc_al_rename_file",
+        "displayName": "Rename AL File",
+        "modelDescription": "Safely renames the AL file at an explicit path according to the configured naming pattern. Requires user confirmation and never relies on the active editor.",
+        "userDescription": "Rename an AL file to its configured name.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "renameAlFile",
+        "icon": "$(edit)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Absolute path to an AL file in the workspace."
+            }
+          },
+          "required": [
+            "filePath"
+          ]
+        }
+      },
+      {
+        "name": "skc_al_reorganize_file",
+        "displayName": "Reorganize AL File",
+        "modelDescription": "Safely renames and moves the AL file at an explicit path according to workspace settings. Requires user confirmation and never relies on the active editor.",
+        "userDescription": "Rename and organize an AL file.",
+        "canBeReferencedInPrompt": true,
+        "toolReferenceName": "reorganizeAlFile",
+        "icon": "$(move)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Absolute path to an AL file in the workspace."
+            }
+          },
+          "required": [
+            "filePath"
+          ]
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node scripts/build.js --production",
+    "watch": "node scripts/build.js --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "npm run typecheck && npm test && npm run build && vsce package --no-dependencies",
+    "publish": "node scripts/publish.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.107.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -4,8 +4,14 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const presetPath = path.join(root, "presets", "extensions.json");
+const profilesPath = path.join(root, "presets", "profiles.json");
 const packagePath = path.join(root, "package.json");
+
+const FORBIDDEN_EXTENSIONS = new Set([
+    "github.vscode-codeql",
+    "microsoft-isvexptools.powerplatform-vscode",
+    "ms-sarifvscode.sarif-viewer",
+]);
 
 function readJson(filePath) {
     const raw = fs.readFileSync(filePath, "utf8");
@@ -23,38 +29,50 @@ function extractId(entry) {
 }
 
 function main() {
-    if (!fs.existsSync(presetPath)) {
-        throw new Error(`Preset file not found at ${presetPath}`);
+    if (!fs.existsSync(profilesPath)) {
+        throw new Error(`Workstation profile file not found at ${profilesPath}`);
     }
 
-    const preset = readJson(presetPath);
-    if (!ensureExtensionsArray(preset.extensions)) {
-        throw new Error("presets/extensions.json must contain an 'extensions' array of strings or { id, preRelease? } objects.");
+    const definitions = readJson(profilesPath);
+    if (!ensureExtensionsArray(definitions.sharedExtensions) || !Array.isArray(definitions.profiles)) {
+        throw new Error("presets/profiles.json must contain sharedExtensions and profiles arrays.");
     }
 
-    const extensions = Array.from(new Set(preset.extensions.map(extractId)));
+    const profileNames = new Set();
+    const extensionIds = new Set(definitions.sharedExtensions.map(extractId));
+    for (const profile of definitions.profiles) {
+        if (!profile || typeof profile.id !== "string" || typeof profile.name !== "string" ||
+            typeof profile.description !== "string" || !ensureExtensionsArray(profile.extensions)) {
+            throw new Error("presets/profiles.json contains an invalid profile definition.");
+        }
+        if (profileNames.has(profile.name.toLowerCase())) {
+            throw new Error(`Duplicate workstation profile name: ${profile.name}`);
+        }
+        profileNames.add(profile.name.toLowerCase());
+        for (const entry of profile.extensions) extensionIds.add(extractId(entry));
+    }
+    if (definitions.profiles.length !== 3) {
+        throw new Error(`Expected exactly 3 workstation profiles, found ${definitions.profiles.length}.`);
+    }
+    for (const id of extensionIds) {
+        if (FORBIDDEN_EXTENSIONS.has(id.toLowerCase())) {
+            throw new Error(`Forbidden extension in workstation profiles: ${id}`);
+        }
+    }
 
     const pkg = readJson(packagePath);
 
-    // extensionPack is a top-level manifest field; VS Code ignores it under "contributes".
-    // Deliberately not extensionDependencies: those cannot be uninstalled individually,
-    // and this extension's code requires none of them.
+    // Profile-specific tools are installed by SKC: Create or Update Workstation Profiles.
+    // A manifest extensionPack would install every ecosystem into every profile.
     delete pkg.extensionDependencies;
+    delete pkg.extensionPack;
     if (pkg.contributes) {
         delete pkg.contributes.extensionDependencies;
         delete pkg.contributes.extensionPack;
     }
 
-    const ordered = {};
-    for (const [key, value] of Object.entries(pkg)) {
-        if (key === "extensionPack") continue;
-        ordered[key] = value;
-        if (key === "contributes") ordered.extensionPack = extensions;
-    }
-    if (!ordered.extensionPack) ordered.extensionPack = extensions;
-
-    fs.writeFileSync(packagePath, `${JSON.stringify(ordered, null, 2)}\n`);
-    console.log(`Synced ${extensions.length} extensions into package.json (top-level extensionPack)`);
+    fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
+    console.log(`Validated ${definitions.profiles.length} workstation profiles with ${extensionIds.size} unique extensions; package.json has no extensionPack.`);
 }
 
 main();

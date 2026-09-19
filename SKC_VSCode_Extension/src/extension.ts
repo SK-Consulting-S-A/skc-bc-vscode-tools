@@ -8,6 +8,7 @@ import {
   env,
   ExtensionContext,
   OutputChannel,
+  ProgressLocation,
   extensions,
   window,
   workspace,
@@ -41,6 +42,20 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   registerBcChatParticipant(context, channel);
 
+  const forkCopilotChatCommand = commands.registerCommand("skc.forkCopilotChat", async () => {
+    const availableCommands = await commands.getCommands(true);
+    const nativeForkCommand = "workbench.action.chat.forkConversation";
+    if (!availableCommands.includes(nativeForkCommand)) {
+      void window.showWarningMessage(
+        "This VS Code version does not provide native Copilot Chat forking. Update VS Code and try again."
+      );
+      return;
+    }
+
+    await commands.executeCommand(nativeForkCommand);
+  });
+  context.subscriptions.push(forkCopilotChatCommand);
+
   const storedVersion = context.globalState.get<string>(STATE_VERSION_KEY);
   const isNewVersion = Boolean(currentVersion && storedVersion !== currentVersion);
 
@@ -48,6 +63,21 @@ export async function activate(context: ExtensionContext): Promise<void> {
     await applyPresets(context, channel, false);
   });
   context.subscriptions.push(applyCommand);
+
+  const createProfilesCommand = commands.registerCommand("skc.createWorkstationProfiles", async () => {
+    await window.withProgress(
+      {
+        location: ProgressLocation.Notification,
+        title: "Creating SKC workstation profiles",
+        cancellable: false
+      },
+      async (progress) => {
+        await createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
+      }
+    );
+    void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
+  });
+  context.subscriptions.push(createProfilesCommand);
 
   const installSkillsCommand = commands.registerCommand("skc.installSkills", async () => {
     await installSkills(context, channel);
@@ -287,19 +317,100 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
       registerTranslationTools(context, channel);
 
-      const autoApply = true;
-      const alreadyApplied = context.globalState.get<boolean>(STATE_KEY, false);
-      if (autoApply && (!alreadyApplied || isNewVersion)) {
-        void applyPresets(context, channel, true).catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          channel.appendLine(`[SKC] Startup preset apply failed: ${msg}`);
-        });
-      }
       void showNewsIfNeeded(context, channel, currentVersion, isNewVersion).catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         channel.appendLine(`[SKC] News notification failed: ${msg}`);
       });
     })();
+  });
+}
+
+type WorkstationProfileDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  extensions: ExtensionEntry[];
+};
+
+type WorkstationProfilesFile = {
+  sharedExtensions: ExtensionEntry[];
+  profiles: WorkstationProfileDefinition[];
+};
+
+async function createOrUpdateWorkstationProfiles(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  reportProgress: (message: string) => void
+): Promise<void> {
+  const definitions = await readWorkstationProfiles(context);
+  const extensionId = context.extension.id;
+
+  for (const profile of definitions.profiles) {
+    reportProgress(profile.name);
+    const byId = new Map<string, ExtensionEntry>();
+    for (const entry of [{ id: extensionId }, ...definitions.sharedExtensions, ...profile.extensions]) {
+      byId.set(entry.id.toLowerCase(), entry);
+    }
+
+    const profileProbe = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
+    if (profileProbe.code !== 0) {
+      channel.appendLine(`[SKC] Creating missing profile ${profile.name}...`);
+      const createResult = await runCodeCli(["--profile", profile.name, "--new-window"], context.extensionPath);
+      if (createResult.code !== 0) {
+        throw new Error(`Could not create ${profile.name}. See the SKC Workstation Tools output channel.`);
+      }
+    }
+
+    channel.appendLine(`[SKC] Updating profile ${profile.name} with ${byId.size} extension(s)...`);
+    for (const entry of byId.values()) {
+      const args = ["--profile", profile.name, "--install-extension", entry.id, "--force"];
+      if (entry.preRelease) {
+        args.push("--pre-release");
+      }
+      const result = await runCodeCli(args, context.extensionPath);
+      for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
+        channel.appendLine(`[${profile.name}] ${line}`);
+      }
+      if (result.code !== 0) {
+        throw new Error(`Could not install ${entry.id} in ${profile.name}. See the SKC Workstation Tools output channel.`);
+      }
+    }
+  }
+}
+
+async function readWorkstationProfiles(context: ExtensionContext): Promise<WorkstationProfilesFile> {
+  const profilePath = path.join(context.extensionPath, "presets", "profiles.json");
+  const parsed: unknown = JSON.parse(await fs.readFile(profilePath, "utf8"));
+  if (!isRecord(parsed) || !Array.isArray(parsed.sharedExtensions) || !Array.isArray(parsed.profiles)) {
+    throw new Error(`Invalid workstation profile file at ${profilePath}.`);
+  }
+
+  const sharedExtensions = parseExtensionEntries(parsed.sharedExtensions, profilePath);
+  const profiles = parsed.profiles.map((value): WorkstationProfileDefinition => {
+    if (!isRecord(value) || typeof value.id !== "string" || typeof value.name !== "string" ||
+      typeof value.description !== "string" || !Array.isArray(value.extensions)) {
+      throw new Error(`Invalid workstation profile entry in ${profilePath}.`);
+    }
+    return {
+      id: value.id,
+      name: value.name,
+      description: value.description,
+      extensions: parseExtensionEntries(value.extensions, profilePath)
+    };
+  });
+
+  return { sharedExtensions, profiles };
+}
+
+function parseExtensionEntries(values: unknown[], sourcePath: string): ExtensionEntry[] {
+  return values.map((value): ExtensionEntry => {
+    if (typeof value === "string") {
+      return { id: value };
+    }
+    if (isRecord(value) && typeof value.id === "string") {
+      return { id: value.id, preRelease: value.preRelease === true };
+    }
+    throw new Error(`Invalid extension entry in ${sourcePath}.`);
   });
 }
 
@@ -404,6 +515,24 @@ async function updateBcQuality(context: ExtensionContext, channel: OutputChannel
 function runNodeScript(args: string[], cwd: string): Promise<{ code: number; output: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, args, { cwd, windowsHide: true });
+    let output = "";
+    child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
+    child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
+    child.on("error", (error: Error) => { output += `${error.message}\n`; resolve({ code: 1, output }); });
+    child.on("close", (code) => { resolve({ code: code ?? 1, output }); });
+  });
+}
+
+function runCodeCli(args: string[], cwd: string): Promise<{ code: number; output: string }> {
+  return new Promise((resolve) => {
+    const childEnvironment = { ...process.env };
+    delete childEnvironment.ELECTRON_RUN_AS_NODE;
+    const child = spawn(process.execPath, args, {
+      cwd,
+      env: childEnvironment,
+      shell: false,
+      windowsHide: true
+    });
     let output = "";
     child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
     child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });

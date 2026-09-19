@@ -5,6 +5,10 @@
             "path": "SKC_VSCode_Extension"
         },
         {
+            "name": "AL Workspace Toolkit",
+            "path": "AL_Workspace_Toolkit"
+        },
+        {
             "name": "bc-mcp-proxy-npm",
             "path": "bc-mcp-proxy-npm"
         },
