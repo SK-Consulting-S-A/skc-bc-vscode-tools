@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Added separate filename patterns for extension objects and page customizations.
+- Added prefix, suffix, base-object, base-ID, and uppercase object-type tokens.
+- Added opt-in semantic object-name rewriting through the AL language server.
+- Added configurable Test and TestRunner codeunit routing.
+
 ## 0.1.1
 
 - Refreshed Marketplace metadata to describe multi-root safety, confirmed bulk actions, and explicit Copilot tools.

@@ -32,14 +32,24 @@ Agent tools operate on the supplied `filePath`; they never infer a target from t
 {
   "alWorkspace.onSaveAction": "Nothing",
   "alWorkspace.fileNamePattern": "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+  "alWorkspace.extensionFileNamePattern": "<BaseNameShort>.<ObjectTypeShortPascalCase>.al",
+  "alWorkspace.pageCustomizationFileNamePattern": "<BaseNameShort>.<ObjectTypeShortPascalCase>.al",
   "alWorkspace.organizationMode": "Namespace",
   "alWorkspace.sourceRoot": "src",
+  "alWorkspace.testSourceRoot": "test",
   "alWorkspace.namespacePrefixToIgnore": "Contoso",
-  "alWorkspace.affixesToRemove": ["CTO"]
+  "alWorkspace.affixesToRemove": ["CTO"],
+  "alWorkspace.objectNamePrefix": "CTO ",
+  "alWorkspace.objectNameSuffix": " SKC",
+  "alWorkspace.rewriteObjectName": false
 }
 ```
 
 `onSaveAction` is disabled by default. Choose `Rename` or `Reorganize` per workspace when automatic behavior is wanted.
+
+`rewriteObjectName` is also disabled by default. When enabled, the Toolkit asks the AL language server for a semantic rename so references are updated before the file is moved. Save affected AL files first; the operation stops if semantic rename is unavailable.
+
+Specialized filename patterns are optional. Empty values inherit `fileNamePattern`. `testSourceRoot` is optional; when set, codeunits with `Subtype = Test` or `Subtype = TestRunner` are routed through that root.
 
 Supported file-name tokens:
 
@@ -48,9 +58,15 @@ Supported file-name tokens:
 - `<ObjectType>`
 - `<ObjectTypeShort>`
 - `<ObjectTypeShortPascalCase>`
+- `<ObjectTypeShortUpper>`
 - `<ObjectId>`
 - `<Namespace>`
+- `<Prefix>`
+- `<Suffix>`
+- `<BaseName>`
+- `<BaseNameShort>`
+- `<BaseId>`
 
 ## Safety
 
-File moves are restricted to the owning workspace folder. Existing destination files are never overwritten. Bulk operations require confirmation and report individual failures in the **AL Workspace Toolkit** output channel.
+File moves are restricted to the owning workspace folder. Existing destination files are never overwritten. Bulk operations require confirmation and report individual failures in the **AL Workspace Toolkit** output channel. Semantic renames require saved documents, save every affected document, and roll back the object name if the subsequent file move fails.

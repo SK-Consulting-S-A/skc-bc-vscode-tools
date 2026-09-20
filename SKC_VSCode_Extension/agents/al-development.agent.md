@@ -127,11 +127,11 @@ Before finishing any AL code block, verify:
 
 The developer's VS Code workspace may have the following BC AL extensions active. Be aware of what each does automatically so you can align your suggestions correctly.
 
-### CRS AL Language (`waldo.crs-al-language-extension`)
+### AL Workspace Toolkit (`SKConsultingSA.skc-al-workspace`)
 
-- **File naming**: Every `.al` file must be named `<ObjectNameShort>.<ObjectType>.al`.
-- **Namespace reorganisation**: `CRS.ReorganizeByNamespace = true` moves files into folder paths matching their namespace on save.
-- **Suffix enforcement**: `CRS.ObjectNameSuffix` — warns when the suffix is missing.
+- **File naming**: Uses project-scoped `alWorkspace.*FileNamePattern` settings for base objects, extension objects, and page customizations.
+- **Namespace organisation**: Reorganizes files under `alWorkspace.sourceRoot`; test codeunits can use a separate `alWorkspace.testSourceRoot`.
+- **Affix rewriting**: `alWorkspace.rewriteObjectName` is opt-in and uses the AL semantic rename provider. Never replace object names with raw text edits.
 
 ### AZ AL Dev Tools / AL Code Outline (`andrzejzwierzchowski.al-code-outline`)
 

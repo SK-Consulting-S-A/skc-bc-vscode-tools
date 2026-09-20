@@ -294,7 +294,7 @@ Welcome to **SKC AL Tools**! Your all-in-one extension for streamlined Business 
 ### 📦 Extension Pack
 Includes essential AL development extensions:
 - Microsoft AL Language
-- Waldo's AL Extension Pack
+- AL Workspace Toolkit
 - Error Lens
 - GitHub Pull Requests
 - AL Toolbox

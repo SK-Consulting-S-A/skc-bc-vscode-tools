@@ -26,6 +26,7 @@ export function registerAgentTools(context: vscode.ExtensionContext, service: Al
           const result = await service.inspectUri(toFileUri(options.input.filePath), true);
           return textResult([
             `Object: ${result.object.objectType} ${result.object.objectName}`,
+            `Expected object name: ${result.desiredObjectName}`,
             `Current path: ${result.source.fsPath}`,
             `Expected path: ${result.destination.fsPath}`,
             `Change required: ${result.changed ? "yes" : "no"}`
@@ -46,12 +47,24 @@ function createWriteTool(
 ): vscode.LanguageModelTool<FileInput> {
   return {
     async prepareInvocation(options) {
+      let rewriteWarning = "";
+      try {
+        const inspection = await service.inspectUri(
+          toFileUri(options.input.filePath),
+          action === "Reorganize"
+        );
+        if (inspection.objectNameChanged) {
+          rewriteWarning = ` This will also semantically rename the AL object to **${escapeMarkdown(inspection.desiredObjectName)}** and update references.`;
+        }
+      } catch {
+        // Invoke reports the detailed inspection error.
+      }
       return {
         invocationMessage: `${action} AL file ${options.input.filePath}`,
         confirmationMessages: {
           title: `${action} AL file`,
           message: new vscode.MarkdownString(
-            `${action} the AL file at **${escapeMarkdown(options.input.filePath)}** according to the workspace configuration?`
+            `${action} the AL file at **${escapeMarkdown(options.input.filePath)}** according to the workspace configuration?${rewriteWarning}`
           )
         }
       };

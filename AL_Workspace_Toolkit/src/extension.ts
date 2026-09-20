@@ -38,7 +38,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
       const answer = await vscode.window.showWarningMessage(
-        `Rename and reorganize every AL file${folder ? ` in ${folder.name}` : " in the workspace"}?`,
+        `Rename and reorganize every AL file${folder ? ` in ${folder.name}` : " in the workspace"}? If object-name rewriting is enabled, references are updated semantically too.`,
         { modal: true },
         "Organize Files"
       );

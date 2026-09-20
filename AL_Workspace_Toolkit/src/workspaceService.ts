@@ -5,7 +5,8 @@ import {
   calculateDestinationPath,
   OrganizationMode,
   parseAlObject,
-  PathOptions
+  PathOptions,
+  renderObjectName
 } from "./alModel";
 
 export type FileAction = "Rename" | "Reorganize";
@@ -15,6 +16,8 @@ export interface InspectionResult {
   destination: vscode.Uri;
   object: AlObjectInfo;
   changed: boolean;
+  desiredObjectName: string;
+  objectNameChanged: boolean;
 }
 
 export interface ApplyResult extends InspectionResult {
@@ -24,7 +27,7 @@ export interface ApplyResult extends InspectionResult {
 export class AlWorkspaceService {
   private readonly inProgress = new Set<string>();
 
-  constructor(private readonly output: vscode.OutputChannel) {}
+  constructor(private readonly output: vscode.OutputChannel) { }
 
   async handleSavedDocument(document: vscode.TextDocument): Promise<void> {
     if (!isAlDocument(document)) {
@@ -89,19 +92,27 @@ export class AlWorkspaceService {
       throw new Error("No supported AL object declaration was found.");
     }
 
+    const options = readPathOptions(document.uri);
+    const desiredObjectName = options.rewriteObjectName
+      ? renderObjectName(object.objectName, options)
+      : object.objectName;
+    const effectiveObject = { ...object, objectName: desiredObjectName };
     const destinationPath = calculateDestinationPath(
       document.uri.fsPath,
       folder.uri.fsPath,
-      object,
-      readPathOptions(document.uri),
+      effectiveObject,
+      options,
       reorganize
     );
     const destination = vscode.Uri.file(destinationPath);
+    const objectNameChanged = object.objectName !== desiredObjectName;
     return {
       source: document.uri,
       destination,
       object,
-      changed: normalizePath(document.uri.fsPath) !== normalizePath(destination.fsPath)
+      changed: objectNameChanged || normalizePath(document.uri.fsPath) !== normalizePath(destination.fsPath),
+      desiredObjectName,
+      objectNameChanged
     };
   }
 
@@ -119,13 +130,35 @@ export class AlWorkspaceService {
         return { ...inspection, applied: false };
       }
 
-      if (await uriExists(inspection.destination)) {
+      const pathChanged = normalizePath(inspection.source.fsPath) !== normalizePath(inspection.destination.fsPath);
+      if (pathChanged && await uriExists(inspection.destination)) {
         throw new Error(`Destination already exists: ${inspection.destination.fsPath}`);
       }
 
-      await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(inspection.destination.fsPath)));
-      await vscode.workspace.fs.rename(inspection.source, inspection.destination, { overwrite: false });
-      this.output.appendLine(`[${action}] ${inspection.source.fsPath} -> ${inspection.destination.fsPath}`);
+      const rollbackObjectRename = inspection.objectNameChanged
+        ? await applySemanticObjectRename(document, inspection.object, inspection.desiredObjectName)
+        : undefined;
+
+      if (pathChanged) {
+        try {
+          await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(inspection.destination.fsPath)));
+          await vscode.workspace.fs.rename(inspection.source, inspection.destination, { overwrite: false });
+        } catch (error) {
+          if (rollbackObjectRename) {
+            try {
+              await rollbackObjectRename();
+            } catch (rollbackError) {
+              throw new Error(
+                `File move failed (${formatError(error)}) and semantic rename rollback also failed (${formatError(rollbackError)}).`
+              );
+            }
+          }
+          throw error;
+        }
+        this.output.appendLine(`[${action}] ${inspection.source.fsPath} -> ${inspection.destination.fsPath}`);
+      } else {
+        this.output.appendLine(`[${action}] Renamed AL object to ${inspection.desiredObjectName}.`);
+      }
       return { ...inspection, applied: true };
     } finally {
       this.inProgress.delete(key);
@@ -137,11 +170,69 @@ function readPathOptions(uri: vscode.Uri): PathOptions {
   const configuration = vscode.workspace.getConfiguration("alWorkspace", uri);
   return {
     fileNamePattern: configuration.get<string>("fileNamePattern", "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al"),
+    extensionFileNamePattern: configuration.get<string>("extensionFileNamePattern", ""),
+    pageCustomizationFileNamePattern: configuration.get<string>("pageCustomizationFileNamePattern", ""),
     organizationMode: configuration.get<OrganizationMode>("organizationMode", "Namespace"),
     sourceRoot: configuration.get<string>("sourceRoot", "src"),
+    testSourceRoot: configuration.get<string>("testSourceRoot", ""),
     namespacePrefixToIgnore: configuration.get<string>("namespacePrefixToIgnore", ""),
-    affixesToRemove: configuration.get<string[]>("affixesToRemove", [])
+    affixesToRemove: configuration.get<string[]>("affixesToRemove", []),
+    objectNamePrefix: configuration.get<string>("objectNamePrefix", ""),
+    objectNameSuffix: configuration.get<string>("objectNameSuffix", ""),
+    rewriteObjectName: configuration.get<boolean>("rewriteObjectName", false)
   };
+}
+
+async function applySemanticObjectRename(
+  document: vscode.TextDocument,
+  object: AlObjectInfo,
+  desiredObjectName: string
+): Promise<() => Promise<void>> {
+  if (document.isDirty) {
+    throw new Error("Save the AL file before rewriting its object name.");
+  }
+
+  const source = document.getText();
+  const positionOffset = object.objectNameOffset + (source[object.objectNameOffset] === '"' ? 1 : 0);
+  await applySemanticRenameAt(document, positionOffset, desiredObjectName);
+
+  return async () => {
+    const renamedDocument = await vscode.workspace.openTextDocument(document.uri);
+    await applySemanticRenameAt(renamedDocument, positionOffset, object.objectName);
+  };
+}
+
+async function applySemanticRenameAt(
+  document: vscode.TextDocument,
+  positionOffset: number,
+  desiredObjectName: string
+): Promise<void> {
+  const workspaceEdit = await vscode.commands.executeCommand<vscode.WorkspaceEdit | undefined>(
+    "vscode.executeDocumentRenameProvider",
+    document.uri,
+    document.positionAt(positionOffset),
+    desiredObjectName
+  );
+  if (!workspaceEdit || workspaceEdit.entries().length === 0) {
+    throw new Error("The AL language server could not prepare a semantic object rename.");
+  }
+
+  const affectedDocuments = await Promise.all(
+    workspaceEdit.entries().map(([uri]) => vscode.workspace.openTextDocument(uri))
+  );
+  const dirtyDependency = affectedDocuments.find((candidate) => candidate.isDirty);
+  if (dirtyDependency) {
+    throw new Error(`Save ${dirtyDependency.uri.fsPath} before rewriting the object name.`);
+  }
+
+  if (!await vscode.workspace.applyEdit(workspaceEdit)) {
+    throw new Error("VS Code could not apply the semantic object rename.");
+  }
+  for (const affectedDocument of affectedDocuments) {
+    if (affectedDocument.isDirty && !await affectedDocument.save()) {
+      throw new Error(`Could not save semantic rename changes in ${affectedDocument.uri.fsPath}.`);
+    }
+  }
 }
 
 function isAlDocument(document: vscode.TextDocument): boolean {

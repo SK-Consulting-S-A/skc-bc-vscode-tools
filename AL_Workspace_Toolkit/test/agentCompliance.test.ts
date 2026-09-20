@@ -20,6 +20,14 @@ describe("agent compliance", () => {
     expect(serviceSource).not.toContain("activeTextEditor.document.uri");
   });
 
+  it("uses semantic rename for optional object-name rewriting", () => {
+    expect(serviceSource).toContain("vscode.executeDocumentRenameProvider");
+    expect(serviceSource).toContain("vscode.workspace.applyEdit(workspaceEdit)");
+    expect(serviceSource).toContain("vscode.workspace.openTextDocument(uri)");
+    expect(serviceSource).toContain("rollbackObjectRename");
+    expect(serviceSource).not.toMatch(/replace\([^\n]*objectName/i);
+  });
+
   it("declares explicit path-based agent tools", () => {
     expect(manifest.contributes.languageModelTools.map((tool) => tool.name)).toEqual([
       "skc_al_inspect_file",

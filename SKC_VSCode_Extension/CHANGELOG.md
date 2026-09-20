@@ -2,6 +2,12 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.4] - 2026-09-20
+
+### Changed
+- Replaced obsolete `CRS.*` settings with conservative `alWorkspace.*` defaults for AL Workspace Toolkit 0.2.0.
+- Updated AL agent guidance to use separate object patterns, test roots, and opt-in semantic affix rewriting.
+
 ## [3.1.3] - 2026-09-20
 
 ### Changed

@@ -7,14 +7,24 @@ export interface AlObjectInfo {
   objectId?: string;
   objectName: string;
   namespace?: string;
+  baseObjectName?: string;
+  baseObjectId?: string;
+  subtype?: "Test" | "TestRunner";
+  objectNameOffset: number;
 }
 
 export interface PathOptions {
   fileNamePattern: string;
+  extensionFileNamePattern: string;
+  pageCustomizationFileNamePattern: string;
   organizationMode: OrganizationMode;
   sourceRoot: string;
+  testSourceRoot: string;
   namespacePrefixToIgnore: string;
   affixesToRemove: string[];
+  objectNamePrefix: string;
+  objectNameSuffix: string;
+  rewriteObjectName: boolean;
 }
 
 const objectTypeShortNames: Record<string, string> = {
@@ -34,6 +44,7 @@ const objectTypeShortNames: Record<string, string> = {
   permissionset: "PermissionSet",
   permissionsetextension: "PermissionSetExt",
   profile: "Profile",
+  profileextension: "ProfileExt",
   controladdin: "ControlAddIn",
   entitlement: "Entitlement"
 };
@@ -55,12 +66,21 @@ const objectTypeFolders: Record<string, string> = {
   permissionset: "PermissionSets",
   permissionsetextension: "PermissionSetExtensions",
   profile: "Profiles",
+  profileextension: "ProfileExtensions",
   controladdin: "ControlAddIns",
   entitlement: "Entitlements"
 };
 
-const objectDeclaration = /^\s*(tableextension|pageextension|reportextension|enumextension|permissionsetextension|pagecustomization|table|page|report|codeunit|query|xmlport|enum|interface|permissionset|profile|controladdin|entitlement)\s+(?:(\d+)\s+)?("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_]*)/im;
+const objectDeclaration = /^\s*(tableextension|pageextension|reportextension|enumextension|permissionsetextension|profileextension|pagecustomization|table|page|report|codeunit|query|xmlport|enum|interface|permissionset|profile|controladdin|entitlement)\s+(?:(\d+)\s+)?("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_]*)/im;
 const namespaceDeclaration = /^\s*namespace\s+([A-Za-z_][A-Za-z0-9_.]*)\s*;/im;
+const extensionObjectTypes = new Set([
+  "tableextension",
+  "pageextension",
+  "reportextension",
+  "enumextension",
+  "permissionsetextension",
+  "profileextension"
+]);
 
 export function parseAlObject(source: string): AlObjectInfo | undefined {
   const code = stripComments(source);
@@ -70,38 +90,78 @@ export function parseAlObject(source: string): AlObjectInfo | undefined {
   }
 
   const namespace = namespaceDeclaration.exec(code)?.[1];
+  const objectNameToken = declaration[3];
+  const objectNameOffset = declaration.index + declaration[0].lastIndexOf(objectNameToken);
+  const declarationTail = code.slice(objectNameOffset + objectNameToken.length);
+  const baseMatch = /^\s+(?:extends|customizes)\s+("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_]*)/i.exec(declarationTail);
+  const baseObjectName = baseMatch ? unquoteIdentifier(baseMatch[1]) : undefined;
+  const baseObjectId = baseMatch
+    ? readBaseObjectId(source, objectNameOffset + objectNameToken.length + baseMatch[0].length)
+    : undefined;
+  const subtypeMatch = declaration[1].toLowerCase() === "codeunit"
+    ? /\bSubtype\s*=\s*(Test|TestRunner)\s*;/i.exec(code)
+    : undefined;
   return {
     objectType: declaration[1].toLowerCase(),
     objectId: declaration[2],
-    objectName: unquoteIdentifier(declaration[3]),
-    namespace
+    objectName: unquoteIdentifier(objectNameToken),
+    namespace,
+    baseObjectName,
+    baseObjectId,
+    subtype: subtypeMatch?.[1] as "Test" | "TestRunner" | undefined,
+    objectNameOffset
   };
 }
 
 export function renderFileName(info: AlObjectInfo, options: PathOptions): string {
-  const objectName = sanitizeFileSegment(info.objectName);
-  const shortObjectName = sanitizeFileSegment(stripAffixes(info.objectName, options.affixesToRemove))
+  const effectiveObjectName = options.rewriteObjectName ? renderObjectName(info.objectName, options) : info.objectName;
+  const objectName = sanitizeFileSegment(effectiveObjectName);
+  const shortObjectName = sanitizeFileSegment(stripAffixes(effectiveObjectName, options.affixesToRemove))
     .replace(/[^A-Za-z0-9]/g, "");
   const shortType = objectTypeShortNames[info.objectType] ?? toPascalCase(info.objectType);
+  const baseName = sanitizeFileSegment(stripAffixes(info.baseObjectName ?? "", options.affixesToRemove));
+  const shortBaseName = baseName.replace(/[^A-Za-z0-9]/g, "");
   const replacements: Record<string, string> = {
+    "<Prefix>": options.objectNamePrefix,
+    "<Suffix>": options.objectNameSuffix,
     "<ObjectName>": objectName,
     "<ObjectNameShort>": shortObjectName || objectName,
     "<ObjectType>": info.objectType,
     "<ObjectTypeShort>": shortType.toLowerCase(),
     "<ObjectTypeShortPascalCase>": shortType,
+    "<ObjectTypeShortUpper>": shortType.toUpperCase(),
     "<ObjectId>": info.objectId ?? "",
-    "<Namespace>": info.namespace ?? ""
+    "<Namespace>": info.namespace ?? "",
+    "<BaseName>": baseName,
+    "<BaseNameShort>": shortBaseName,
+    "<BaseId>": info.baseObjectId ?? ""
   };
 
-  let fileName = options.fileNamePattern;
+  let fileName = selectFileNamePattern(info.objectType, options);
   for (const [token, value] of Object.entries(replacements)) {
     fileName = fileName.split(token).join(value);
   }
   fileName = sanitizeFileSegment(fileName).replace(/\.{2,}/g, ".");
+  if (!fileName || fileName.toLowerCase() === ".al") {
+    throw new Error("The configured filename pattern produced an empty filename.");
+  }
   if (!fileName.toLowerCase().endsWith(".al")) {
     fileName += ".al";
   }
   return fileName;
+}
+
+export function renderObjectName(objectName: string, options: PathOptions): string {
+  let result = objectName.trim();
+  const prefix = options.objectNamePrefix;
+  const suffix = options.objectNameSuffix;
+  if (prefix && !result.toLowerCase().startsWith(prefix.toLowerCase())) {
+    result = `${prefix}${result}`;
+  }
+  if (suffix && !result.toLowerCase().endsWith(suffix.toLowerCase())) {
+    result = `${result}${suffix}`;
+  }
+  return result;
 }
 
 export function calculateDestinationPath(
@@ -114,11 +174,17 @@ export function calculateDestinationPath(
   const fileName = renderFileName(info, options);
   let targetDirectory = path.dirname(currentPath);
 
-  if (reorganize && options.organizationMode !== "None") {
-    const sourceRoot = path.resolve(workspaceRoot, options.sourceRoot || "src");
+  if (reorganize) {
+    const isTestCodeunit = info.objectType === "codeunit" && Boolean(info.subtype);
+    const configuredRoot = isTestCodeunit && options.testSourceRoot.trim()
+      ? options.testSourceRoot
+      : options.sourceRoot || "src";
+    const sourceRoot = path.resolve(workspaceRoot, configuredRoot);
     const segments = options.organizationMode === "Namespace"
       ? namespaceSegments(info.namespace, options.namespacePrefixToIgnore)
-      : [objectTypeFolders[info.objectType] ?? toPascalCase(info.objectType)];
+      : options.organizationMode === "ObjectType"
+        ? [objectTypeFolders[info.objectType] ?? toPascalCase(info.objectType)]
+        : [];
     targetDirectory = path.join(sourceRoot, ...segments);
   }
 
@@ -127,6 +193,22 @@ export function calculateDestinationPath(
     throw new Error("The calculated destination is outside the workspace.");
   }
   return destination;
+}
+
+function selectFileNamePattern(objectType: string, options: PathOptions): string {
+  if (objectType === "pagecustomization" && options.pageCustomizationFileNamePattern.trim()) {
+    return options.pageCustomizationFileNamePattern;
+  }
+  if (extensionObjectTypes.has(objectType) && options.extensionFileNamePattern.trim()) {
+    return options.extensionFileNamePattern;
+  }
+  return options.fileNamePattern;
+}
+
+function readBaseObjectId(source: string, targetEnd: number): string | undefined {
+  const lineEnd = source.indexOf("\n", targetEnd);
+  const lineTail = source.slice(targetEnd, lineEnd < 0 ? source.length : lineEnd);
+  return /^\s*\/\/\s*(\d+)/.exec(lineTail)?.[1];
 }
 
 export function isPathInside(candidatePath: string, workspaceRoot: string): boolean {
