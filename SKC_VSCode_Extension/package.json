@@ -56,7 +56,7 @@
     "workspaceContains:**/power.config.json",
     "workspaceContains:**/powerpages.config.json",
     "workspaceContains:**/*.tmdl",
-    "onChatParticipant:skc.bc"
+    "onChatParticipant:skc.harold"
   ],
   "main": "./out/extension.js",
   "icon": "assets/Small_Logo.png",
@@ -276,10 +276,10 @@
     ],
     "chatParticipants": [
       {
-        "id": "skc.bc",
-        "name": "bc",
-        "fullName": "Business Central",
-        "description": "Ask how Business Central works. Try: how do I post a sales invoice?",
+        "id": "skc.harold",
+        "name": "harold",
+        "fullName": "Harold",
+        "description": "Ask Harold how Business Central works. Try: how do I post a sales invoice?",
         "isSticky": true,
         "commands": [
           {

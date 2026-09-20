@@ -48,7 +48,7 @@ SKC Workstation Tools bundles the official Microsoft **BCQuality** review plugin
 
 - Build and package flows synchronize the current global Copilot skill and agent bundles.
 - The dashboard specialist and updated Business Central skills are included while `algo-settings.agent.md` remains intentionally excluded.
-- The organization release keeps the **SKC Dark** theme and `@bc` Copilot Chat experience.
+- The organization release keeps the **SKC Dark** theme and the `@harold` Copilot Chat experience.
 
 ---
 
@@ -61,9 +61,9 @@ SKC AL Tools now ships **SKC Dark**, a VS Code color theme taken from the [skc.l
 - Pick it from **File → Preferences → Theme → Color Theme → SKC Dark**
 - **SKC: Apply Presets** sets it as the default dark theme
 
-### @bc in Copilot Chat
+### @harold in Copilot Chat
 
-Type `@bc how do I post a sales invoice?` in Copilot Chat. No Agent picker and no skill names. Slash commands: `/docs`, `/object`, `/how`. `@bc` looks up Microsoft Learn when you ask.
+Type `@harold how do I post a sales invoice?` in Copilot Chat. No Agent picker and no skill names. Slash commands: `/docs`, `/object`, `/how`. `@harold` looks up Microsoft Learn when you ask.
 
 ---
 

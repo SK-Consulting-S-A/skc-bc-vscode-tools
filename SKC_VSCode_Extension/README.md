@@ -6,7 +6,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 ## What you get
 
-- **@bc in Copilot Chat** — type `@bc how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
+- **@harold in Copilot Chat** — type `@harold how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
 - **Fork Copilot Chat** — focus any earlier request or response, then run **SKC: Fork Copilot Chat at Focused Message** to continue in a separate native chat session.
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
 - **Isolated workstation profiles** — create `SKC AL`, `SKC Web/Python`, and `SKC Power Platform/BI` without loading every language server in every workspace.
@@ -35,19 +35,19 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 ## How to use
 
-### Ask Business Central questions (`@bc`)
+### Ask Business Central questions (`@harold`)
 
 1. Open Copilot Chat.
-2. Type `@bc` and your question. You do not need to pick an Agent or know skill names.
+2. Type `@harold` and your question. You do not need to pick an Agent or know skill names.
 
 Examples:
 
-- `@bc how do I post a sales invoice?`
-- `@bc /how warehouse shipment`
-- `@bc /object Customer`
-- `@bc /docs VAT posting groups`
+- `@harold how do I post a sales invoice?`
+- `@harold /how warehouse shipment`
+- `@harold /object Customer`
+- `@harold /docs VAT posting groups`
 
-`@bc` looks up Microsoft Learn for that question. `/object` can also use local AL symbols when a project is open.
+`@harold` looks up Microsoft Learn for that question. `/object` can also use local AL symbols when a project is open.
 
 ### Fork a Copilot Chat
 
@@ -136,7 +136,7 @@ The preset registers a `dataverse` MCP server pointing at `https://<YOUR_DATAVER
 
 ## Copilot and language-model tools
 
-SKC Workstation Tools contributes the **@bc** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
+SKC Workstation Tools contributes the **@harold** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
 
 ## Build and publish
 
