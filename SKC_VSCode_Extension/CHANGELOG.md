@@ -2,6 +2,12 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.2] - 2026-09-20
+
+### Fixed
+- Updating a named SKC workstation profile now removes obsolete extensions managed by the former SKC preset, including legacy AL extensions replaced by AL Workspace Toolkit, while preserving user-added extensions.
+- Profile maintenance now invokes VS Code's CLI entry point instead of launching GUI windows for extension operations.
+
 ## [3.1.0] - 2026-09-19
 
 ### Changed

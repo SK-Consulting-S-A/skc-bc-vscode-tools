@@ -27,6 +27,35 @@ const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
 const STATE_LAST_EXTENSION_IDS_KEY = "skc.lastAppliedExtensionIds";
+const LEGACY_MANAGED_EXTENSION_IDS = new Set([
+  "ms-dynamics-smb.al",
+  "davidfeldhoff.al-codeactions",
+  "usernamehw.errorlens",
+  "github.vscode-pull-request-github",
+  "rasmus.al-var-helper",
+  "bartpermentier.al-toolbox",
+  "andrzejzwierzchowski.al-code-outline",
+  "ms-azuretools.vscode-azurefunctions",
+  "ms-azuretools.vscode-azureappservice",
+  "ms-azuretools.vscode-azureresourcegroups",
+  "ms-vscode.vscode-typescript-next",
+  "redhat.vscode-xml",
+  "wbrakowski.al-navigator",
+  "ms-vscode.powershell",
+  "vscode-icons-team.vscode-icons",
+  "waldo.crs-al-language-extension",
+  "ms-python.python",
+  "ms-python.debugpy",
+  "microsoft-isvexptools.powerplatform-vscode",
+  "ms-copilotstudio.vscode-copilotstudio",
+  "danish-naglekar.dataverse-devtools",
+  "danish-naglekar.pcf-builder",
+  "analysis-services.tmdl",
+  "analysis-services.powerbi-modeling-mcp",
+  "gerhardbrueckl.powerbi-vscode",
+  "dbaeumer.vscode-eslint",
+  "esbenp.prettier-vscode"
+]);
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const channel = window.createOutputChannel(OUTPUT_CHANNEL_NAME);
@@ -354,12 +383,15 @@ async function createOrUpdateWorkstationProfiles(
 
     const profileProbe = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
     if (profileProbe.code !== 0) {
-      channel.appendLine(`[SKC] Creating missing profile ${profile.name}...`);
-      const createResult = await runCodeCli(["--profile", profile.name, "--new-window"], context.extensionPath);
-      if (createResult.code !== 0) {
-        throw new Error(`Could not create ${profile.name}. See the SKC Workstation Tools output channel.`);
-      }
+      throw new Error(`Could not inspect ${profile.name}. See the SKC Workstation Tools output channel.`);
     }
+    await removeObsoleteManagedProfileExtensions(
+      profile.name,
+      profileProbe.output,
+      byId,
+      channel,
+      context.extensionPath
+    );
 
     channel.appendLine(`[SKC] Updating profile ${profile.name} with ${byId.size} extension(s)...`);
     for (const entry of byId.values()) {
@@ -374,6 +406,38 @@ async function createOrUpdateWorkstationProfiles(
       if (result.code !== 0) {
         throw new Error(`Could not install ${entry.id} in ${profile.name}. See the SKC Workstation Tools output channel.`);
       }
+    }
+  }
+}
+
+async function removeObsoleteManagedProfileExtensions(
+  profileName: string,
+  installedOutput: string,
+  allowedExtensions: Map<string, ExtensionEntry>,
+  channel: OutputChannel,
+  cwd: string
+): Promise<void> {
+  const installedIds = installedOutput
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^[A-Za-z0-9][A-Za-z0-9_-]*\.[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(line));
+
+  for (const extensionId of installedIds) {
+    const normalizedId = extensionId.toLowerCase();
+    if (!LEGACY_MANAGED_EXTENSION_IDS.has(normalizedId) || allowedExtensions.has(normalizedId)) {
+      continue;
+    }
+
+    channel.appendLine(`[SKC] Removing obsolete managed extension ${extensionId} from ${profileName}...`);
+    const result = await runCodeCli(
+      ["--profile", profileName, "--uninstall-extension", extensionId],
+      cwd
+    );
+    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
+      channel.appendLine(`[${profileName}] ${line}`);
+    }
+    if (result.code !== 0) {
+      throw new Error(`Could not remove ${extensionId} from ${profileName}. See the SKC Workstation Tools output channel.`);
     }
   }
 }
@@ -525,9 +589,13 @@ function runNodeScript(args: string[], cwd: string): Promise<{ code: number; out
 
 function runCodeCli(args: string[], cwd: string): Promise<{ code: number; output: string }> {
   return new Promise((resolve) => {
-    const childEnvironment = { ...process.env };
-    delete childEnvironment.ELECTRON_RUN_AS_NODE;
-    const child = spawn(process.execPath, args, {
+    const childEnvironment = {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
+      VSCODE_DEV: ""
+    };
+    const cliPath = path.join(env.appRoot, "out", "cli.js");
+    const child = spawn(process.execPath, [cliPath, ...args], {
       cwd,
       env: childEnvironment,
       shell: false,

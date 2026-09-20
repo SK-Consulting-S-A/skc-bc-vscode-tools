@@ -65,6 +65,8 @@ This command uses VS Code's native session fork when the installed VS Code versi
 4. In `SKC AL`, run **SKC: Apply Presets** when you want the AL settings and MCP configuration.
 5. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
 
+Updating a named SKC profile removes obsolete extensions previously managed by SKC but preserves extensions the user added. Other VS Code profiles are not changed.
+
 Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 
 ## Workstation profiles
