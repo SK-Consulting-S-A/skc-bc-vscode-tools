@@ -32,6 +32,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 env:
   VSCE_PAT: ${{ secrets.VSCE_PAT }}
   # Extension subfolder in this repo (single place to change if path ever changes)

@@ -1,9 +1,17 @@
+import { XMLParser } from "fast-xml-parser";
+
 const TRANS_UNIT_REGEX = /<trans-unit\b[^>]*>([\s\S]*?)<\/trans-unit\s*>/gi;
 const TARGET_REGEX = /<target\b([^>]*)\/\s*>|<target\b([^>]*)>([\s\S]*?)<\/target\s*>/gi;
 const SOURCE_REGEX = /<source\b[^>]*\/\s*>|<source\b[^>]*>([\s\S]*?)<\/source\s*>/i;
 
 const COMPLETED_TARGET_STATES = new Set(["translated", "signed-off", "final"]);
 const NAB_PLACEHOLDER_REGEX = /\[\s*(?:NAB\s*:\s*)?(?:NOT\s+TRANSLATED|NEEDS\s+TRANSLATION|SUGGESTION|REVIEW)\s*\]/i;
+const XML_FRAGMENT_PARSER = new XMLParser({
+    ignoreAttributes: false,
+    preserveOrder: true,
+    processEntities: true,
+    trimValues: false
+});
 
 export interface TranslationUnitStatus {
     targetText: string;
@@ -20,10 +28,24 @@ function getAttribute(attributes: string, name: string): string {
 }
 
 function stripXmlMarkup(value: string): string {
-    return value
-        .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-        .replace(/<[^>]*>/g, "")
-        .trim();
+    const parsed = XML_FRAGMENT_PARSER.parse(`<root>${value}</root>`);
+    return collectXmlText(parsed).trim();
+}
+
+function collectXmlText(value: unknown): string {
+    if (typeof value === "string" || typeof value === "number") {
+        return String(value);
+    }
+    if (Array.isArray(value)) {
+        return value.map(collectXmlText).join("");
+    }
+    if (!value || typeof value !== "object") {
+        return "";
+    }
+    return Object.entries(value)
+        .filter(([key]) => key !== ":@")
+        .map(([, child]) => collectXmlText(child))
+        .join("");
 }
 
 export function hasTranslatableSource(unitContent: string): boolean {

@@ -94,6 +94,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm test
+
       - name: Lint
         env:
           ESLINT_USE_FLAT_CONFIG: "false"

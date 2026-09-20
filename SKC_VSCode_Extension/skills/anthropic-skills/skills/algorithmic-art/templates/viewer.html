@@ -16,14 +16,18 @@
     The world is your oyster - be creative!
 -->
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generative Art Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"
+        integrity="sha384-Mhzoc5EVkjFUVtIW2M3h8BgXtFlUsUpu9lTCThPrV7+k6MN6vTi079rew0LkvgFb"
+        crossorigin="anonymous"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         /* Anthropic Brand Colors */
         :root {
@@ -328,6 +332,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Control Sidebar -->
@@ -350,12 +355,13 @@
             <!-- Parameters Section (CUSTOMIZE THIS FOR YOUR ART) -->
             <div class="control-section">
                 <h3>Parameters</h3>
-                
+
                 <!-- Particle Count -->
                 <div class="control-group">
                     <label>Particle Count</label>
                     <div class="slider-container">
-                        <input type="range" id="particleCount" min="1000" max="10000" step="500" value="5000" oninput="updateParam('particleCount', this.value)">
+                        <input type="range" id="particleCount" min="1000" max="10000" step="500" value="5000"
+                            oninput="updateParam('particleCount', this.value)">
                         <span class="value-display" id="particleCount-value">5000</span>
                     </div>
                 </div>
@@ -364,7 +370,8 @@
                 <div class="control-group">
                     <label>Flow Speed</label>
                     <div class="slider-container">
-                        <input type="range" id="flowSpeed" min="0.1" max="2.0" step="0.1" value="0.5" oninput="updateParam('flowSpeed', this.value)">
+                        <input type="range" id="flowSpeed" min="0.1" max="2.0" step="0.1" value="0.5"
+                            oninput="updateParam('flowSpeed', this.value)">
                         <span class="value-display" id="flowSpeed-value">0.5</span>
                     </div>
                 </div>
@@ -373,7 +380,8 @@
                 <div class="control-group">
                     <label>Noise Scale</label>
                     <div class="slider-container">
-                        <input type="range" id="noiseScale" min="0.001" max="0.02" step="0.001" value="0.005" oninput="updateParam('noiseScale', this.value)">
+                        <input type="range" id="noiseScale" min="0.001" max="0.02" step="0.001" value="0.005"
+                            oninput="updateParam('noiseScale', this.value)">
                         <span class="value-display" id="noiseScale-value">0.005</span>
                     </div>
                 </div>
@@ -382,7 +390,8 @@
                 <div class="control-group">
                     <label>Trail Length</label>
                     <div class="slider-container">
-                        <input type="range" id="trailLength" min="2" max="20" step="1" value="8" oninput="updateParam('trailLength', this.value)">
+                        <input type="range" id="trailLength" min="2" max="20" step="1" value="8"
+                            oninput="updateParam('trailLength', this.value)">
                         <span class="value-display" id="trailLength-value">8</span>
                     </div>
                 </div>
@@ -391,7 +400,7 @@
             <!-- Colors Section (OPTIONAL - CUSTOMIZE OR REMOVE) -->
             <div class="control-section">
                 <h3>Colors</h3>
-                
+
                 <!-- Color 1 -->
                 <div class="color-group">
                     <label>Primary Color</label>
@@ -451,7 +460,7 @@
             colorPalette: ['#d97757', '#6a9bcc', '#788c5d']
         };
 
-        let defaultParams = {...params}; // Store defaults for reset
+        let defaultParams = { ...params }; // Store defaults for reset
 
         // ═══════════════════════════════════════════════════════════════════════
         // P5.JS GENERATIVE ART ALGORITHM - REPLACE WITH YOUR VISION
@@ -465,9 +474,9 @@
         function setup() {
             let canvas = createCanvas(1200, 1200);
             canvas.parent('canvas-container');
-            
+
             initializeSystem();
-            
+
             // Remove loading message
             document.querySelector('.loading').style.display = 'none';
         }
@@ -479,7 +488,7 @@
 
             // Clear particles and recreate
             particles = [];
-            
+
             // Initialize particles
             for (let i = 0; i < params.particleCount; i++) {
                 particles.push(new Particle());
@@ -488,7 +497,7 @@
             // Calculate flow field dimensions
             cols = floor(width / scl);
             rows = floor(height / scl);
-            
+
             // Generate flow field
             generateFlowField();
 
@@ -497,7 +506,7 @@
         }
 
         function generateFlowField() {
-          // fill this in
+            // fill this in
         }
 
         function draw() {
@@ -566,8 +575,8 @@
         }
 
         function resetParameters() {
-            params = {...defaultParams};
-            
+            params = { ...defaultParams };
+
             // Update UI elements
             document.getElementById('particleCount').value = params.particleCount;
             document.getElementById('particleCount-value').textContent = params.particleCount;
@@ -577,7 +586,7 @@
             document.getElementById('noiseScale-value').textContent = params.noiseScale;
             document.getElementById('trailLength').value = params.trailLength;
             document.getElementById('trailLength-value').textContent = params.trailLength;
-            
+
             // Reset colors
             document.getElementById('color1').value = params.colorPalette[0];
             document.getElementById('color1-value').textContent = params.colorPalette[0];
@@ -585,15 +594,16 @@
             document.getElementById('color2-value').textContent = params.colorPalette[1];
             document.getElementById('color3').value = params.colorPalette[2];
             document.getElementById('color3-value').textContent = params.colorPalette[2];
-            
+
             updateSeedDisplay();
             initializeSystem();
         }
 
         // Initialize UI on load
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             updateSeedDisplay();
         });
     </script>
 </body>
+
 </html>

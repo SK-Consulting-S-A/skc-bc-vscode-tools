@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC Workstation Tools",
   "description": "SKC workstation profiles for Business Central AL, Web/Python, and Power Platform, with Copilot agents, chat forking, MCP presets, XLF translation, and productivity themes.",
-  "version": "3.1.4",
+  "version": "3.1.5",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -419,7 +419,7 @@
     "sync:content": "npm run sync:extensions && npm run sync:bcquality",
     "check:publishable": "node scripts/check-publishable.js",
     "build:themes": "node scripts/build-themes.js",
-    "vscode:prepublish": "npm run check:publishable && npm run sync:content && npm run build:themes && npm run build",
+    "vscode:prepublish": "npm run check:publishable && npm test && npm run sync:content && npm run build:themes && npm run build",
     "build": "node scripts/build.js --production",
     "compile": "npm run sync:content && npm run build:themes && node scripts/build.js",
     "package": "npm run check:publishable && npm run build:themes && npm run build && vsce package",
@@ -431,10 +431,11 @@
     "watch": "node scripts/build.js --watch",
     "typecheck": "tsc --noEmit",
     "lint": "set ESLINT_USE_FLAT_CONFIG=false&& eslint src --ext ts",
-    "test": "npm run compile"
+    "test": "node scripts/test-xlf-status.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "fast-xml-parser": "^5.11.1"
   },
   "devDependencies": {
     "@types/node": "^26.3.0",

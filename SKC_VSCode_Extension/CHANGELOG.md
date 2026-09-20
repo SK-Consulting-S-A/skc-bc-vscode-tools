@@ -2,6 +2,13 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.5] - 2026-09-20
+
+### Security
+- Replaced regex-based XLIFF markup stripping with structured XML parsing and added regression tests.
+- Added an integrity hash to the pinned p5.js template dependency.
+- Restricted the Marketplace publishing workflow token to read-only repository contents.
+
 ## [3.1.4] - 2026-09-20
 
 ### Changed
