@@ -27,8 +27,8 @@ The proxy uses the Windows authentication broker, which requires a specific Redi
 
 **Error Message:**
 ```
-Selected user account does not exist in tenant 'projectmaven-test' and cannot access 
-the application '3acde393-18cc-4b12-803c-4c85fa111c21' in that tenant. The account 
+Selected user account does not exist in tenant '<tenant-name>' and cannot access
+the application '<client-id>' in that tenant. The account
 needs to be added as an external user in the tenant first. Please use a different account.
 ```
 
@@ -41,7 +41,7 @@ The `TenantId` in your `appsettings.json` doesn't match the tenant where your us
 
 1. **Identify Your Tenant:**
    - Check which tenant your user account belongs to
-   - The error message shows the tenant name (e.g., "projectmaven-test")
+   - The error message shows the tenant name (e.g., `<tenant-name>`)
    - You may need to use a different tenant ID
 
 2. **Find Your Tenant ID:**

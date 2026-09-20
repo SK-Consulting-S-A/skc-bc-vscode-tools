@@ -134,7 +134,7 @@ Try these prompts in your AI assistant:
 ### Issue: "Authentication failed" or "Selected user account does not exist in tenant"
 **Solution**: 
 1. **Verify Tenant ID**: The `TenantId` in `appsettings.json` must match the tenant where your user account exists
-   - If you see an error mentioning a tenant name (like "projectmaven-test"), check if that's the correct tenant
+  - If you see an error mentioning a tenant name (like `<tenant-name>`), check if that's the correct tenant
    - Your user account must exist in that tenant or be added as an external user
 2. **Verify Client ID**: Ensure the `ClientId` matches your Azure AD app registration
 3. **Check Permissions**: Ensure your Azure AD App has:
