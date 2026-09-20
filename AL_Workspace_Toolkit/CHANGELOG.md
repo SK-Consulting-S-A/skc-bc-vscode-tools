@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Replaced the Marketplace icon with the blue-and-silver AL workspace emblem.
+
 ## 0.2.0
 
 - Added separate filename patterns for extension objects and page customizations.
