@@ -81,6 +81,17 @@ This extension does not declare an `extensionPack` or `extensionDependencies` in
 
 Every profile also gets these shared extensions: `usernamehw.errorlens`, `GitHub.vscode-pull-request-github`, `ms-vscode.PowerShell`, `vscode-icons-team.vscode-icons`, and SKC Workstation Tools itself.
 
+### Preset vs profile
+
+These are two different things:
+
+| Item | What it is | What it changes |
+|---|---|---|
+| **Profile** | A separate VS Code profile created by **SKC: Create or Update Workstation Profiles** | Which extensions are installed and enabled in that profile, such as AL tools in `SKC AL` or Python tools in `SKC Web/Python` |
+| **SKC preset** | A configuration bundle applied by **SKC: Apply Presets** | User settings, MCP server configuration, optional preset extensions, Copilot skills, and Copilot agents for the currently active profile |
+
+Example: create the three profiles once, switch VS Code to `SKC AL`, then run **SKC: Apply Presets**. The profile supplies the AL extensions; the preset supplies the AL settings, MCP servers, skills, and agents. Applying a preset does not switch profiles, and creating or updating profiles does not apply the preset settings.
+
 The Power Platform Tools extension pack is intentionally excluded because it installs CodeQL and SARIF. Install the Power Apps CLI (`pac`) separately only on workstations that manage solutions or Power Pages.
 
 Code apps additionally need Node.js LTS and Git on the machine; the extension does not install those.
