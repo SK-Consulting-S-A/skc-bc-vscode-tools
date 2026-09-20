@@ -2,6 +2,12 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.7] - 2026-09-20
+
+### Added
+- A shipped user instruction file, `instructions/skc-context-hygiene.instructions.md`, installed into the active profile's `prompts` folder by **SKC: Apply Presets** and **SKC: Install Agents**. It tells agents to treat image files as opaque binaries and read one only when the user pointed at that specific image. Attaching a folder or application root pulled deep images into context as though the user had shared them; VS Code has no setting for this, so the rule has to be instruction-level. Unlike agents, a user instruction file applies to every chat, including the default one.
+- The publish gate now allowlists `instructions/` alongside `skills/` and `agents/`, and screens it with `PUBLISH_DENY_PATTERNS`.
+
 ## [3.1.6] - 2026-09-20
 
 ### Fixed

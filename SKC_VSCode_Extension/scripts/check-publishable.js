@@ -54,6 +54,10 @@ const PUBLISHABLE_AGENTS = new Set([
     "dashboard-addin-specialist.agent.md",
 ]);
 
+const PUBLISHABLE_INSTRUCTIONS = new Set([
+    "skc-context-hygiene.instructions.md",
+]);
+
 // Settings that reconfigure the machine of anyone who runs Apply Presets.
 // These are workstation preferences, not AL tooling defaults, and shipping them
 // silently disables Copilot or weakens the workspace trust prompt.
@@ -95,6 +99,15 @@ function checkAllowlists() {
             failures.push(
                 `agents/${name} is not on the publishable allowlist. See PUBLISHABLE_AGENTS ` +
                 `in scripts/check-publishable.js.`
+            );
+        }
+    }
+    for (const name of listFiles(path.join(extensionRoot, "instructions"))) {
+        if (!name.endsWith(".instructions.md")) continue;
+        if (!PUBLISHABLE_INSTRUCTIONS.has(name)) {
+            failures.push(
+                `instructions/${name} is not on the publishable allowlist. See ` +
+                `PUBLISHABLE_INSTRUCTIONS in scripts/check-publishable.js.`
             );
         }
     }
@@ -148,7 +161,7 @@ function checkEnvSuppliedPatterns() {
     const patterns = raw.split(/\r?\n/).map((p) => p.trim()).filter(Boolean);
     if (patterns.length === 0) return;
 
-    const roots = ["skills", "agents", "presets", "src", "scripts"];
+    const roots = ["skills", "agents", "instructions", "presets", "src", "scripts"];
     const files = [];
     for (const root of roots) walk(path.join(extensionRoot, root), files);
 

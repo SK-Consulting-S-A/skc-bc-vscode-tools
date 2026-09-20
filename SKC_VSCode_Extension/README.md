@@ -31,6 +31,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
 - `skills/bcquality/` — official BCQuality plugin snapshot, knowledge index, layers, bridge, and tools
 - `agents/` — BC Copilot subagents
+- `instructions/` — user-level Copilot instruction files applied to every chat
 - **Translations** view — `.g.xlf` files and Azure AI translation
 
 ## How to use
@@ -67,7 +68,9 @@ This command uses VS Code's native session fork when the installed VS Code versi
 
 Updating a named SKC profile removes obsolete extensions previously managed by SKC but preserves extensions the user added. Other VS Code profiles are not changed.
 
-Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
+Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`. Instruction files land in the active profile's `prompts/` folder, where VS Code picks them up for every chat.
+
+`skc-context-hygiene.instructions.md` tells agents to treat image files as opaque binaries and to open one only when you pointed at that specific image. Attaching a folder or an application root otherwise pulls images buried in the tree into the model's context as though you had shared them. VS Code has no setting that filters images out of context, so this has to be a rule the agent follows.
 
 ## Workstation profiles
 

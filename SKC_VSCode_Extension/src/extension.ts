@@ -116,6 +116,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
   const installAgentsCommand = commands.registerCommand("skc.installAgents", async () => {
     await installAgents(context, channel);
+    await installInstructions(context, channel);
     void window.showInformationMessage("SKC agents installed.");
   });
   context.subscriptions.push(installAgentsCommand);
@@ -536,6 +537,7 @@ async function applyPresets(
   if (installSkillsOnApply) {
     await installSkills(context, channel);
     await installAgents(context, channel);
+    await installInstructions(context, channel);
   }
 
   if (bcQualityUpdateOnApply) {
@@ -851,8 +853,57 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
   await ensureCopilotAgentsPath(channel);
 }
 
-async function ensureCopilotAgentsPath(channel: OutputChannel): Promise<void> {
-  try {
+/**
+ * Installs the shipped instruction files into the active profile's `prompts` folder
+ * (e.g. %APPDATA%\Code\User\prompts on Windows), which VS Code reads for user-level
+ * `.instructions.md` files. Unlike agents, these apply to every chat, including the
+ * default one, which is where context hygiene has to hold.
+ *
+ * Existing files are left alone unless skc.overwriteExistingSkills is set.
+ */
+async function installInstructions(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+  const cfg = workspace.getConfiguration("skc");
+  const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
+
+  const sourceRoot = path.join(context.extensionPath, "instructions");
+  if (!(await pathExists(sourceRoot))) {
+    channel.appendLine(`[SKC] Instructions folder not found at ${sourceRoot}; skipping instruction install.`);
+    return;
+  }
+
+  // globalStorageUri is …/User/globalStorage/<extId>, so two levels up is the profile root.
+  const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
+  const targetRoot = path.join(userDir, "prompts");
+  await fs.mkdir(targetRoot, { recursive: true });
+
+  const entries = await fs.readdir(sourceRoot, { withFileTypes: true });
+  const files = entries.filter((f) => f.isFile() && f.name.endsWith(".instructions.md"));
+
+  let installedCount = 0;
+  let skippedCount = 0;
+
+  for (const file of files) {
+    const dest = path.join(targetRoot, file.name);
+    const destExists = await pathExists(dest);
+    if (destExists && !overwriteExisting) {
+      channel.appendLine(`[SKC] Instructions '${file.name}' already exist; skipping (set skc.overwriteExistingSkills to overwrite).`);
+      skippedCount++;
+      continue;
+    }
+    await fs.copyFile(path.join(sourceRoot, file.name), dest);
+    channel.appendLine(`[SKC] ${destExists ? "Updated" : "Installed"} instructions ${file.name}.`);
+    installedCount++;
+  }
+
+  if (installedCount === 0 && skippedCount === 0) {
+    channel.appendLine(`[SKC] No instruction files found in ${sourceRoot}.`);
+    return;
+  }
+
+  channel.appendLine(`[SKC] Instructions summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
+}
+
+async function ensureCopilotAgentsPath(channel: OutputChannel): Promise<void> {  try {
     const config = workspace.getConfiguration("chat");
     const current = config.get<Record<string, boolean>>("agentFilesLocations", {});
     const key = "~/.copilot/agents";
