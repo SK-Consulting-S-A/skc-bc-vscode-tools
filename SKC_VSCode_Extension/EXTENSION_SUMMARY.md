@@ -82,10 +82,9 @@ Sets up Model Context Protocol (MCP) servers for AI-powered development assistan
 1. **Playwright MCP** - Browser automation and testing
 2. **Context7 MCP** - Code documentation and library references (requires API key)
 3. **MS Learn Docs MCP** - Microsoft Learn documentation access
-4. **Dataverse MCP** - Dataverse tables and records (requires the environment URL, and an admin must allow Microsoft GitHub Copilot as an MCP client)
-5. **BC Intelligence MCP** - Business Central-specific AI assistance
-6. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
-7. **MCP Pandoc** and **markitdown** - Document conversion utilities
+4. **BC Intelligence MCP** - Business Central-specific AI assistance
+5. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
+6. **MCP Pandoc** and **markitdown** - Document conversion utilities
 
 ### 3. **Applies AL-Optimized Settings**
 

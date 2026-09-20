@@ -96,7 +96,7 @@ The Power Platform Tools extension pack is intentionally excluded because it ins
 
 Code apps additionally need Node.js LTS and Git on the machine; the extension does not install those.
 
-The preset registers a `dataverse` MCP server pointing at `https://<YOUR_DATAVERSE_ORG>.crm4.dynamics.com/api/mcp`. Replace the placeholder with your environment URL. The server must also be enabled per environment in the Power Platform admin center, with **Microsoft GitHub Copilot** allowed as an MCP client — otherwise the endpoint refuses the connection.
+The preset does not register a Dataverse MCP server. To add one, put an entry in your own `mcp.json` with the real environment URL — `https://yourorg.crm4.dynamics.com/api/mcp`. Never leave a `<PLACEHOLDER>` in a `url`: VS Code validates every URL before it answers an MCP discovery request, so a single unparseable URL fails the whole list and hangs chat in that profile. The server must also be enabled per environment in the Power Platform admin center, with **Microsoft GitHub Copilot** allowed as an MCP client — otherwise the endpoint refuses the connection.
 
 ### Translations
 

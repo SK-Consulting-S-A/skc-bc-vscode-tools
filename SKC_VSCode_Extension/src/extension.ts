@@ -498,7 +498,13 @@ async function applyPresets(
 
   const { settings, extensions: presetExtensions } = await readPresetFile(presetPath, context, channel);
   const { servers: mcpServersRaw, inputs: mcpInputs } = await readMcpFile(mcpPath, context, channel);
-  const mcpServers = await injectMcpSecrets(context, channel, mcpServersRaw, silent);
+  const mcpServersInjected = await injectMcpSecrets(context, channel, mcpServersRaw, silent);
+  const mcpServers = mcpServersInjected?.filter(server => {
+    if (!hasUnusableUrl(server)) return true;
+    const id = isRecord(server) && typeof server.id === "string" ? server.id : "(unnamed)";
+    channel.appendLine(`[SKC] Skipping preset MCP server "${id}" — its url is an unreplaced placeholder and would break MCP discovery.`);
+    return false;
+  });
   const extraExtensions = await readExtensionsFile(extensionsPath, context, channel);
 
   const settingsToApply = settings ? { ...settings } : {};
@@ -1170,6 +1176,15 @@ async function writeVSCodeMcpFileIfNeeded(
         }
         existingServers[key] = val;
       }
+      // Drop entries whose url never got filled in. VS Code validates every url before it
+      // answers mcp/list, so one unresolved placeholder makes the whole list fail and every
+      // chat in the profile hangs. Earlier versions shipped such a placeholder.
+      for (const [key, val] of Object.entries(existingServers)) {
+        if (hasUnusableUrl(val)) {
+          delete existingServers[key];
+          channel.appendLine(`[SKC] VS Code mcp.json: removed "${key}" — its url is an unreplaced placeholder and breaks MCP discovery.`);
+        }
+      }
     }
     if (Array.isArray(parsed.inputs)) {
       existingInputs = parsed.inputs;
@@ -1359,6 +1374,25 @@ async function promptAndSaveMcpSecrets(context: ExtensionContext): Promise<boole
   );
 
   return Boolean(githubToken || context7ApiKey);
+}
+
+/**
+ * True when an MCP server entry declares a `url` that VS Code cannot parse — typically a
+ * placeholder such as `https://<YOUR_ORG>.example.com/api/mcp` that the user never replaced.
+ * VS Code rejects the entire server list when one url is invalid, so such entries must not
+ * be written. Urls containing `${input:...}` / `${env:...}` are resolved by VS Code and kept.
+ */
+function hasUnusableUrl(entry: unknown): boolean {
+  if (!isRecord(entry)) return false;
+  const url = entry.url;
+  if (typeof url !== "string") return false;
+  if (/\$\{[^}]+\}/.test(url)) return false;
+  try {
+    new URL(url);
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

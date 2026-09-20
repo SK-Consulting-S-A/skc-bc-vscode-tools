@@ -2,6 +2,12 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.6] - 2026-09-20
+
+### Fixed
+- Removed the `dataverse` MCP server from `presets/mcp.json`. Its URL was the literal placeholder `https://<YOUR_DATAVERSE_ORG>.crm4.dynamics.com/api/mcp`, which is not a parseable URL. VS Code validates every MCP server URL before answering a discovery request, so the whole server list failed with `mcpServers.dataverse.url: Invalid url` and chat hung in any profile using the preset.
+- Applying presets now removes an existing MCP server from the user `mcp.json`, and skips a preset server, when its `url` is an unreplaced placeholder. This repairs machines that already received the broken entry. URLs using `${input:…}` or `${env:…}` are resolved by VS Code and are left alone.
+
 ## [3.1.5] - 2026-09-20
 
 ### Security

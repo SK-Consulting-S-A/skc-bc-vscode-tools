@@ -28,7 +28,7 @@ The Power Platform/BI profile installs the standalone tools SKC uses:
 
 Plus **Power BI** as code (TMDL, Power BI Modeling MCP Server, Power BI Studio) and **Copilot Studio** agent editing.
 
-A `dataverse` MCP server is registered with a placeholder org URL. Replace it with your environment, and have an admin allow **Microsoft GitHub Copilot** as an MCP client for that environment — the endpoint refuses the connection otherwise.
+A `dataverse` MCP server is no longer registered. Its placeholder URL was not a valid URL, and VS Code rejects the whole MCP server list when one URL fails to parse — which left chat hanging in the affected profile. Add the server to your own `mcp.json` with the real environment URL, and have an admin allow **Microsoft GitHub Copilot** as an MCP client for that environment — the endpoint refuses the connection otherwise.
 
 VS Code now also activates the extension in Power Platform workspaces (`*.cdsproj`, `*.pcfproj`, `power.config.json`, `powerpages.config.json`, `*.tmdl`), not just where an `app.json` is present.
 
