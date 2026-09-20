@@ -71,13 +71,15 @@ Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`.
 
 ## Workstation profiles
 
-| Profile | Included workload |
-|---|---|
-| `SKC AL` | Microsoft AL, AL Workspace Toolkit, variable helpers, XML |
-| `SKC Web/Python` | TypeScript, ESLint, Prettier, Python, Pylance, Debugpy, Python Environments, Azure web tooling |
-| `SKC Power Platform/BI` | Dataverse DevTools, PCF Builder, Copilot Studio, TMDL, Power BI Modeling MCP, Power BI Studio |
+This extension does not declare an `extensionPack` or `extensionDependencies` in its manifest, so the Marketplace page does not auto-list installs. Instead, **SKC: Create or Update Workstation Profiles** installs the following Marketplace extensions into isolated named profiles, from [`presets/profiles.json`](presets/profiles.json):
 
-All profiles also include Error Lens, GitHub Pull Requests, PowerShell, VS Code Icons, and SKC Workstation Tools.
+| Profile | Extensions installed (Marketplace IDs) |
+|---|---|
+| `SKC AL` | `ms-dynamics-smb.al` (Microsoft AL), `SKConsultingSA.skc-al-workspace` (AL Workspace Toolkit, replaces `waldo.crs-al-language-extension`), `rasmus.al-var-helper`, `redhat.vscode-xml` |
+| `SKC Web/Python` | `ms-vscode.vscode-typescript-next`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode`, `ms-python.python`, `ms-python.vscode-pylance`, `ms-python.debugpy`, `ms-python.vscode-python-envs`, `ms-azuretools.vscode-azurefunctions`, `ms-azuretools.vscode-azureappservice`, `ms-azuretools.vscode-azureresourcegroups` |
+| `SKC Power Platform/BI` | `ms-copilotstudio.vscode-copilotstudio`, `danish-naglekar.dataverse-devtools`, `danish-naglekar.pcf-builder`, `analysis-services.tmdl`, `analysis-services.powerbi-modeling-mcp`, `GerhardBrueckl.powerbi-vscode`, `ms-vscode.vscode-typescript-next`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode` |
+
+Every profile also gets these shared extensions: `usernamehw.errorlens`, `GitHub.vscode-pull-request-github`, `ms-vscode.PowerShell`, `vscode-icons-team.vscode-icons`, and SKC Workstation Tools itself.
 
 The Power Platform Tools extension pack is intentionally excluded because it installs CodeQL and SARIF. Install the Power Apps CLI (`pac`) separately only on workstations that manage solutions or Power Pages.
 
