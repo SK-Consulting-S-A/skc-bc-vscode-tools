@@ -1,6 +1,6 @@
 # SKC Workstation Tools
 
-Modern workstation tooling for SK Consulting employees and contractors, from [SK Consulting S.A.](https://www.skc.lu). It standardises one development machine across everything we actually build on: Dynamics 365 Business Central AL, Power Platform, Azure, and the Office documents that come out of both.
+SKC workstation profiles for Business Central AL, Web/Python, and Power Platform, from [SK Consulting S.A.](https://www.skc.lu). It adds Copilot agents, native chat forking, MCP presets, XLF translation, document skills, and four productivity themes.
 
 Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools).
 

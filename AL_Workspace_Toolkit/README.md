@@ -1,6 +1,6 @@
 # AL Workspace Toolkit
 
-Safe AL file naming and workspace organization for developers and coding agents.
+Safe Business Central AL file naming and workspace organization with multi-root support, confirmed bulk actions, and explicit Copilot tools for coding agents.
 
 ## Features
 

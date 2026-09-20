@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Refreshed Marketplace metadata to describe multi-root safety, confirmed bulk actions, and explicit Copilot tools.
+
 ## 0.1.0
 
 - Safe AL file naming from explicit document URIs.

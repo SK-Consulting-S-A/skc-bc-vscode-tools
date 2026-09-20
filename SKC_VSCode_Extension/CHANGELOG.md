@@ -2,6 +2,11 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.1.3] - 2026-09-20
+
+### Changed
+- Refreshed the Marketplace description to reflect isolated workstation profiles, Copilot Chat forking, MCP presets, XLF translation, and productivity themes.
+
 ## [3.1.2] - 2026-09-20
 
 ### Fixed
