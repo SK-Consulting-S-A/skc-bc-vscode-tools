@@ -94,17 +94,19 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(applyCommand);
 
   const createProfilesCommand = commands.registerCommand("skc.createWorkstationProfiles", async () => {
-    await window.withProgress(
+    const profilesUpdated = await window.withProgress(
       {
         location: ProgressLocation.Notification,
         title: "Creating SKC workstation profiles",
         cancellable: false
       },
       async (progress) => {
-        await createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
+        return createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
       }
     );
-    void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
+    if (profilesUpdated) {
+      void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
+    }
   });
   context.subscriptions.push(createProfilesCommand);
 
@@ -371,8 +373,11 @@ async function createOrUpdateWorkstationProfiles(
   context: ExtensionContext,
   channel: OutputChannel,
   reportProgress: (message: string) => void
-): Promise<void> {
+): Promise<boolean> {
   const definitions = await readWorkstationProfiles(context);
+  if (!(await ensureWorkstationProfilesExist(definitions, context, channel))) {
+    return false;
+  }
   const extensionId = context.extension.id;
 
   for (const profile of definitions.profiles) {
@@ -380,14 +385,6 @@ async function createOrUpdateWorkstationProfiles(
     const byId = new Map<string, ExtensionEntry>();
     for (const entry of [{ id: extensionId }, ...definitions.sharedExtensions, ...profile.extensions]) {
       byId.set(entry.id.toLowerCase(), entry);
-    }
-
-    const profileBootstrap = await runCodeCli(
-      ["--profile", profile.name, "--new-window", context.extensionPath],
-      context.extensionPath
-    );
-    if (profileBootstrap.code !== 0) {
-      throw new Error(`Could not create ${profile.name}. See the SKC Workstation Tools output channel.`);
     }
 
     const profileProbe = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
@@ -417,6 +414,39 @@ async function createOrUpdateWorkstationProfiles(
       }
     }
   }
+
+  return true;
+}
+
+async function ensureWorkstationProfilesExist(
+  definitions: WorkstationProfilesFile,
+  context: ExtensionContext,
+  channel: OutputChannel
+): Promise<boolean> {
+  const missingProfiles: string[] = [];
+
+  for (const profile of definitions.profiles) {
+    const result = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
+    if (result.code !== 0) {
+      missingProfiles.push(profile.name);
+    }
+  }
+
+  if (missingProfiles.length === 0) {
+    return true;
+  }
+
+  const names = missingProfiles.join(", ");
+  channel.appendLine(`[SKC] Missing VS Code profile(s): ${names}.`);
+  const choice = await window.showWarningMessage(
+    `Create these VS Code profiles, then run this command again: ${names}.`,
+    "Open Profile Creator"
+  );
+  if (choice === "Open Profile Creator") {
+    await commands.executeCommand("workbench.profiles.actions.createProfile");
+  }
+
+  return false;
 }
 
 async function removeObsoleteManagedProfileExtensions(
