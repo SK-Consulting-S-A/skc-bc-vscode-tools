@@ -382,6 +382,14 @@ async function createOrUpdateWorkstationProfiles(
       byId.set(entry.id.toLowerCase(), entry);
     }
 
+    const profileBootstrap = await runCodeCli(
+      ["--profile", profile.name, "--new-window", context.extensionPath],
+      context.extensionPath
+    );
+    if (profileBootstrap.code !== 0) {
+      throw new Error(`Could not create ${profile.name}. See the SKC Workstation Tools output channel.`);
+    }
+
     const profileProbe = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
     if (profileProbe.code !== 0) {
       throw new Error(`Could not inspect ${profile.name}. See the SKC Workstation Tools output channel.`);
