@@ -62,7 +62,7 @@ This command uses VS Code's native session fork when the installed VS Code versi
 
 1. Install **SKC Workstation Tools** from the Marketplace.
 2. Run **SKC: Configure MCP Auth** to store your GitHub token and Context7 API key in VS Code secrets.
-3. Run **SKC: Create or Update Workstation Profiles**. If VS Code asks you to create profiles, use the native profile creator to add `SKC AL`, `SKC Web/Python`, and `SKC Power Platform/BI`, then run the SKC command again.
+3. Run **SKC: Create or Update Workstation Profiles** once, then open a workspace with the matching profile. Missing profiles are created automatically; VS Code opens a window for each new profile while it registers.
 4. In `SKC AL`, run **SKC: Apply Presets** when you want the AL settings and MCP configuration.
 5. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
 
@@ -90,7 +90,7 @@ These are two different things:
 
 | Item | What it is | What it changes |
 |---|---|---|
-| **Profile** | A separate VS Code profile created with VS Code's native profile creator, then configured by **SKC: Create or Update Workstation Profiles** | Which extensions are installed and enabled in that profile, such as AL tools in `SKC AL` or Python tools in `SKC Web/Python` |
+| **Profile** | A separate VS Code profile created by **SKC: Create or Update Workstation Profiles** | Which extensions are installed and enabled in that profile, such as AL tools in `SKC AL` or Python tools in `SKC Web/Python` |
 | **SKC preset** | A configuration bundle applied by **SKC: Apply Presets** | User settings, MCP server configuration, optional preset extensions, Copilot skills, and Copilot agents for the currently active profile |
 
 Example: create the three profiles once, switch VS Code to `SKC AL`, then run **SKC: Apply Presets**. The profile supplies the AL extensions; the preset supplies the AL settings, MCP servers, skills, and agents. Applying a preset does not switch profiles, and creating or updating profiles does not apply the preset settings.

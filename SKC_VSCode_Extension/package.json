@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC Workstation Tools",
   "description": "SKC workstation profiles for Business Central AL, Web/Python, and Power Platform, with Copilot agents, chat forking, MCP presets, XLF translation, and productivity themes.",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",

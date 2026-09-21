@@ -94,7 +94,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   context.subscriptions.push(applyCommand);
 
   const createProfilesCommand = commands.registerCommand("skc.createWorkstationProfiles", async () => {
-    const profilesUpdated = await window.withProgress(
+    const failures = await window.withProgress(
       {
         location: ProgressLocation.Notification,
         title: "Creating SKC workstation profiles",
@@ -104,8 +104,13 @@ export async function activate(context: ExtensionContext): Promise<void> {
         return createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
       }
     );
-    if (profilesUpdated) {
+    if (failures.length === 0) {
       void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
+      return;
+    }
+    const choice = await window.showErrorMessage(`SKC profile setup incomplete. ${failures[0]}`, "Show Log");
+    if (choice === "Show Log") {
+      channel.show(true);
     }
   });
   context.subscriptions.push(createProfilesCommand);
@@ -373,12 +378,10 @@ async function createOrUpdateWorkstationProfiles(
   context: ExtensionContext,
   channel: OutputChannel,
   reportProgress: (message: string) => void
-): Promise<boolean> {
+): Promise<string[]> {
   const definitions = await readWorkstationProfiles(context);
-  if (!(await ensureWorkstationProfilesExist(definitions, context, channel))) {
-    return false;
-  }
   const extensionId = context.extension.id;
+  const failures: string[] = [];
 
   for (const profile of definitions.profiles) {
     reportProgress(profile.name);
@@ -387,66 +390,134 @@ async function createOrUpdateWorkstationProfiles(
       byId.set(entry.id.toLowerCase(), entry);
     }
 
-    const profileProbe = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
-    if (profileProbe.code !== 0) {
-      throw new Error(`Could not inspect ${profile.name}. See the SKC Workstation Tools output channel.`);
+    let installedOutput: string;
+    try {
+      installedOutput = await ensureProfileExists(profile.name, channel, context.extensionPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      channel.appendLine(`[SKC] ${message}`);
+      failures.push(message);
+      continue;
     }
+
     await removeObsoleteManagedProfileExtensions(
       profile.name,
-      profileProbe.output,
+      installedOutput,
       byId,
       channel,
       context.extensionPath
     );
 
-    channel.appendLine(`[SKC] Updating profile ${profile.name} with ${byId.size} extension(s)...`);
-    for (const entry of byId.values()) {
-      const args = ["--profile", profile.name, "--install-extension", entry.id, "--force"];
-      if (entry.preRelease) {
-        args.push("--pre-release");
-      }
-      const result = await runCodeCli(args, context.extensionPath);
-      for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
-        channel.appendLine(`[${profile.name}] ${line}`);
-      }
-      if (result.code !== 0) {
-        throw new Error(`Could not install ${entry.id} in ${profile.name}. See the SKC Workstation Tools output channel.`);
-      }
+    const installedIds = new Set(parseInstalledExtensionIds(installedOutput));
+    const missing = Array.from(byId.values()).filter((entry) => !installedIds.has(entry.id.toLowerCase()));
+    if (missing.length === 0) {
+      channel.appendLine(`[SKC] Profile ${profile.name} already has all ${byId.size} managed extension(s).`);
+      continue;
     }
+
+    channel.appendLine(`[SKC] Installing ${missing.length} extension(s) into ${profile.name}...`);
+    failures.push(...(await installProfileExtensions(profile.name, missing, channel, context.extensionPath)));
   }
 
-  return true;
+  return failures;
 }
 
-async function ensureWorkstationProfilesExist(
-  definitions: WorkstationProfilesFile,
-  context: ExtensionContext,
-  channel: OutputChannel
-): Promise<boolean> {
-  const missingProfiles: string[] = [];
+// VS Code registers a new profile asynchronously, so the CLI exit code alone does not mean it is usable yet.
+async function ensureProfileExists(profileName: string, channel: OutputChannel, cwd: string): Promise<string> {
+  const existing = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
+  if (existing.code === 0) {
+    return existing.output;
+  }
 
-  for (const profile of definitions.profiles) {
-    const result = await runCodeCli(["--profile", profile.name, "--list-extensions"], context.extensionPath);
-    if (result.code !== 0) {
-      missingProfiles.push(profile.name);
+  channel.appendLine(`[SKC] Creating profile ${profileName}...`);
+  const created = await runCodeCli(["--profile", profileName, "--new-window"], cwd);
+  if (created.code !== 0) {
+    throw new Error(`Could not create ${profileName}: ${describeCliFailure(created.output)}`);
+  }
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await delay(1000);
+    const probe = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
+    if (probe.code === 0) {
+      channel.appendLine(`[SKC] Profile ${profileName} is ready.`);
+      return probe.output;
     }
   }
 
-  if (missingProfiles.length === 0) {
-    return true;
+  throw new Error(`Could not create ${profileName}. VS Code did not register the profile in time.`);
+}
+
+async function installProfileExtensions(
+  profileName: string,
+  entries: ExtensionEntry[],
+  channel: OutputChannel,
+  cwd: string
+): Promise<string[]> {
+  const failures: string[] = [];
+  const groups = [
+    { preRelease: false, entries: entries.filter((entry) => !entry.preRelease) },
+    { preRelease: true, entries: entries.filter((entry) => entry.preRelease) }
+  ];
+
+  for (const group of groups) {
+    if (group.entries.length === 0) {
+      continue;
+    }
+
+    const args = ["--profile", profileName];
+    for (const entry of group.entries) {
+      args.push("--install-extension", entry.id);
+    }
+    if (group.preRelease) {
+      args.push("--pre-release");
+    }
+
+    const result = await runCodeCliWithRetry(args, cwd, channel, profileName);
+    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
+      channel.appendLine(`[${profileName}] ${line}`);
+    }
+    if (result.code !== 0) {
+      failures.push(`${profileName}: ${describeCliFailure(result.output)}`);
+    }
   }
 
-  const names = missingProfiles.join(", ");
-  channel.appendLine(`[SKC] Missing VS Code profile(s): ${names}.`);
-  const choice = await window.showWarningMessage(
-    `Create these VS Code profiles, then run this command again: ${names}.`,
-    "Open Profile Creator"
-  );
-  if (choice === "Open Profile Creator") {
-    await commands.executeCommand("workbench.profiles.actions.createProfile");
-  }
+  return failures;
+}
 
-  return false;
+// Marketplace lookups fail intermittently behind managed networks and proxies, so a failed install is retried.
+async function runCodeCliWithRetry(
+  args: string[],
+  cwd: string,
+  channel: OutputChannel,
+  profileName: string
+): Promise<{ code: number; output: string }> {
+  let result = await runCodeCli(args, cwd);
+  for (let attempt = 1; attempt <= 2 && result.code !== 0; attempt++) {
+    channel.appendLine(`[${profileName}] Attempt ${attempt} failed: ${describeCliFailure(result.output)}`);
+    await delay(attempt * 3000);
+    result = await runCodeCli(args, cwd);
+  }
+  return result;
+}
+
+function describeCliFailure(output: string): string {
+  const line = output
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter((value) => value && !value.includes("DeprecationWarning") && !value.includes("trace-deprecation"))
+    .pop();
+  return line || "the VS Code CLI exited with an error.";
+}
+
+function parseInstalledExtensionIds(installedOutput: string): string[] {
+  return installedOutput
+    .split(/\r?\n/)
+    .map((line) => line.trim().toLowerCase())
+    .filter((line) => /^[a-z0-9][a-z0-9_-]*\.[a-z0-9][a-z0-9_.-]*$/.test(line));
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 async function removeObsoleteManagedProfileExtensions(
@@ -941,7 +1012,8 @@ async function installInstructions(context: ExtensionContext, channel: OutputCha
   channel.appendLine(`[SKC] Instructions summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 }
 
-async function ensureCopilotAgentsPath(channel: OutputChannel): Promise<void> {  try {
+async function ensureCopilotAgentsPath(channel: OutputChannel): Promise<void> {
+  try {
     const config = workspace.getConfiguration("chat");
     const current = config.get<Record<string, boolean>>("agentFilesLocations", {});
     const key = "~/.copilot/agents";
