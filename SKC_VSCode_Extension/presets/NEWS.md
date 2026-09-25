@@ -1,6 +1,16 @@
 # 📰 SKC Workstation Tools - What's New
 
-## Version 3.1.0 - Latest Release
+## Version 3.2.0 - Latest Release
+
+### One profile instead of three
+
+**SKC: Create or Update Workstation Profiles** is gone. **SKC: Apply Presets** now installs everything — the combined AL, Web/Python, and Power Platform/BI extension set, AL settings, MCP servers, Copilot skills, and Copilot agents — into your current (default) profile in one run.
+
+This also fixes a gap: the three named profiles only ever received extensions, never the MCP servers (Microsoft Learn Docs, Context7, bc-intelligence, etc.) or settings from Apply Presets, because those were written to whichever profile was active when you ran that command — usually Default. With one profile, everything you install matches everything you configure.
+
+If you already created `SKC AL`, `SKC Web/Python`, or `SKC Power Platform/BI`, they still exist as VS Code profiles but are no longer managed by this extension. Switch back to Default and run **SKC: Apply Presets** there to get the full combined setup.
+
+## Version 3.1.0
 
 ### Isolated workstation profiles
 

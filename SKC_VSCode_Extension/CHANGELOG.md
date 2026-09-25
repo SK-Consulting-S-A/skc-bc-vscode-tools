@@ -2,6 +2,13 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.2.0] - 2026-09-25
+
+### Changed
+- Merged the three isolated workstation profiles (`SKC AL`, `SKC Web/Python`, `SKC Power Platform/BI`) into one combined extension set applied to the current (default) profile. **SKC: Create or Update Workstation Profiles** is removed; **SKC: Apply Presets** now installs the full AL, Web/Python, and Power Platform/BI extension set together with settings, MCP servers, skills, and agents in a single run.
+- This fixes MCP servers (Microsoft Learn Docs, Context7, bc-intelligence, etc.) not being available in the named profiles: only whichever profile happened to be active when Apply Presets ran previously received `mcp.json`/settings, since profile creation only installed extensions.
+- `presets/profiles.json` removed. Extensions now live in the `extensions` array of `presets/settings.json`, validated by `scripts/sync-extensions.js`.
+
 ## [3.1.7] - 2026-09-20
 
 ### Added

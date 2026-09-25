@@ -1,8 +1,8 @@
 {
   "name": "skc-vs-tools",
   "displayName": "SKC Workstation Tools",
-  "description": "SKC workstation profiles for Business Central AL, Web/Python, and Power Platform, with Copilot agents, chat forking, MCP presets, XLF translation, and productivity themes.",
-  "version": "3.1.9",
+  "description": "SKC workstation setup for Business Central AL, Web/Python, and Power Platform in a single profile, with Copilot agents, chat forking, MCP presets, XLF translation, and productivity themes.",
+  "version": "3.2.0",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -94,10 +94,6 @@
       {
         "command": "skc.applyPresets",
         "title": "SKC: Apply Presets"
-      },
-      {
-        "command": "skc.createWorkstationProfiles",
-        "title": "SKC: Create or Update Workstation Profiles"
       },
       {
         "command": "skc.installSkills",
@@ -325,7 +321,7 @@
         "skc.uninstallExtensionsRemovedFromPreset": {
           "type": "boolean",
           "default": false,
-          "description": "When applying a custom extension preset, uninstall installed extensions that are not in that preset. Disabled by default because workstation profiles isolate extension sets."
+          "description": "When applying presets, uninstall installed extensions that are not in the preset list. Disabled by default so extensions you added yourself are kept."
         },
         "skc.presetFilePath": {
           "type": "string",

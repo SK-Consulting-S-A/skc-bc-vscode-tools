@@ -52,7 +52,7 @@ function mergeSection(filePath, section, anchors) {
     let updated;
     if (anchor) {
         const anchorIndex = withoutOldSection.indexOf(anchor);
-        const prefix = withoutOldSection.slice(0, anchorIndex).replace(/\n+$/, "\n\n\n");
+        const prefix = withoutOldSection.slice(0, anchorIndex).replace(/(?:\r?\n)+$/, "\n\n\n");
         const suffix = withoutOldSection.slice(anchorIndex);
         updated = `${prefix}${section}\n\n${suffix}`;
     } else {

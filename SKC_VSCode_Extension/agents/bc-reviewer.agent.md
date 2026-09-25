@@ -19,9 +19,6 @@ You are a Business Central AL Code Reviewer.
 4. Use `get_errors` to check for any existing compiler or analyzer diagnostics.
 
 
-
-
-
 <!-- SKC BCQUALITY INTEGRATION: START -->
 ## BCQuality Review Integration
 

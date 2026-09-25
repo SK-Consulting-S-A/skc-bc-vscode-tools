@@ -8,7 +8,6 @@ import {
   env,
   ExtensionContext,
   OutputChannel,
-  ProgressLocation,
   extensions,
   window,
   workspace,
@@ -27,35 +26,6 @@ const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
 const STATE_LAST_EXTENSION_IDS_KEY = "skc.lastAppliedExtensionIds";
-const LEGACY_MANAGED_EXTENSION_IDS = new Set([
-  "ms-dynamics-smb.al",
-  "davidfeldhoff.al-codeactions",
-  "usernamehw.errorlens",
-  "github.vscode-pull-request-github",
-  "rasmus.al-var-helper",
-  "bartpermentier.al-toolbox",
-  "andrzejzwierzchowski.al-code-outline",
-  "ms-azuretools.vscode-azurefunctions",
-  "ms-azuretools.vscode-azureappservice",
-  "ms-azuretools.vscode-azureresourcegroups",
-  "ms-vscode.vscode-typescript-next",
-  "redhat.vscode-xml",
-  "wbrakowski.al-navigator",
-  "ms-vscode.powershell",
-  "vscode-icons-team.vscode-icons",
-  "waldo.crs-al-language-extension",
-  "ms-python.python",
-  "ms-python.debugpy",
-  "microsoft-isvexptools.powerplatform-vscode",
-  "ms-copilotstudio.vscode-copilotstudio",
-  "danish-naglekar.dataverse-devtools",
-  "danish-naglekar.pcf-builder",
-  "analysis-services.tmdl",
-  "analysis-services.powerbi-modeling-mcp",
-  "gerhardbrueckl.powerbi-vscode",
-  "dbaeumer.vscode-eslint",
-  "esbenp.prettier-vscode"
-]);
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const channel = window.createOutputChannel(OUTPUT_CHANNEL_NAME);
@@ -92,28 +62,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     await applyPresets(context, channel, false);
   });
   context.subscriptions.push(applyCommand);
-
-  const createProfilesCommand = commands.registerCommand("skc.createWorkstationProfiles", async () => {
-    const failures = await window.withProgress(
-      {
-        location: ProgressLocation.Notification,
-        title: "Creating SKC workstation profiles",
-        cancellable: false
-      },
-      async (progress) => {
-        return createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
-      }
-    );
-    if (failures.length === 0) {
-      void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
-      return;
-    }
-    const choice = await window.showErrorMessage(`SKC profile setup incomplete. ${failures[0]}`, "Show Log");
-    if (choice === "Show Log") {
-      channel.show(true);
-    }
-  });
-  context.subscriptions.push(createProfilesCommand);
 
   const installSkillsCommand = commands.registerCommand("skc.installSkills", async () => {
     await installSkills(context, channel);
@@ -362,232 +310,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
 }
 
-type WorkstationProfileDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  extensions: ExtensionEntry[];
-};
-
-type WorkstationProfilesFile = {
-  sharedExtensions: ExtensionEntry[];
-  profiles: WorkstationProfileDefinition[];
-};
-
-async function createOrUpdateWorkstationProfiles(
-  context: ExtensionContext,
-  channel: OutputChannel,
-  reportProgress: (message: string) => void
-): Promise<string[]> {
-  const definitions = await readWorkstationProfiles(context);
-  const extensionId = context.extension.id;
-  const failures: string[] = [];
-
-  for (const profile of definitions.profiles) {
-    reportProgress(profile.name);
-    const byId = new Map<string, ExtensionEntry>();
-    for (const entry of [{ id: extensionId }, ...definitions.sharedExtensions, ...profile.extensions]) {
-      byId.set(entry.id.toLowerCase(), entry);
-    }
-
-    let installedOutput: string;
-    try {
-      installedOutput = await ensureProfileExists(profile.name, channel, context.extensionPath);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      channel.appendLine(`[SKC] ${message}`);
-      failures.push(message);
-      continue;
-    }
-
-    await removeObsoleteManagedProfileExtensions(
-      profile.name,
-      installedOutput,
-      byId,
-      channel,
-      context.extensionPath
-    );
-
-    const installedIds = new Set(parseInstalledExtensionIds(installedOutput));
-    const missing = Array.from(byId.values()).filter((entry) => !installedIds.has(entry.id.toLowerCase()));
-    if (missing.length === 0) {
-      channel.appendLine(`[SKC] Profile ${profile.name} already has all ${byId.size} managed extension(s).`);
-      continue;
-    }
-
-    channel.appendLine(`[SKC] Installing ${missing.length} extension(s) into ${profile.name}...`);
-    failures.push(...(await installProfileExtensions(profile.name, missing, channel, context.extensionPath)));
-  }
-
-  return failures;
-}
-
-// VS Code registers a new profile asynchronously, so the CLI exit code alone does not mean it is usable yet.
-async function ensureProfileExists(profileName: string, channel: OutputChannel, cwd: string): Promise<string> {
-  const existing = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
-  if (existing.code === 0) {
-    return existing.output;
-  }
-
-  channel.appendLine(`[SKC] Creating profile ${profileName}...`);
-  const created = await runCodeCli(["--profile", profileName, "--new-window"], cwd);
-  if (created.code !== 0) {
-    throw new Error(`Could not create ${profileName}: ${describeCliFailure(created.output)}`);
-  }
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    await delay(1000);
-    const probe = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
-    if (probe.code === 0) {
-      channel.appendLine(`[SKC] Profile ${profileName} is ready.`);
-      return probe.output;
-    }
-  }
-
-  throw new Error(`Could not create ${profileName}. VS Code did not register the profile in time.`);
-}
-
-async function installProfileExtensions(
-  profileName: string,
-  entries: ExtensionEntry[],
-  channel: OutputChannel,
-  cwd: string
-): Promise<string[]> {
-  const failures: string[] = [];
-  const groups = [
-    { preRelease: false, entries: entries.filter((entry) => !entry.preRelease) },
-    { preRelease: true, entries: entries.filter((entry) => entry.preRelease) }
-  ];
-
-  for (const group of groups) {
-    if (group.entries.length === 0) {
-      continue;
-    }
-
-    const args = ["--profile", profileName];
-    for (const entry of group.entries) {
-      args.push("--install-extension", entry.id);
-    }
-    if (group.preRelease) {
-      args.push("--pre-release");
-    }
-
-    const result = await runCodeCliWithRetry(args, cwd, channel, profileName);
-    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
-      channel.appendLine(`[${profileName}] ${line}`);
-    }
-    if (result.code !== 0) {
-      failures.push(`${profileName}: ${describeCliFailure(result.output)}`);
-    }
-  }
-
-  return failures;
-}
-
-// Marketplace lookups fail intermittently behind managed networks and proxies, so a failed install is retried.
-async function runCodeCliWithRetry(
-  args: string[],
-  cwd: string,
-  channel: OutputChannel,
-  profileName: string
-): Promise<{ code: number; output: string }> {
-  let result = await runCodeCli(args, cwd);
-  for (let attempt = 1; attempt <= 2 && result.code !== 0; attempt++) {
-    channel.appendLine(`[${profileName}] Attempt ${attempt} failed: ${describeCliFailure(result.output)}`);
-    await delay(attempt * 3000);
-    result = await runCodeCli(args, cwd);
-  }
-  return result;
-}
-
-function describeCliFailure(output: string): string {
-  const line = output
-    .split(/\r?\n/)
-    .map((value) => value.trim())
-    .filter((value) => value && !value.includes("DeprecationWarning") && !value.includes("trace-deprecation"))
-    .pop();
-  return line || "the VS Code CLI exited with an error.";
-}
-
-function parseInstalledExtensionIds(installedOutput: string): string[] {
-  return installedOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim().toLowerCase())
-    .filter((line) => /^[a-z0-9][a-z0-9_-]*\.[a-z0-9][a-z0-9_.-]*$/.test(line));
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-async function removeObsoleteManagedProfileExtensions(
-  profileName: string,
-  installedOutput: string,
-  allowedExtensions: Map<string, ExtensionEntry>,
-  channel: OutputChannel,
-  cwd: string
-): Promise<void> {
-  const installedIds = installedOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /^[A-Za-z0-9][A-Za-z0-9_-]*\.[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(line));
-
-  for (const extensionId of installedIds) {
-    const normalizedId = extensionId.toLowerCase();
-    if (!LEGACY_MANAGED_EXTENSION_IDS.has(normalizedId) || allowedExtensions.has(normalizedId)) {
-      continue;
-    }
-
-    channel.appendLine(`[SKC] Removing obsolete managed extension ${extensionId} from ${profileName}...`);
-    const result = await runCodeCli(
-      ["--profile", profileName, "--uninstall-extension", extensionId],
-      cwd
-    );
-    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
-      channel.appendLine(`[${profileName}] ${line}`);
-    }
-    if (result.code !== 0) {
-      throw new Error(`Could not remove ${extensionId} from ${profileName}. See the SKC Workstation Tools output channel.`);
-    }
-  }
-}
-
-async function readWorkstationProfiles(context: ExtensionContext): Promise<WorkstationProfilesFile> {
-  const profilePath = path.join(context.extensionPath, "presets", "profiles.json");
-  const parsed: unknown = JSON.parse(await fs.readFile(profilePath, "utf8"));
-  if (!isRecord(parsed) || !Array.isArray(parsed.sharedExtensions) || !Array.isArray(parsed.profiles)) {
-    throw new Error(`Invalid workstation profile file at ${profilePath}.`);
-  }
-
-  const sharedExtensions = parseExtensionEntries(parsed.sharedExtensions, profilePath);
-  const profiles = parsed.profiles.map((value): WorkstationProfileDefinition => {
-    if (!isRecord(value) || typeof value.id !== "string" || typeof value.name !== "string" ||
-      typeof value.description !== "string" || !Array.isArray(value.extensions)) {
-      throw new Error(`Invalid workstation profile entry in ${profilePath}.`);
-    }
-    return {
-      id: value.id,
-      name: value.name,
-      description: value.description,
-      extensions: parseExtensionEntries(value.extensions, profilePath)
-    };
-  });
-
-  return { sharedExtensions, profiles };
-}
-
-function parseExtensionEntries(values: unknown[], sourcePath: string): ExtensionEntry[] {
-  return values.map((value): ExtensionEntry => {
-    if (typeof value === "string") {
-      return { id: value };
-    }
-    if (isRecord(value) && typeof value.id === "string") {
-      return { id: value.id, preRelease: value.preRelease === true };
-    }
-    throw new Error(`Invalid extension entry in ${sourcePath}.`);
-  });
-}
-
 async function applyPresets(
   context: ExtensionContext,
   channel: OutputChannel,
@@ -696,28 +418,6 @@ async function updateBcQuality(context: ExtensionContext, channel: OutputChannel
 function runNodeScript(args: string[], cwd: string): Promise<{ code: number; output: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, args, { cwd, windowsHide: true });
-    let output = "";
-    child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
-    child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
-    child.on("error", (error: Error) => { output += `${error.message}\n`; resolve({ code: 1, output }); });
-    child.on("close", (code) => { resolve({ code: code ?? 1, output }); });
-  });
-}
-
-function runCodeCli(args: string[], cwd: string): Promise<{ code: number; output: string }> {
-  return new Promise((resolve) => {
-    const childEnvironment = {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
-      VSCODE_DEV: ""
-    };
-    const cliPath = path.join(env.appRoot, "out", "cli.js");
-    const child = spawn(process.execPath, [cliPath, ...args], {
-      cwd,
-      env: childEnvironment,
-      shell: false,
-      windowsHide: true
-    });
     let output = "";
     child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
     child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });

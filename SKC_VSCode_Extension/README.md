@@ -1,6 +1,6 @@
 # SKC Workstation Tools
 
-SKC workstation profiles for Business Central AL, Web/Python, and Power Platform, from [SK Consulting S.A.](https://www.skc.lu). It adds Copilot agents, native chat forking, MCP presets, XLF translation, document skills, and four productivity themes.
+SKC workstation setup for Business Central AL, Web/Python, and Power Platform, from [SK Consulting S.A.](https://www.skc.lu). It adds Copilot agents, native chat forking, MCP presets, XLF translation, document skills, and four productivity themes.
 
 Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SKConsultingSA.skc-vs-tools) (`ext install SKConsultingSA.skc-vs-tools`). Source: [skc-bc-vscode-tools](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools).
 
@@ -9,7 +9,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - **@harold in Copilot Chat** — type `@harold how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
 - **Fork Copilot Chat** — focus any earlier request or response, then run **SKC: Fork Copilot Chat at Focused Message** to continue in a separate native chat session.
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
-- **Isolated workstation profiles** — create `SKC AL`, `SKC Web/Python`, and `SKC Power Platform/BI` without loading every language server in every workspace.
+- **One workstation profile** — AL, Web/Python, and Power Platform/BI tooling, settings, MCP servers, skills, and agents all apply together to your default profile.
 - **Office and document work** — `docx`, `pptx` and `xlsx` skills plus `mermaid-to-word`, `applying-brand-guidelines` and `frontend-slides` for reports, decks and workbooks.
 - **BCQuality reviews** — the official Microsoft BCQuality plugin snapshot is bundled offline and used additively by the reviewer/orchestrator. Live refresh is explicit or opt-in.
 - **Workspace presets** — AL settings, CodeCop and UICop, and MCP servers applied explicitly with **SKC: Apply Presets**.
@@ -24,9 +24,8 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 ## What's included
 
-- `presets/settings.json` — user settings applied to User scope
+- `presets/settings.json` — user settings applied to User scope, plus the `extensions` list installed by **SKC: Apply Presets** (AL, Web/Python, and Power Platform/BI tooling combined)
 - `presets/mcp.json` — MCP servers written to `mcp.servers` (secrets come from VS Code secret storage)
-- `presets/profiles.json` — isolated extension lists for the three SKC workstation profiles
 - `themes/*.json` — the four SKC color themes. These are **generated**: edit the palettes in `scripts/build-themes.js` and run `npm run build:themes`, then commit the result. Hand-editing a single theme file makes the variants drift apart.
 - `skills/` — Copilot skill bundles (SKC BC skills plus the Anthropic curated set)
 - `skills/bcquality/` — official BCQuality plugin snapshot, knowledge index, layers, bridge, and tools
@@ -62,38 +61,25 @@ This command uses VS Code's native session fork when the installed VS Code versi
 
 1. Install **SKC Workstation Tools** from the Marketplace.
 2. Run **SKC: Configure MCP Auth** to store your GitHub token and Context7 API key in VS Code secrets.
-3. Run **SKC: Create or Update Workstation Profiles** once, then open a workspace with the matching profile. Missing profiles are created automatically; VS Code opens a window for each new profile while it registers.
-4. In `SKC AL`, run **SKC: Apply Presets** when you want the AL settings and MCP configuration.
-5. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
-
-Updating a named SKC profile removes obsolete extensions previously managed by SKC but preserves extensions the user added. Other VS Code profiles are not changed.
+3. Run **SKC: Apply Presets** to install the combined AL, Web/Python, and Power Platform/BI extensions, AL settings, and MCP configuration into your current (default) profile.
+4. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
 
 Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`. Instruction files land in the active profile's `prompts/` folder, where VS Code picks them up for every chat.
 
 `skc-context-hygiene.instructions.md` tells agents to treat image files as opaque binaries and to open one only when you pointed at that specific image. Attaching a folder or an application root otherwise pulls images buried in the tree into the model's context as though you had shared them. VS Code has no setting that filters images out of context, so this has to be a rule the agent follows.
 
-## Workstation profiles
+## Workstation setup
 
-This extension does not declare an `extensionPack` or `extensionDependencies` in its manifest, so the Marketplace page does not auto-list installs. Instead, **SKC: Create or Update Workstation Profiles** installs the following Marketplace extensions into isolated named profiles, from [`presets/profiles.json`](presets/profiles.json):
+This extension does not declare an `extensionPack` or `extensionDependencies` in its manifest, so the Marketplace page does not auto-list installs. Instead, **SKC: Apply Presets** installs the following Marketplace extensions into your current (default) profile, from the `extensions` list in [`presets/settings.json`](presets/settings.json):
 
-| Profile | Extensions installed (Marketplace IDs) |
+| Area | Extensions installed (Marketplace IDs) |
 |---|---|
-| `SKC AL` | `ms-dynamics-smb.al` (Microsoft AL), `SKConsultingSA.skc-al-workspace` (AL Workspace Toolkit, replaces `waldo.crs-al-language-extension`), `rasmus.al-var-helper`, `redhat.vscode-xml` |
-| `SKC Web/Python` | `ms-vscode.vscode-typescript-next`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode`, `ms-python.python`, `ms-python.vscode-pylance`, `ms-python.debugpy`, `ms-python.vscode-python-envs`, `ms-azuretools.vscode-azurefunctions`, `ms-azuretools.vscode-azureappservice`, `ms-azuretools.vscode-azureresourcegroups` |
-| `SKC Power Platform/BI` | `ms-copilotstudio.vscode-copilotstudio`, `danish-naglekar.dataverse-devtools`, `danish-naglekar.pcf-builder`, `analysis-services.tmdl`, `analysis-services.powerbi-modeling-mcp`, `GerhardBrueckl.powerbi-vscode`, `ms-vscode.vscode-typescript-next`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode` |
+| Shared | `usernamehw.errorlens`, `GitHub.vscode-pull-request-github`, `ms-vscode.PowerShell`, `vscode-icons-team.vscode-icons` |
+| AL | `ms-dynamics-smb.al` (Microsoft AL), `SKConsultingSA.skc-al-workspace` (AL Workspace Toolkit, replaces `waldo.crs-al-language-extension`), `rasmus.al-var-helper`, `redhat.vscode-xml` |
+| Web/Python | `ms-vscode.vscode-typescript-next`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode`, `ms-python.python`, `ms-python.vscode-pylance`, `ms-python.debugpy`, `ms-python.vscode-python-envs`, `ms-azuretools.vscode-azurefunctions`, `ms-azuretools.vscode-azureappservice`, `ms-azuretools.vscode-azureresourcegroups` |
+| Power Platform/BI | `ms-copilotstudio.vscode-copilotstudio`, `danish-naglekar.dataverse-devtools`, `danish-naglekar.pcf-builder`, `analysis-services.tmdl`, `analysis-services.powerbi-modeling-mcp`, `GerhardBrueckl.powerbi-vscode` |
 
-Every profile also gets these shared extensions: `usernamehw.errorlens`, `GitHub.vscode-pull-request-github`, `ms-vscode.PowerShell`, `vscode-icons-team.vscode-icons`, and SKC Workstation Tools itself.
-
-### Preset vs profile
-
-These are two different things:
-
-| Item | What it is | What it changes |
-|---|---|---|
-| **Profile** | A separate VS Code profile created by **SKC: Create or Update Workstation Profiles** | Which extensions are installed and enabled in that profile, such as AL tools in `SKC AL` or Python tools in `SKC Web/Python` |
-| **SKC preset** | A configuration bundle applied by **SKC: Apply Presets** | User settings, MCP server configuration, optional preset extensions, Copilot skills, and Copilot agents for the currently active profile |
-
-Example: create the three profiles once, switch VS Code to `SKC AL`, then run **SKC: Apply Presets**. The profile supplies the AL extensions; the preset supplies the AL settings, MCP servers, skills, and agents. Applying a preset does not switch profiles, and creating or updating profiles does not apply the preset settings.
+All of the above install together in one run of **SKC: Apply Presets**, along with the AL settings, MCP servers (including the Microsoft Learn Docs MCP server), Copilot skills, and Copilot agents — all applied to whichever profile is active, normally your default profile.
 
 The Power Platform Tools extension pack is intentionally excluded because it installs CodeQL and SARIF. Install the Power Apps CLI (`pac`) separately only on workstations that manage solutions or Power Pages.
 
@@ -125,8 +111,7 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 
 | Command | Description |
 |---|---|
-| **SKC: Create or Update Workstation Profiles** | Create the three named profiles and install each isolated extension set |
-| **SKC: Apply Presets** | Apply settings, optional custom extensions, and MCP servers to the current profile |
+| **SKC: Apply Presets** | Apply settings, the combined AL/Web/Python/Power Platform extension set, and MCP servers to the current profile |
 | **SKC: Install Copilot Skills** | Install bundled skills (`~/.copilot/skills/`) |
 | **SKC: Install Copilot Agents** | Install BC subagents (`~/.copilot/agents/`) |
 | **SKC: Update BCQuality Snapshot** | Refresh the bundled BCQuality snapshot offline or explicitly from official upstream |
