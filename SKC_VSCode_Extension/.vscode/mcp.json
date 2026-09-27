@@ -5,17 +5,10 @@
 			"command": "npx",
 			"args": [
 				"-y",
-				"@playwright/mcp@latest"
+				"@playwright/mcp@0.0.82"
 			],
 			"env": {
 				"PLAYWRIGHT_BROWSER": "msedge"
-			}
-		},
-		"context7": {
-			"type": "http",
-			"url": "https://mcp.context7.com/mcp",
-			"headers": {
-				"CONTEXT7_API_KEY": "<CONTEXT7_API_KEY>"
 			}
 		},
 		"MS Learn Docs": {
@@ -27,14 +20,41 @@
 			"type": "stdio",
 			"command": "npx",
 			"args": [
-				"bc-code-intelligence-mcp"
+				"bc-code-intelligence-mcp@1.7.6"
 			]
+		},
+		"businesscentral": {
+			"type": "http",
+			"url": "https://mcp.businesscentral.dynamics.com",
+			"headers": {
+				"TenantId": "${input:bcTenantId}",
+				"EnvironmentName": "${input:bcEnvironmentName}",
+				"Company": "${input:bcCompany}",
+				"ConfigurationName": ""
+			}
 		},
 		"mcp-pandoc": {
 			"type": "stdio",
 			"command": "uvx",
 			"args": [
-				"mcp-pandoc"
+				,
+				"inputs": [
+					{
+						"id": "bcTenantId",
+						"type": "promptString",
+						"description": "Business Central: Microsoft Entra tenant ID (GUID)"
+					},
+					{
+						"id": "bcEnvironmentName",
+						"type": "promptString",
+						"description": "Business Central: environment name (use a sandbox unless production access is intended)"
+					},
+					{
+						"id": "bcCompany",
+						"type": "promptString",
+						"description": "Business Central: company name (non-ASCII names must be =?base64?<UTF-8 Base64>?=)"
+					}
+				]		"mcp-pandoc==0.11.1"
 			]
 		},
 		"microsoft/markitdown": {
@@ -44,13 +64,5 @@
 				"markitdown-mcp@0.0.1a4"
 			]
 		}
-	},
-	"inputs": [
-		{
-			"id": "githubToken",
-			"type": "promptString",
-			"description": "GitHub Personal Access Token for MCP server",
-			"password": true
-		}
-	]
+	}
 }

@@ -3,6 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import { spawn } from "child_process";
 import {
+  authentication,
   commands,
   ConfigurationTarget,
   env,
@@ -329,9 +330,15 @@ async function applyPresets(
   channel.appendLine(`[SKC] Extensions path: ${extensionsPath || "(empty)"}`);
 
   const { settings, extensions: presetExtensions } = await readPresetFile(presetPath, context, channel);
-  const { servers: mcpServersRaw, inputs: mcpInputs } = await readMcpFile(mcpPath, context, channel);
-  const mcpServersInjected = await injectMcpSecrets(context, channel, mcpServersRaw, silent);
-  const mcpServers = mcpServersInjected?.filter(server => {
+  const { servers: presetMcpServers, inputs: presetMcpInputs } = await readMcpFile(mcpPath, context, channel);
+  const overlay = presetMcpServers ? await readPrivateMcpOverlay(channel) : { servers: [], inputs: [] };
+  const presetMcpIds = new Set(presetMcpServers?.map(s => (isRecord(s) ? s.id : undefined)));
+  const mcpServersRaw = presetMcpServers && [
+    ...presetMcpServers,
+    ...overlay.servers.filter(s => isRecord(s) && !presetMcpIds.has(s.id))
+  ];
+  const mcpInputs = mergeInputs(presetMcpInputs ?? [], overlay.inputs);
+  const mcpServers = mcpServersRaw?.filter(server => {
     if (!hasUnusableUrl(server)) return true;
     const id = isRecord(server) && typeof server.id === "string" ? server.id : "(unnamed)";
     channel.appendLine(`[SKC] Skipping preset MCP server "${id}" — its url is an unreplaced placeholder and would break MCP discovery.`);
@@ -915,6 +922,82 @@ async function readMcpFile(
   }
 }
 
+/**
+ * Reads MCP servers that must not live in this public repo (e.g. the internal gateway) from a
+ * private GitHub file, using the user's own GitHub sign-in. Users without access get nothing.
+ * Only remote https servers are accepted, so the overlay can never make a machine run a command.
+ */
+async function readPrivateMcpOverlay(channel: OutputChannel): Promise<{ servers: unknown[]; inputs: unknown[] }> {
+  const none = { servers: [], inputs: [] };
+  const location = workspace.getConfiguration("skc").get<string>("privateMcpOverlay", "").trim();
+  if (!location) {
+    return none;
+  }
+  const match = /^([\w.-]+)\/([\w.-]+)\/([\w./-]+\.json)$/.exec(location);
+  if (!match || match[3].split("/").includes("..")) {
+    channel.appendLine(`[SKC] Private MCP overlay: '${location}' is not <owner>/<repo>/<path>.json; skipped.`);
+    return none;
+  }
+  const [, owner, repo, filePath] = match;
+
+  try {
+    // Not silent: without a session VS Code shows a sign-in request in the Accounts menu instead of a prompt.
+    const session = await authentication.getSession("github", ["repo"], { createIfNone: false });
+    if (!session) {
+      channel.appendLine("[SKC] Private MCP overlay: not signed in to GitHub; skipped.");
+      return none;
+    }
+
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        Accept: "application/vnd.github.raw+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "skc-vscode-extension"
+      },
+      signal: AbortSignal.timeout(15_000)
+    });
+    if (response.status === 403 || response.status === 404) {
+      // SAML-enforced orgs answer with "X-GitHub-SSO: required; url=<authorize link>" until the token is authorized.
+      const ssoUrl = /required;\s*url=(https:\/\/github\.com\/\S+)/i.exec(response.headers.get("x-github-sso") ?? "")?.[1];
+      if (ssoUrl) {
+        channel.appendLine(`[SKC] Private MCP overlay: GitHub sign-in of ${session.account.label} is not authorized for ${owner} single sign-on; skipped.`);
+        void window
+          .showInformationMessage(`SKC: authorize your GitHub sign-in for ${owner} single sign-on to get the internal MCP servers, then run "Apply Presets" again.`, "Authorize")
+          .then(choice => (choice === "Authorize" ? env.openExternal(Uri.parse(ssoUrl)) : undefined));
+        return none;
+      }
+      channel.appendLine(`[SKC] Private MCP overlay: no access for ${session.account.label}; skipped.`);
+      return none;
+    }
+    if (!response.ok) {
+      channel.appendLine(`[SKC] Private MCP overlay: GitHub returned HTTP ${response.status}; skipped.`);
+      return none;
+    }
+
+    const parsed: unknown = JSON.parse(await response.text());
+    const rawServers = isRecord(parsed) && isRecord(parsed.servers)
+      ? convertMcpServersObjectToArray(parsed.servers, location, channel) ?? []
+      : [];
+    const servers = rawServers.filter(server => {
+      const ok = isRecord(server) && server.type === "http" && typeof server.url === "string" && /^https:\/\//i.test(server.url);
+      if (!ok) {
+        const id = isRecord(server) ? String(server.id) : "(unnamed)";
+        channel.appendLine(`[SKC] Private MCP overlay: ignored "${id}" — only https remote servers are allowed.`);
+      }
+      return ok;
+    });
+    const inputs = isRecord(parsed) && Array.isArray(parsed.inputs) ? parsed.inputs : [];
+
+    channel.appendLine(`[SKC] Private MCP overlay: loaded ${servers.length} server(s).`);
+    return { servers, inputs };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    channel.appendLine(`[SKC] Private MCP overlay: failed (${message}); skipped.`);
+    return none;
+  }
+}
+
 function convertMcpServersObjectToArray(
   mcpServers: Record<string, unknown>,
   sourcePath: string,
@@ -1044,6 +1127,9 @@ async function writeVSCodeMcpFileIfNeeded(
         if (hasUnusableUrl(val)) {
           delete existingServers[key];
           channel.appendLine(`[SKC] VS Code mcp.json: removed "${key}" — its url is an unreplaced placeholder and breaks MCP discovery.`);
+        } else if (usesRetiredPackage(val)) {
+          delete existingServers[key];
+          channel.appendLine(`[SKC] VS Code mcp.json: removed "${key}" — it runs a retired package; replaced by the preset's official server.`);
         }
       }
     }
@@ -1140,57 +1226,6 @@ async function pathExists(target: string): Promise<boolean> {
   }
 }
 
-async function injectMcpSecrets(
-  context: ExtensionContext,
-  channel: OutputChannel,
-  servers: unknown[] | undefined,
-  silent: boolean
-): Promise<unknown[] | undefined> {
-  if (!servers || !Array.isArray(servers)) {
-    return servers;
-  }
-
-  const allowPrompt = !silent;
-  let context7ApiKey: string | undefined;
-  const hydrated: unknown[] = [];
-
-  for (const server of servers) {
-    if (!isRecord(server) || typeof server.id !== "string") {
-      hydrated.push(server);
-      continue;
-    }
-
-    const copy: Record<string, unknown> = { ...server };
-    const headers = isRecord(copy.headers) ? { ...copy.headers } : {};
-
-    if (copy.id === "context7") {
-      if (!context7ApiKey) {
-        context7ApiKey = await getOrPromptSecret(
-          context,
-          "skc.context7ApiKey",
-          "Enter the Context7 API key. Stored securely.",
-          allowPrompt
-        );
-      }
-      if (context7ApiKey) {
-        headers.CONTEXT7_API_KEY = context7ApiKey;
-      } else {
-        channel.appendLine(
-          "[SKC] No Context7 API key available; 'context7' MCP server will be applied without CONTEXT7_API_KEY."
-        );
-      }
-    }
-
-    if (Object.keys(headers).length > 0) {
-      copy.headers = headers;
-    }
-
-    hydrated.push(copy);
-  }
-
-  return hydrated;
-}
-
 async function getOrPromptSecret(
   context: ExtensionContext,
   key: string,
@@ -1227,14 +1262,8 @@ async function promptAndSaveMcpSecrets(context: ExtensionContext): Promise<boole
     "Enter a GitHub MCP token (PAT or MCP token). Stored securely.",
     true
   );
-  const context7ApiKey = await getOrPromptSecret(
-    context,
-    "skc.context7ApiKey",
-    "Enter the Context7 API key. Stored securely.",
-    true
-  );
 
-  return Boolean(githubToken || context7ApiKey);
+  return Boolean(githubToken);
 }
 
 /**
@@ -1254,6 +1283,17 @@ function hasUnusableUrl(entry: unknown): boolean {
   } catch {
     return true;
   }
+}
+
+// Superseded by Microsoft's hosted Business Central MCP server (https://mcp.businesscentral.dynamics.com).
+const RETIRED_MCP_PACKAGES = ["bc-mcp-proxy-fisqal"];
+
+function usesRetiredPackage(entry: unknown): boolean {
+  if (!isRecord(entry) || !Array.isArray(entry.args)) return false;
+  return entry.args.some(arg =>
+    typeof arg === "string" &&
+    RETIRED_MCP_PACKAGES.some(pkg => arg === pkg || arg.startsWith(`${pkg}@`))
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

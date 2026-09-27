@@ -1,6 +1,16 @@
 # 📰 SKC Workstation Tools - What's New
 
-## Version 3.2.0 - Latest Release
+## Version 3.3.0 - Latest Release
+
+### Internal MCP servers for SKC colleagues
+
+**SKC: Apply Presets** now also adds MCP servers that are only available to SKC team members, such as the SKC MCP Gateway. They come from a private GitHub file that is read with your GitHub sign-in, so nothing internal ships in this public extension. If you're asked to authorize single sign-on for SK-Consulting-S-A, click **Authorize** and run **SKC: Apply Presets** again.
+
+### Official Business Central MCP server
+
+The old `bc-mcp-proxy` server is replaced by Microsoft's hosted Business Central MCP server (`businesscentral`). It signs in with your Microsoft account and asks for tenant, environment and company when it starts. Apply Presets removes the old proxy entry automatically.
+
+## Version 3.2.0
 
 ### One profile instead of three
 

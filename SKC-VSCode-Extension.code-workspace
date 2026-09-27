@@ -7,11 +7,7 @@
         {
             "name": "AL Workspace Toolkit",
             "path": "AL_Workspace_Toolkit"
-        },
-        {
-            "name": "bc-mcp-proxy-npm",
-            "path": "bc-mcp-proxy-npm"
-        },
+        }
     ],
     "settings": {
         "files.exclude": {
@@ -43,7 +39,7 @@
             "editor.defaultFormatter": "ms-dynamics-smb.al",
             "editor.formatOnSave": true
         },
-        "powershell.cwd": "bc-mcp-proxy-npm"
+        "powershell.cwd": "SKC VSCode Extension"
     },
     "extensions": {
         "recommendations": [

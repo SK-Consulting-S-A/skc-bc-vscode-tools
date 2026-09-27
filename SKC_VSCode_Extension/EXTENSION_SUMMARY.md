@@ -80,11 +80,10 @@ The `extensions` array in `presets/settings.json` is the single source of truth 
 Sets up Model Context Protocol (MCP) servers for AI-powered development assistance:
 
 1. **Playwright MCP** - Browser automation and testing
-2. **Context7 MCP** - Code documentation and library references (requires API key)
-3. **MS Learn Docs MCP** - Microsoft Learn documentation access
-4. **BC Intelligence MCP** - Business Central-specific AI assistance
-5. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
-6. **MCP Pandoc** and **markitdown** - Document conversion utilities
+2. **MS Learn Docs MCP** - Microsoft Learn documentation access
+3. **BC Intelligence MCP** - Business Central-specific AI assistance
+4. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
+5. **MCP Pandoc** and **markitdown** - Document conversion utilities
 
 ### 3. **Applies AL-Optimized Settings**
 
@@ -114,7 +113,7 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 
 ### MCP Authentication
 - **Secure credential storage** - Uses VS Code secret storage for API keys and tokens
-- **Easy configuration** - "SKC: Configure MCP Auth" command to set up GitHub token and Context7 API key
+- **Easy configuration** - "SKC: Configure MCP Auth" command to set up GitHub token
 
 ### Customization
 - **Configurable paths** - Override default preset file locations
@@ -153,7 +152,6 @@ code --install-extension skc-vs-tools-1.0.0.vsix
 1. **Install the extension** from the VS Code Marketplace
 2. **Configure MCP Auth** - Run "SKC: Configure MCP Auth" command to set up:
    - GitHub Personal Access Token (for GitHub MCP)
-   - Context7 API Key (for Context7 MCP)
 3. **Apply Presets** - Run "SKC: Apply Presets" to install the combined AL/Web/Python/Power Platform extension set, settings, and MCP servers
 4. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
 

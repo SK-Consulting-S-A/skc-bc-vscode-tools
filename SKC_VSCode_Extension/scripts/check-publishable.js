@@ -30,6 +30,7 @@ const PUBLISHABLE_SKILLS = new Set([
     "docx",
     "frontend-slides",
     "loop",
+    "mcp-server-review",
     "mermaid-to-word",
     "pbi-to-bc-dashboard",
     "pptx",
@@ -55,6 +56,8 @@ const PUBLISHABLE_AGENTS = new Set([
 ]);
 
 const PUBLISHABLE_INSTRUCTIONS = new Set([
+    "mcp-server-safety.instructions.md",
+    "remote-mcp-data-minimization.instructions.md",
     "skc-context-hygiene.instructions.md",
 ]);
 
