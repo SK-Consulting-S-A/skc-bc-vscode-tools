@@ -60,9 +60,8 @@ This command uses VS Code's native session fork when the installed VS Code versi
 ### Presets, extensions, and AI
 
 1. Install **SKC Workstation Tools** from the Marketplace.
-2. Run **SKC: Configure MCP Auth** to store your GitHub token and Context7 API key in VS Code secrets.
-3. Run **SKC: Apply Presets** to install the combined AL, Web/Python, and Power Platform/BI extensions, AL settings, and MCP configuration into your current (default) profile.
-4. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
+2. Run **SKC: Apply Presets** to install the combined AL, Web/Python, and Power Platform/BI extensions, AL settings, and MCP configuration into your current (default) profile.
+3. Copilot skills and agents install with presets. You can also run **SKC: Install Copilot Skills** and **SKC: Install Copilot Agents**.
 
 Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`. Instruction files land in the active profile's `prompts/` folder, where VS Code picks them up for every chat.
 
@@ -115,7 +114,6 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 | **SKC: Install Copilot Skills** | Install bundled skills (`~/.copilot/skills/`) |
 | **SKC: Install Copilot Agents** | Install BC subagents (`~/.copilot/agents/`) |
 | **SKC: Update BCQuality Snapshot** | Refresh the bundled BCQuality snapshot offline or explicitly from official upstream |
-| **SKC: Configure MCP Auth** | Store GitHub token and Context7 API key |
 | **SKC: Fork Copilot Chat at Focused Message** | Branch the current native Copilot session after the focused request or response |
 | **SKC: Configure Translation URL** | Set Azure Translation Function endpoint |
 | **Translate File** | Translate the selected XLF file |

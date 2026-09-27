@@ -2,6 +2,20 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [3.3.0] - 2026-09-27
+
+### Added
+- **Private MCP overlay** (`skc.privateMcpOverlay`): **SKC: Apply Presets** reads additional MCP servers from a private GitHub file with your GitHub sign-in and merges them after the public preset. Users without access to that file get nothing extra. Only `http` servers with `https` URLs are accepted, so the overlay can never make a machine run a command. When the org enforces SAML single sign-on and your sign-in isn't authorized yet, you get a prompt with the authorization link.
+- `businesscentral` added to the workspace `.vscode/mcp.json`, matching the preset.
+- MCP safety instructions (`mcp-server-safety`, `remote-mcp-data-minimization`) and the `mcp-server-review` skill.
+
+### Removed
+- **SKC: Configure MCP Auth**. The GitHub token it stored (`skc.githubToken`) wasn't used by any MCP server. The extension now deletes that stored token on activation.
+
+### Security
+- Replaced the `bc-mcp-proxy` MCP server (`bc-mcp-proxy-fisqal`, a local stdio proxy that fetched and built the BCTech sample at install time) with Microsoft's official hosted Business Central MCP server, `businesscentral` at `https://mcp.businesscentral.dynamics.com`. It connects over HTTP with Microsoft Entra OAuth, with no local binary or app registration. Tenant, environment and company are prompted through `${input:…}`. `ConfigurationName` is left empty, so access defaults to read-only.
+- **SKC: Apply Presets** now removes any existing user `mcp.json` server that runs `bc-mcp-proxy-fisqal`.
+
 ## [3.2.0] - 2026-09-25
 
 ### Changed

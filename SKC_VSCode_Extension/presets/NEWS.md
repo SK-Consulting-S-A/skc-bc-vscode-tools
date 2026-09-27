@@ -1,6 +1,20 @@
 # 📰 SKC Workstation Tools - What's New
 
-## Version 3.2.0 - Latest Release
+## Version 3.3.0 - Latest Release
+
+### Private MCP servers
+
+**SKC: Apply Presets** can now also add MCP servers from a private GitHub file (setting `skc.privateMcpOverlay`), read with your GitHub sign-in. If you don't have access to that file, nothing extra is added. If you're asked to authorize single sign-on for the organization, click **Authorize** and run **SKC: Apply Presets** again.
+
+### Removed: SKC: Configure MCP Auth
+
+The GitHub token this command stored was not used by any MCP server, so the command is gone and the stored token is deleted from VS Code secret storage.
+
+### Official Business Central MCP server
+
+The old `bc-mcp-proxy` server is replaced by Microsoft's hosted Business Central MCP server (`businesscentral`). It signs in with your Microsoft account and asks for tenant, environment and company when it starts. Apply Presets removes the old proxy entry automatically.
+
+## Version 3.2.0
 
 ### One profile instead of three
 

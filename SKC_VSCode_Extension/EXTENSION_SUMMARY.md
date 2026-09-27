@@ -80,11 +80,10 @@ The `extensions` array in `presets/settings.json` is the single source of truth 
 Sets up Model Context Protocol (MCP) servers for AI-powered development assistance:
 
 1. **Playwright MCP** - Browser automation and testing
-2. **Context7 MCP** - Code documentation and library references (requires API key)
-3. **MS Learn Docs MCP** - Microsoft Learn documentation access
-4. **BC Intelligence MCP** - Business Central-specific AI assistance
-5. **BC MCP Proxy** - Business Central API access (requires tenant and app registration details)
-6. **MCP Pandoc** and **markitdown** - Document conversion utilities
+2. **MS Learn Docs MCP** - Microsoft Learn documentation access
+3. **BC Intelligence MCP** - Business Central-specific AI assistance
+4. **Business Central MCP** - Microsoft's hosted Business Central MCP server (asks for tenant, environment and company)
+5. **MCP Pandoc** and **markitdown** - Document conversion utilities
 
 ### 3. **Applies AL-Optimized Settings**
 
@@ -112,10 +111,6 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 - **Explicit presets** - Settings and MCP changes happen only when Apply Presets is run
 - **Single profile** - AL, Web/Python, and Power Platform/BI tooling all live together in your default profile
 
-### MCP Authentication
-- **Secure credential storage** - Uses VS Code secret storage for API keys and tokens
-- **Easy configuration** - "SKC: Configure MCP Auth" command to set up GitHub token and Context7 API key
-
 ### Customization
 - **Configurable paths** - Override default preset file locations
 - **Skip installed extensions** - Option to skip already-installed extensions
@@ -125,7 +120,6 @@ Configures VS Code with production-ready settings specifically optimized for AL 
 - **SKC: Apply Presets** - Manually apply all presets (extensions, settings, MCP servers, skills, agents)
 - **SKC: Install Cursor Skills** - Install bundled skills (Cursor: `~/.cursor/skills/`, VS Code: `~/.copilot/skills/`)
 - **SKC: Install Cursor Agents** - Install BC subagents (Cursor: `~/.cursor/agents/`, VS Code: `~/.copilot/agents/`)
-- **SKC: Configure MCP Auth** - Set up MCP server authentication
 - **SKC: Configure Translation URL** - Set Azure Translation Function endpoint
 - **Translate File** - Translate selected XLF file (from sidebar)
 - **Refresh Translations** - Refresh the translations list
@@ -151,11 +145,8 @@ code --install-extension skc-vs-tools-1.0.0.vsix
 ## Quick Start
 
 1. **Install the extension** from the VS Code Marketplace
-2. **Configure MCP Auth** - Run "SKC: Configure MCP Auth" command to set up:
-   - GitHub Personal Access Token (for GitHub MCP)
-   - Context7 API Key (for Context7 MCP)
-3. **Apply Presets** - Run "SKC: Apply Presets" to install the combined AL/Web/Python/Power Platform extension set, settings, and MCP servers
-4. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
+2. **Apply Presets** - Run "SKC: Apply Presets" to install the combined AL/Web/Python/Power Platform extension set, settings, and MCP servers
+3. **Configure Translations** (optional) - Run "SKC: Configure Translation URL" to enable XLF translation
 
 ## Technical Details
 
