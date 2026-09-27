@@ -2,9 +2,13 @@
 
 ## Version 3.3.0 - Latest Release
 
-### Internal MCP servers for SKC colleagues
+### Private MCP servers
 
-**SKC: Apply Presets** now also adds MCP servers that are only available to SKC team members, such as the SKC MCP Gateway. They come from a private GitHub file that is read with your GitHub sign-in, so nothing internal ships in this public extension. If you're asked to authorize single sign-on for SK-Consulting-S-A, click **Authorize** and run **SKC: Apply Presets** again.
+**SKC: Apply Presets** can now also add MCP servers from a private GitHub file (setting `skc.privateMcpOverlay`), read with your GitHub sign-in. If you don't have access to that file, nothing extra is added. If you're asked to authorize single sign-on for the organization, click **Authorize** and run **SKC: Apply Presets** again.
+
+### Removed: SKC: Configure MCP Auth
+
+The GitHub token this command stored was not used by any MCP server, so the command is gone and the stored token is deleted from VS Code secret storage.
 
 ### Official Business Central MCP server
 

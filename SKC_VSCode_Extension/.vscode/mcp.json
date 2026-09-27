@@ -37,24 +37,7 @@
 			"type": "stdio",
 			"command": "uvx",
 			"args": [
-				,
-				"inputs": [
-					{
-						"id": "bcTenantId",
-						"type": "promptString",
-						"description": "Business Central: Microsoft Entra tenant ID (GUID)"
-					},
-					{
-						"id": "bcEnvironmentName",
-						"type": "promptString",
-						"description": "Business Central: environment name (use a sandbox unless production access is intended)"
-					},
-					{
-						"id": "bcCompany",
-						"type": "promptString",
-						"description": "Business Central: company name (non-ASCII names must be =?base64?<UTF-8 Base64>?=)"
-					}
-				]		"mcp-pandoc==0.11.1"
+				"mcp-pandoc==0.11.1"
 			]
 		},
 		"microsoft/markitdown": {
@@ -64,5 +47,22 @@
 				"markitdown-mcp@0.0.1a4"
 			]
 		}
-	}
+	},
+	"inputs": [
+		{
+			"id": "bcTenantId",
+			"type": "promptString",
+			"description": "Business Central: Microsoft Entra tenant ID (GUID)"
+		},
+		{
+			"id": "bcEnvironmentName",
+			"type": "promptString",
+			"description": "Business Central: environment name (use a sandbox unless production access is intended)"
+		},
+		{
+			"id": "bcCompany",
+			"type": "promptString",
+			"description": "Business Central: company name (non-ASCII names must be =?base64?<UTF-8 Base64>?=)"
+		}
+	]
 }

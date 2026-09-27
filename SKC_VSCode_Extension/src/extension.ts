@@ -97,14 +97,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(updateBcQualityCommand);
 
-  const configureAuthCommand = commands.registerCommand("skc.configureMcpAuth", async () => {
-    const saved = await promptAndSaveMcpSecrets(context);
-    const message = saved
-      ? "SKC MCP credentials saved."
-      : "No MCP credentials were saved.";
-    void window.showInformationMessage(message);
-  });
-  context.subscriptions.push(configureAuthCommand);
+  // Left behind by the removed "Configure MCP Auth" command; nothing reads it.
+  void context.secrets.delete("skc.githubToken");
 
   // Defer view and startup tasks so activate() returns immediately (avoids long "Activating...").
   setImmediate(() => {
@@ -1224,46 +1218,6 @@ async function pathExists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-async function getOrPromptSecret(
-  context: ExtensionContext,
-  key: string,
-  prompt: string,
-  allowPrompt: boolean
-): Promise<string | undefined> {
-  const existing = await context.secrets.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  if (!allowPrompt) {
-    return undefined;
-  }
-
-  const value = await window.showInputBox({
-    prompt,
-    ignoreFocusOut: true,
-    password: true
-  });
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  await context.secrets.store(key, trimmed);
-  return trimmed;
-}
-
-async function promptAndSaveMcpSecrets(context: ExtensionContext): Promise<boolean> {
-  const githubToken = await getOrPromptSecret(
-    context,
-    "skc.githubToken",
-    "Enter a GitHub MCP token (PAT or MCP token). Stored securely.",
-    true
-  );
-
-  return Boolean(githubToken);
 }
 
 /**

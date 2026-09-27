@@ -9,6 +9,9 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 - `businesscentral` added to the workspace `.vscode/mcp.json`, matching the preset.
 - MCP safety instructions (`mcp-server-safety`, `remote-mcp-data-minimization`) and the `mcp-server-review` skill.
 
+### Removed
+- **SKC: Configure MCP Auth**. The GitHub token it stored (`skc.githubToken`) wasn't used by any MCP server. The extension now deletes that stored token on activation.
+
 ### Security
 - Replaced the `bc-mcp-proxy` MCP server (`bc-mcp-proxy-fisqal`, a local stdio proxy that fetched and built the BCTech sample at install time) with Microsoft's official hosted Business Central MCP server, `businesscentral` at `https://mcp.businesscentral.dynamics.com`. It connects over HTTP with Microsoft Entra OAuth, with no local binary or app registration. Tenant, environment and company are prompted through `${input:…}`. `ConfigurationName` is left empty, so access defaults to read-only.
 - **SKC: Apply Presets** now removes any existing user `mcp.json` server that runs `bc-mcp-proxy-fisqal`.
