@@ -38,10 +38,10 @@
         "bc-mcp-proxy-fisqal"
       ],
       "env": {
-        "BC_TENANT_ID": "<YOUR_TENANT_ID_OR_DOMAIN>",
-        "BC_CLIENT_ID": "<YOUR_AZURE_AD_APP_CLIENT_ID>",
+        "BC_TENANT_ID": "${input:bctenantid}",
+        "BC_CLIENT_ID": "${input:bcclientid}",
         "BC_ENVIRONMENT": "Production",
-        "BC_COMPANY": "<YOUR_BC_COMPANY_NAME>",
+        "BC_COMPANY": "${input:bccompany}",
         "BC_CONFIG_NAME": ""
       }
     },
@@ -66,6 +66,21 @@
       "type": "promptString",
       "description": "GitHub Personal Access Token for MCP server",
       "password": true
+    },
+    {
+      "id": "bctenantid",
+      "type": "promptString",
+      "description": "Business Central tenant ID or domain"
+    },
+    {
+      "id": "bcclientid",
+      "type": "promptString",
+      "description": "Microsoft Entra app client ID used by the Business Central MCP server"
+    },
+    {
+      "id": "bccompany",
+      "type": "promptString",
+      "description": "Business Central company name"
     }
   ]
 }

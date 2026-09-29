@@ -2,6 +2,11 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- The Business Central MCP proxy now prompts for tenant ID, client ID, and company name instead of passing example placeholders or an unresolved tenant input to sign-in.
+
 ## [3.1.7] - 2026-09-20
 
 ### Added
