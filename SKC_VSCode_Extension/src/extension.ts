@@ -3,12 +3,12 @@ import * as os from "os";
 import * as path from "path";
 import { spawn } from "child_process";
 import {
+  authentication,
   commands,
   ConfigurationTarget,
   env,
   ExtensionContext,
   OutputChannel,
-  ProgressLocation,
   extensions,
   window,
   workspace,
@@ -27,35 +27,6 @@ const STATE_KEY = "skc.presetsApplied";
 const STATE_VERSION_KEY = "skc.presetsVersion";
 const STATE_NEWS_SHOWN_KEY = "skc.newsShownForVersion";
 const STATE_LAST_EXTENSION_IDS_KEY = "skc.lastAppliedExtensionIds";
-const LEGACY_MANAGED_EXTENSION_IDS = new Set([
-  "ms-dynamics-smb.al",
-  "davidfeldhoff.al-codeactions",
-  "usernamehw.errorlens",
-  "github.vscode-pull-request-github",
-  "rasmus.al-var-helper",
-  "bartpermentier.al-toolbox",
-  "andrzejzwierzchowski.al-code-outline",
-  "ms-azuretools.vscode-azurefunctions",
-  "ms-azuretools.vscode-azureappservice",
-  "ms-azuretools.vscode-azureresourcegroups",
-  "ms-vscode.vscode-typescript-next",
-  "redhat.vscode-xml",
-  "wbrakowski.al-navigator",
-  "ms-vscode.powershell",
-  "vscode-icons-team.vscode-icons",
-  "waldo.crs-al-language-extension",
-  "ms-python.python",
-  "ms-python.debugpy",
-  "microsoft-isvexptools.powerplatform-vscode",
-  "ms-copilotstudio.vscode-copilotstudio",
-  "danish-naglekar.dataverse-devtools",
-  "danish-naglekar.pcf-builder",
-  "analysis-services.tmdl",
-  "analysis-services.powerbi-modeling-mcp",
-  "gerhardbrueckl.powerbi-vscode",
-  "dbaeumer.vscode-eslint",
-  "esbenp.prettier-vscode"
-]);
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const channel = window.createOutputChannel(OUTPUT_CHANNEL_NAME);
@@ -93,28 +64,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(applyCommand);
 
-  const createProfilesCommand = commands.registerCommand("skc.createWorkstationProfiles", async () => {
-    const failures = await window.withProgress(
-      {
-        location: ProgressLocation.Notification,
-        title: "Creating SKC workstation profiles",
-        cancellable: false
-      },
-      async (progress) => {
-        return createOrUpdateWorkstationProfiles(context, channel, (message) => progress.report({ message }));
-      }
-    );
-    if (failures.length === 0) {
-      void window.showInformationMessage("SKC AL, SKC Web/Python, and SKC Power Platform/BI profiles are ready.");
-      return;
-    }
-    const choice = await window.showErrorMessage(`SKC profile setup incomplete. ${failures[0]}`, "Show Log");
-    if (choice === "Show Log") {
-      channel.show(true);
-    }
-  });
-  context.subscriptions.push(createProfilesCommand);
-
   const installSkillsCommand = commands.registerCommand("skc.installSkills", async () => {
     await installSkills(context, channel);
     void window.showInformationMessage("SKC skills installed.");
@@ -148,14 +97,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(updateBcQualityCommand);
 
-  const configureAuthCommand = commands.registerCommand("skc.configureMcpAuth", async () => {
-    const saved = await promptAndSaveMcpSecrets(context);
-    const message = saved
-      ? "SKC MCP credentials saved."
-      : "No MCP credentials were saved.";
-    void window.showInformationMessage(message);
-  });
-  context.subscriptions.push(configureAuthCommand);
+  // Left behind by the removed "Configure MCP Auth" command; nothing reads it.
+  void context.secrets.delete("skc.githubToken");
 
   // Defer view and startup tasks so activate() returns immediately (avoids long "Activating...").
   setImmediate(() => {
@@ -362,232 +305,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
 }
 
-type WorkstationProfileDefinition = {
-  id: string;
-  name: string;
-  description: string;
-  extensions: ExtensionEntry[];
-};
-
-type WorkstationProfilesFile = {
-  sharedExtensions: ExtensionEntry[];
-  profiles: WorkstationProfileDefinition[];
-};
-
-async function createOrUpdateWorkstationProfiles(
-  context: ExtensionContext,
-  channel: OutputChannel,
-  reportProgress: (message: string) => void
-): Promise<string[]> {
-  const definitions = await readWorkstationProfiles(context);
-  const extensionId = context.extension.id;
-  const failures: string[] = [];
-
-  for (const profile of definitions.profiles) {
-    reportProgress(profile.name);
-    const byId = new Map<string, ExtensionEntry>();
-    for (const entry of [{ id: extensionId }, ...definitions.sharedExtensions, ...profile.extensions]) {
-      byId.set(entry.id.toLowerCase(), entry);
-    }
-
-    let installedOutput: string;
-    try {
-      installedOutput = await ensureProfileExists(profile.name, channel, context.extensionPath);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      channel.appendLine(`[SKC] ${message}`);
-      failures.push(message);
-      continue;
-    }
-
-    await removeObsoleteManagedProfileExtensions(
-      profile.name,
-      installedOutput,
-      byId,
-      channel,
-      context.extensionPath
-    );
-
-    const installedIds = new Set(parseInstalledExtensionIds(installedOutput));
-    const missing = Array.from(byId.values()).filter((entry) => !installedIds.has(entry.id.toLowerCase()));
-    if (missing.length === 0) {
-      channel.appendLine(`[SKC] Profile ${profile.name} already has all ${byId.size} managed extension(s).`);
-      continue;
-    }
-
-    channel.appendLine(`[SKC] Installing ${missing.length} extension(s) into ${profile.name}...`);
-    failures.push(...(await installProfileExtensions(profile.name, missing, channel, context.extensionPath)));
-  }
-
-  return failures;
-}
-
-// VS Code registers a new profile asynchronously, so the CLI exit code alone does not mean it is usable yet.
-async function ensureProfileExists(profileName: string, channel: OutputChannel, cwd: string): Promise<string> {
-  const existing = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
-  if (existing.code === 0) {
-    return existing.output;
-  }
-
-  channel.appendLine(`[SKC] Creating profile ${profileName}...`);
-  const created = await runCodeCli(["--profile", profileName, "--new-window"], cwd);
-  if (created.code !== 0) {
-    throw new Error(`Could not create ${profileName}: ${describeCliFailure(created.output)}`);
-  }
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    await delay(1000);
-    const probe = await runCodeCli(["--profile", profileName, "--list-extensions"], cwd);
-    if (probe.code === 0) {
-      channel.appendLine(`[SKC] Profile ${profileName} is ready.`);
-      return probe.output;
-    }
-  }
-
-  throw new Error(`Could not create ${profileName}. VS Code did not register the profile in time.`);
-}
-
-async function installProfileExtensions(
-  profileName: string,
-  entries: ExtensionEntry[],
-  channel: OutputChannel,
-  cwd: string
-): Promise<string[]> {
-  const failures: string[] = [];
-  const groups = [
-    { preRelease: false, entries: entries.filter((entry) => !entry.preRelease) },
-    { preRelease: true, entries: entries.filter((entry) => entry.preRelease) }
-  ];
-
-  for (const group of groups) {
-    if (group.entries.length === 0) {
-      continue;
-    }
-
-    const args = ["--profile", profileName];
-    for (const entry of group.entries) {
-      args.push("--install-extension", entry.id);
-    }
-    if (group.preRelease) {
-      args.push("--pre-release");
-    }
-
-    const result = await runCodeCliWithRetry(args, cwd, channel, profileName);
-    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
-      channel.appendLine(`[${profileName}] ${line}`);
-    }
-    if (result.code !== 0) {
-      failures.push(`${profileName}: ${describeCliFailure(result.output)}`);
-    }
-  }
-
-  return failures;
-}
-
-// Marketplace lookups fail intermittently behind managed networks and proxies, so a failed install is retried.
-async function runCodeCliWithRetry(
-  args: string[],
-  cwd: string,
-  channel: OutputChannel,
-  profileName: string
-): Promise<{ code: number; output: string }> {
-  let result = await runCodeCli(args, cwd);
-  for (let attempt = 1; attempt <= 2 && result.code !== 0; attempt++) {
-    channel.appendLine(`[${profileName}] Attempt ${attempt} failed: ${describeCliFailure(result.output)}`);
-    await delay(attempt * 3000);
-    result = await runCodeCli(args, cwd);
-  }
-  return result;
-}
-
-function describeCliFailure(output: string): string {
-  const line = output
-    .split(/\r?\n/)
-    .map((value) => value.trim())
-    .filter((value) => value && !value.includes("DeprecationWarning") && !value.includes("trace-deprecation"))
-    .pop();
-  return line || "the VS Code CLI exited with an error.";
-}
-
-function parseInstalledExtensionIds(installedOutput: string): string[] {
-  return installedOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim().toLowerCase())
-    .filter((line) => /^[a-z0-9][a-z0-9_-]*\.[a-z0-9][a-z0-9_.-]*$/.test(line));
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-async function removeObsoleteManagedProfileExtensions(
-  profileName: string,
-  installedOutput: string,
-  allowedExtensions: Map<string, ExtensionEntry>,
-  channel: OutputChannel,
-  cwd: string
-): Promise<void> {
-  const installedIds = installedOutput
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /^[A-Za-z0-9][A-Za-z0-9_-]*\.[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(line));
-
-  for (const extensionId of installedIds) {
-    const normalizedId = extensionId.toLowerCase();
-    if (!LEGACY_MANAGED_EXTENSION_IDS.has(normalizedId) || allowedExtensions.has(normalizedId)) {
-      continue;
-    }
-
-    channel.appendLine(`[SKC] Removing obsolete managed extension ${extensionId} from ${profileName}...`);
-    const result = await runCodeCli(
-      ["--profile", profileName, "--uninstall-extension", extensionId],
-      cwd
-    );
-    for (const line of result.output.split(/\r?\n/).filter(Boolean)) {
-      channel.appendLine(`[${profileName}] ${line}`);
-    }
-    if (result.code !== 0) {
-      throw new Error(`Could not remove ${extensionId} from ${profileName}. See the SKC Workstation Tools output channel.`);
-    }
-  }
-}
-
-async function readWorkstationProfiles(context: ExtensionContext): Promise<WorkstationProfilesFile> {
-  const profilePath = path.join(context.extensionPath, "presets", "profiles.json");
-  const parsed: unknown = JSON.parse(await fs.readFile(profilePath, "utf8"));
-  if (!isRecord(parsed) || !Array.isArray(parsed.sharedExtensions) || !Array.isArray(parsed.profiles)) {
-    throw new Error(`Invalid workstation profile file at ${profilePath}.`);
-  }
-
-  const sharedExtensions = parseExtensionEntries(parsed.sharedExtensions, profilePath);
-  const profiles = parsed.profiles.map((value): WorkstationProfileDefinition => {
-    if (!isRecord(value) || typeof value.id !== "string" || typeof value.name !== "string" ||
-      typeof value.description !== "string" || !Array.isArray(value.extensions)) {
-      throw new Error(`Invalid workstation profile entry in ${profilePath}.`);
-    }
-    return {
-      id: value.id,
-      name: value.name,
-      description: value.description,
-      extensions: parseExtensionEntries(value.extensions, profilePath)
-    };
-  });
-
-  return { sharedExtensions, profiles };
-}
-
-function parseExtensionEntries(values: unknown[], sourcePath: string): ExtensionEntry[] {
-  return values.map((value): ExtensionEntry => {
-    if (typeof value === "string") {
-      return { id: value };
-    }
-    if (isRecord(value) && typeof value.id === "string") {
-      return { id: value.id, preRelease: value.preRelease === true };
-    }
-    throw new Error(`Invalid extension entry in ${sourcePath}.`);
-  });
-}
-
 async function applyPresets(
   context: ExtensionContext,
   channel: OutputChannel,
@@ -607,9 +324,15 @@ async function applyPresets(
   channel.appendLine(`[SKC] Extensions path: ${extensionsPath || "(empty)"}`);
 
   const { settings, extensions: presetExtensions } = await readPresetFile(presetPath, context, channel);
-  const { servers: mcpServersRaw, inputs: mcpInputs } = await readMcpFile(mcpPath, context, channel);
-  const mcpServersInjected = await injectMcpSecrets(context, channel, mcpServersRaw, silent);
-  const mcpServers = mcpServersInjected?.filter(server => {
+  const { servers: presetMcpServers, inputs: presetMcpInputs } = await readMcpFile(mcpPath, context, channel);
+  const overlay = presetMcpServers ? await readPrivateMcpOverlay(channel) : { servers: [], inputs: [] };
+  const presetMcpIds = new Set(presetMcpServers?.map(s => (isRecord(s) ? s.id : undefined)));
+  const mcpServersRaw = presetMcpServers && [
+    ...presetMcpServers,
+    ...overlay.servers.filter(s => isRecord(s) && !presetMcpIds.has(s.id))
+  ];
+  const mcpInputs = mergeInputs(presetMcpInputs ?? [], overlay.inputs);
+  const mcpServers = mcpServersRaw?.filter(server => {
     if (!hasUnusableUrl(server)) return true;
     const id = isRecord(server) && typeof server.id === "string" ? server.id : "(unnamed)";
     channel.appendLine(`[SKC] Skipping preset MCP server "${id}" — its url is an unreplaced placeholder and would break MCP discovery.`);
@@ -696,28 +419,6 @@ async function updateBcQuality(context: ExtensionContext, channel: OutputChannel
 function runNodeScript(args: string[], cwd: string): Promise<{ code: number; output: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, args, { cwd, windowsHide: true });
-    let output = "";
-    child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
-    child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
-    child.on("error", (error: Error) => { output += `${error.message}\n`; resolve({ code: 1, output }); });
-    child.on("close", (code) => { resolve({ code: code ?? 1, output }); });
-  });
-}
-
-function runCodeCli(args: string[], cwd: string): Promise<{ code: number; output: string }> {
-  return new Promise((resolve) => {
-    const childEnvironment = {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
-      VSCODE_DEV: ""
-    };
-    const cliPath = path.join(env.appRoot, "out", "cli.js");
-    const child = spawn(process.execPath, [cliPath, ...args], {
-      cwd,
-      env: childEnvironment,
-      shell: false,
-      windowsHide: true
-    });
     let output = "";
     child.stdout.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
     child.stderr.on("data", (chunk: Buffer | string) => { output += chunk.toString(); });
@@ -1215,6 +916,82 @@ async function readMcpFile(
   }
 }
 
+/**
+ * Reads MCP servers that must not live in this public repo (e.g. the internal gateway) from a
+ * private GitHub file, using the user's own GitHub sign-in. Users without access get nothing.
+ * Only remote https servers are accepted, so the overlay can never make a machine run a command.
+ */
+async function readPrivateMcpOverlay(channel: OutputChannel): Promise<{ servers: unknown[]; inputs: unknown[] }> {
+  const none = { servers: [], inputs: [] };
+  const location = workspace.getConfiguration("skc").get<string>("privateMcpOverlay", "").trim();
+  if (!location) {
+    return none;
+  }
+  const match = /^([\w.-]+)\/([\w.-]+)\/([\w./-]+\.json)$/.exec(location);
+  if (!match || match[3].split("/").includes("..")) {
+    channel.appendLine(`[SKC] Private MCP overlay: '${location}' is not <owner>/<repo>/<path>.json; skipped.`);
+    return none;
+  }
+  const [, owner, repo, filePath] = match;
+
+  try {
+    // Not silent: without a session VS Code shows a sign-in request in the Accounts menu instead of a prompt.
+    const session = await authentication.getSession("github", ["repo"], { createIfNone: false });
+    if (!session) {
+      channel.appendLine("[SKC] Private MCP overlay: not signed in to GitHub; skipped.");
+      return none;
+    }
+
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+      headers: {
+        Authorization: `Bearer ${session.accessToken}`,
+        Accept: "application/vnd.github.raw+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "skc-vscode-extension"
+      },
+      signal: AbortSignal.timeout(15_000)
+    });
+    if (response.status === 403 || response.status === 404) {
+      // SAML-enforced orgs answer with "X-GitHub-SSO: required; url=<authorize link>" until the token is authorized.
+      const ssoUrl = /required;\s*url=(https:\/\/github\.com\/\S+)/i.exec(response.headers.get("x-github-sso") ?? "")?.[1];
+      if (ssoUrl) {
+        channel.appendLine(`[SKC] Private MCP overlay: GitHub sign-in of ${session.account.label} is not authorized for ${owner} single sign-on; skipped.`);
+        void window
+          .showInformationMessage(`SKC: authorize your GitHub sign-in for ${owner} single sign-on to get the internal MCP servers, then run "Apply Presets" again.`, "Authorize")
+          .then(choice => (choice === "Authorize" ? env.openExternal(Uri.parse(ssoUrl)) : undefined));
+        return none;
+      }
+      channel.appendLine(`[SKC] Private MCP overlay: no access for ${session.account.label}; skipped.`);
+      return none;
+    }
+    if (!response.ok) {
+      channel.appendLine(`[SKC] Private MCP overlay: GitHub returned HTTP ${response.status}; skipped.`);
+      return none;
+    }
+
+    const parsed: unknown = JSON.parse(await response.text());
+    const rawServers = isRecord(parsed) && isRecord(parsed.servers)
+      ? convertMcpServersObjectToArray(parsed.servers, location, channel) ?? []
+      : [];
+    const servers = rawServers.filter(server => {
+      const ok = isRecord(server) && server.type === "http" && typeof server.url === "string" && /^https:\/\//i.test(server.url);
+      if (!ok) {
+        const id = isRecord(server) ? String(server.id) : "(unnamed)";
+        channel.appendLine(`[SKC] Private MCP overlay: ignored "${id}" — only https remote servers are allowed.`);
+      }
+      return ok;
+    });
+    const inputs = isRecord(parsed) && Array.isArray(parsed.inputs) ? parsed.inputs : [];
+
+    channel.appendLine(`[SKC] Private MCP overlay: loaded ${servers.length} server(s).`);
+    return { servers, inputs };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    channel.appendLine(`[SKC] Private MCP overlay: failed (${message}); skipped.`);
+    return none;
+  }
+}
+
 function convertMcpServersObjectToArray(
   mcpServers: Record<string, unknown>,
   sourcePath: string,
@@ -1344,6 +1121,9 @@ async function writeVSCodeMcpFileIfNeeded(
         if (hasUnusableUrl(val)) {
           delete existingServers[key];
           channel.appendLine(`[SKC] VS Code mcp.json: removed "${key}" — its url is an unreplaced placeholder and breaks MCP discovery.`);
+        } else if (usesRetiredPackage(val)) {
+          delete existingServers[key];
+          channel.appendLine(`[SKC] VS Code mcp.json: removed "${key}" — it runs a retired package; replaced by the preset's official server.`);
         }
       }
     }
@@ -1440,103 +1220,6 @@ async function pathExists(target: string): Promise<boolean> {
   }
 }
 
-async function injectMcpSecrets(
-  context: ExtensionContext,
-  channel: OutputChannel,
-  servers: unknown[] | undefined,
-  silent: boolean
-): Promise<unknown[] | undefined> {
-  if (!servers || !Array.isArray(servers)) {
-    return servers;
-  }
-
-  const allowPrompt = !silent;
-  let context7ApiKey: string | undefined;
-  const hydrated: unknown[] = [];
-
-  for (const server of servers) {
-    if (!isRecord(server) || typeof server.id !== "string") {
-      hydrated.push(server);
-      continue;
-    }
-
-    const copy: Record<string, unknown> = { ...server };
-    const headers = isRecord(copy.headers) ? { ...copy.headers } : {};
-
-    if (copy.id === "context7") {
-      if (!context7ApiKey) {
-        context7ApiKey = await getOrPromptSecret(
-          context,
-          "skc.context7ApiKey",
-          "Enter the Context7 API key. Stored securely.",
-          allowPrompt
-        );
-      }
-      if (context7ApiKey) {
-        headers.CONTEXT7_API_KEY = context7ApiKey;
-      } else {
-        channel.appendLine(
-          "[SKC] No Context7 API key available; 'context7' MCP server will be applied without CONTEXT7_API_KEY."
-        );
-      }
-    }
-
-    if (Object.keys(headers).length > 0) {
-      copy.headers = headers;
-    }
-
-    hydrated.push(copy);
-  }
-
-  return hydrated;
-}
-
-async function getOrPromptSecret(
-  context: ExtensionContext,
-  key: string,
-  prompt: string,
-  allowPrompt: boolean
-): Promise<string | undefined> {
-  const existing = await context.secrets.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  if (!allowPrompt) {
-    return undefined;
-  }
-
-  const value = await window.showInputBox({
-    prompt,
-    ignoreFocusOut: true,
-    password: true
-  });
-  const trimmed = value?.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  await context.secrets.store(key, trimmed);
-  return trimmed;
-}
-
-async function promptAndSaveMcpSecrets(context: ExtensionContext): Promise<boolean> {
-  const githubToken = await getOrPromptSecret(
-    context,
-    "skc.githubToken",
-    "Enter a GitHub MCP token (PAT or MCP token). Stored securely.",
-    true
-  );
-  const context7ApiKey = await getOrPromptSecret(
-    context,
-    "skc.context7ApiKey",
-    "Enter the Context7 API key. Stored securely.",
-    true
-  );
-
-  return Boolean(githubToken || context7ApiKey);
-}
-
 /**
  * True when an MCP server entry declares a `url` that VS Code cannot parse — typically a
  * placeholder such as `https://<YOUR_ORG>.example.com/api/mcp` that the user never replaced.
@@ -1554,6 +1237,17 @@ function hasUnusableUrl(entry: unknown): boolean {
   } catch {
     return true;
   }
+}
+
+// Superseded by Microsoft's hosted Business Central MCP server (https://mcp.businesscentral.dynamics.com).
+const RETIRED_MCP_PACKAGES = ["bc-mcp-proxy-fisqal"];
+
+function usesRetiredPackage(entry: unknown): boolean {
+  if (!isRecord(entry) || !Array.isArray(entry.args)) return false;
+  return entry.args.some(arg =>
+    typeof arg === "string" &&
+    RETIRED_MCP_PACKAGES.some(pkg => arg === pkg || arg.startsWith(`${pkg}@`))
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

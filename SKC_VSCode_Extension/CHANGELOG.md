@@ -2,26 +2,49 @@
 
 All notable changes to the "SKC Workstation Tools" extension will be documented in this file.
 
-## [Unreleased]
+## [3.3.0] - 2026-09-27
 
-### Fixed
-- The Business Central MCP proxy now prompts for tenant ID, client ID, and company name instead of passing example placeholders or an unresolved tenant input to sign-in.
+### Added
+
+- **Private MCP overlay** (`skc.privateMcpOverlay`): **SKC: Apply Presets** reads additional MCP servers from a private GitHub file with your GitHub sign-in and merges them after the public preset. Users without access to that file get nothing extra. Only `http` servers with `https` URLs are accepted, so the overlay can never make a machine run a command. When the org enforces SAML single sign-on and your sign-in isn't authorized yet, you get a prompt with the authorization link.
+- `businesscentral` added to the workspace `.vscode/mcp.json`, matching the preset.
+- MCP safety instructions (`mcp-server-safety`, `remote-mcp-data-minimization`) and the `mcp-server-review` skill.
+
+### Removed
+
+- **SKC: Configure MCP Auth**. The GitHub token it stored (`skc.githubToken`) wasn't used by any MCP server. The extension now deletes that stored token on activation.
+
+### Security
+
+- Replaced the `bc-mcp-proxy` MCP server (`bc-mcp-proxy-fisqal`, a local stdio proxy that fetched and built the BCTech sample at install time) with Microsoft's official hosted Business Central MCP server, `businesscentral` at `https://mcp.businesscentral.dynamics.com`. It connects over HTTP with Microsoft Entra OAuth, with no local binary or app registration. Tenant, environment and company are prompted through `${input:…}`. `ConfigurationName` is left empty, so access defaults to read-only.
+- **SKC: Apply Presets** now removes any existing user `mcp.json` server that runs `bc-mcp-proxy-fisqal`.
+
+## [3.2.0] - 2026-09-25
+
+### Changed
+
+- Merged the three isolated workstation profiles (`SKC AL`, `SKC Web/Python`, `SKC Power Platform/BI`) into one combined extension set applied to the current (default) profile. **SKC: Create or Update Workstation Profiles** is removed; **SKC: Apply Presets** now installs the full AL, Web/Python, and Power Platform/BI extension set together with settings, MCP servers, skills, and agents in a single run.
+- This fixes MCP servers (Microsoft Learn Docs, Context7, bc-intelligence, etc.) not being available in the named profiles: only whichever profile happened to be active when Apply Presets ran previously received `mcp.json`/settings, since profile creation only installed extensions.
+- `presets/profiles.json` removed. Extensions now live in the `extensions` array of `presets/settings.json`, validated by `scripts/sync-extensions.js`.
 
 ## [3.1.7] - 2026-09-20
 
 ### Added
+
 - A shipped user instruction file, `instructions/skc-context-hygiene.instructions.md`, installed into the active profile's `prompts` folder by **SKC: Apply Presets** and **SKC: Install Agents**. It tells agents to treat image files as opaque binaries and read one only when the user pointed at that specific image. Attaching a folder or application root pulled deep images into context as though the user had shared them; VS Code has no setting for this, so the rule has to be instruction-level. Unlike agents, a user instruction file applies to every chat, including the default one.
 - The publish gate now allowlists `instructions/` alongside `skills/` and `agents/`, and screens it with `PUBLISH_DENY_PATTERNS`.
 
 ## [3.1.6] - 2026-09-20
 
 ### Fixed
+
 - Removed the `dataverse` MCP server from `presets/mcp.json`. Its URL was the literal placeholder `https://<YOUR_DATAVERSE_ORG>.crm4.dynamics.com/api/mcp`, which is not a parseable URL. VS Code validates every MCP server URL before answering a discovery request, so the whole server list failed with `mcpServers.dataverse.url: Invalid url` and chat hung in any profile using the preset.
 - Applying presets now removes an existing MCP server from the user `mcp.json`, and skips a preset server, when its `url` is an unreplaced placeholder. This repairs machines that already received the broken entry. URLs using `${input:…}` or `${env:…}` are resolved by VS Code and are left alone.
 
 ## [3.1.5] - 2026-09-20
 
 ### Security
+
 - Replaced regex-based XLIFF markup stripping with structured XML parsing and added regression tests.
 - Added an integrity hash to the pinned p5.js template dependency.
 - Restricted the Marketplace publishing workflow token to read-only repository contents.
@@ -29,27 +52,32 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ## [3.1.4] - 2026-09-20
 
 ### Changed
+
 - Replaced obsolete `CRS.*` settings with conservative `alWorkspace.*` defaults for AL Workspace Toolkit 0.2.0.
 - Updated AL agent guidance to use separate object patterns, test roots, and opt-in semantic affix rewriting.
 
 ## [3.1.3] - 2026-09-20
 
 ### Changed
+
 - Refreshed the Marketplace description to reflect isolated workstation profiles, Copilot Chat forking, MCP presets, XLF translation, and productivity themes.
 
 ## [3.1.2] - 2026-09-20
 
 ### Fixed
+
 - Updating a named SKC workstation profile now removes obsolete extensions managed by the former SKC preset, including legacy AL extensions replaced by AL Workspace Toolkit, while preserving user-added extensions.
 - Profile maintenance now invokes VS Code's CLI entry point instead of launching GUI windows for extension operations.
 
 ## [3.1.0] - 2026-09-19
 
 ### Changed
+
 - Renamed the extension to **SKC Workstation Tools**. The Marketplace identity (`SKConsultingSA.skc-vs-tools`) is unchanged, so existing installs update in place.
 - Broadened the description, keywords and categories to cover Business Central, Power Platform, Azure and Office document work rather than AL alone.
 
 ### Added
+
 - A guarded **SKC: Fork Copilot Chat at Focused Message** command that exposes VS Code's native session fork without reading Copilot's private storage.
 - Power Platform tooling in the preset: Power Platform Tools (PAC CLI, solutions, Power Pages), Dataverse DevTools, PCF Builder, Copilot Studio, TMDL, Power BI Modeling MCP Server and Power BI Studio.
 - ESLint and Prettier, required by the Vite/React stack behind Power Apps code apps.
@@ -57,12 +85,14 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 - Activation on Power Platform workspaces: `*.cdsproj`, `*.pcfproj`, `power.config.json`, `powerpages.config.json` and `*.tmdl`.
 
 ### Fixed
+
 - `extensionPack` is now a top-level manifest field. It sat under `contributes`, where VS Code ignores it, so the extension pack had never installed anything — only **SKC: Apply Presets** did.
 - Dropped `extensionDependencies`. It duplicated the same list, and a hard dependency cannot be uninstalled on its own; the extension's own code requires none of these. Pack members stay independently removable, which is what an extension pack is for.
 
 ## [3.0.8] - 2026-09-10
 
 ### Fixed
+
 - Retried transient asynchronous translation status and result requests with exponential backoff.
 - Used compact job-status responses and dedicated timeouts for polling and large result downloads.
 - Validated and atomically saved translated XLIFF files before requesting Azure job cleanup.
@@ -71,39 +101,46 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ## [3.0.7] - 2026-09-09
 
 ### Fixed
+
 - Ignored markup-only XLIFF source units consistently in translation statistics and the translations tree.
 - Refreshed the extension summary so its recommended extensions match the bundled preset.
 
 ## [3.0.6] - 2026-09-09
 
 ### Fixed
+
 - Prevented global content synchronization from overwriting the SKC/Azure-only translator agent and orchestration workflow.
 
 ## [3.0.5] - 2026-09-09
 
 ### Fixed
+
 - Aligned XLF progress and pending-unit detection with style placeholders and XLIFF target states.
 - Preserved completed translations while allowing pending populated targets to be processed by Azure.
 
 ## [2.5.1] - 2026-09-09
 
 ### Added
+
 - Bundled the official Microsoft BCQuality plugin snapshot, including its knowledge index, layers, bridge, and validation tools.
 - Added the **SKC: Update BCQuality Snapshot** command with bundled offline refresh and explicit live-update choices.
 - Added additive BCQuality review integration to the reviewer and orchestration agents/skills while preserving existing review paths.
 - Restored standalone first-party migration, document, presentation, branding, and UI skill bundles.
 
 ### Changed
+
 - Corrected repository and issue links to `SK-Consulting-S-A/skc-bc-vscode-tools`.
 - Live BCQuality refresh during preset application is opt-in and defaults to off; offline fallback remains available.
 
 ## [2.5.0] - 2026-09-08
 
 ### Added
+
 - **SKC Dark** color theme, matching the [skc.lu](https://www.skc.lu) dark design system (violet `#6c63ff`, cyan `#00d4ff`, night background `#0f0f1a`). Bundled in the extension (Color Theme picker → **SKC Dark**) and applied by **SKC: Apply Presets**.
 - `@harold` Copilot chat participant with `/docs`, `/object`, and `/how`. Type `@harold how do I post a sales invoice?` — no Agent picker or skill names. Looks up Microsoft Learn on demand; `/object` can use local AL symbols when a project is open, then points at [BCApps](https://github.com/microsoft/BCApps).
 
 ### Changed
+
 - Marketplace icon is the final SK agent mark (transparent PNG, 256×256).
 
 ---
@@ -111,6 +148,7 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ## [2.4.2] - 2026-08-27
 
 ### Changed
+
 - Marketplace display name is now **SKC AL Tools** (install ID remains `SKConsultingSA.skc-vs-tools`).
 - Short description, categories (Extension Packs, Programming Languages, AI, Chat), and README now describe Copilot AI agents, AL presets, and XLF translation.
 - Listing is documented as a public Marketplace product.
@@ -121,6 +159,7 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ## [2.4.1] - 2026-08-27
 
 ### Removed
+
 - BusinessCentral.LinterCop from the extension pack, dependencies, presets, and Copilot agent guidance. Microsoft CodeCop and UICop remain the default analyzers.
 
 ---
@@ -134,6 +173,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 #### Added
 
 **BC Orchestration Skill - Complete NAV to BC Upgrade Pipeline**
+
 - **bc-cal-converter Subagent**: Intelligent CAL-to-AL conversion with dual-mode strategy
   - Mode 1 (Smart Detection): Creates table/page extensions for standard BC objects (ID < 50000)
   - Mode 2 (Bulk Conversion): Fast conversion of custom objects (ID >= 50000) using Txt2Al.exe
@@ -144,6 +184,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 - **Manual Review Flags**: Identifies .NET interop, SQL, BLOB, and other patterns requiring attention
 
 **PowerShell Automation Scripts**
+
 - **upgrade-nav2017-to-bc2027.ps1**: Master orchestrator for complete upgrade pipeline
 - **phase1-nav-export-delta.ps1**: NAV 2017 export and delta generation (~10-15 min)
 - **phase2-cal-to-al-conversion.ps1**: Dual-mode CAL to AL conversion (~25 min)
@@ -153,6 +194,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 - **README-UPGRADE-SCRIPTS.md**: Comprehensive documentation (50+ pages)
 
 **BC Knowledge Specialists**
+
 - logan-legacy: Migration patterns and NAV to BC upgrade guidance
 - sam-coder: Modern AL patterns and code modernization
 - alex-architect: Extension design and restructuring
@@ -162,6 +204,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 - morgan-market: AppSource compliance
 
 **Orchestrator Updates**
+
 - Phase 0: Migration orchestration (before Research & Design)
 - Automatic activation on .txt, .DELTA, .al, and app.json files
 - Dual-mode routing based on object ID ranges
@@ -192,11 +235,13 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 ## [1.8.14] - Previous Release
 
 ### Added
+
 - Translation LLM Tools (#translateXlf, #listTranslations)
 - LM Bridge MCP server for Cursor integration
 - Cursor Skills auto-install on update
 
 ### Enhanced
+
 - Full XLF sync (add missing units, remove obsolete)
 - Translation statistics and progress tracking
 - Azure AI Translation integration
@@ -206,6 +251,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 ## [1.7.0] - 2024
 
 ### Added
+
 - Translation sidebar with SKC Tools panel
 - Azure OpenAI translation integration
 - app.json integration for target languages
@@ -215,6 +261,7 @@ This major release introduces comprehensive Business Central upgrade capabilitie
 ## [1.5.0] - Initial Release
 
 ### Added
+
 - Automatic preset application
 - MCP server integration (6 servers)
 - AL development extensions (18 extensions)

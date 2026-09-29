@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const profilesPath = path.join(root, "presets", "profiles.json");
+const settingsPath = path.join(root, "presets", "settings.json");
 const packagePath = path.join(root, "package.json");
 
 const FORBIDDEN_EXTENSIONS = new Set([
@@ -29,41 +29,26 @@ function extractId(entry) {
 }
 
 function main() {
-    if (!fs.existsSync(profilesPath)) {
-        throw new Error(`Workstation profile file not found at ${profilesPath}`);
+    if (!fs.existsSync(settingsPath)) {
+        throw new Error(`Preset settings file not found at ${settingsPath}`);
     }
 
-    const definitions = readJson(profilesPath);
-    if (!ensureExtensionsArray(definitions.sharedExtensions) || !Array.isArray(definitions.profiles)) {
-        throw new Error("presets/profiles.json must contain sharedExtensions and profiles arrays.");
+    const definitions = readJson(settingsPath);
+    if (!ensureExtensionsArray(definitions.extensions)) {
+        throw new Error("presets/settings.json must contain an extensions array.");
     }
 
-    const profileNames = new Set();
-    const extensionIds = new Set(definitions.sharedExtensions.map(extractId));
-    for (const profile of definitions.profiles) {
-        if (!profile || typeof profile.id !== "string" || typeof profile.name !== "string" ||
-            typeof profile.description !== "string" || !ensureExtensionsArray(profile.extensions)) {
-            throw new Error("presets/profiles.json contains an invalid profile definition.");
-        }
-        if (profileNames.has(profile.name.toLowerCase())) {
-            throw new Error(`Duplicate workstation profile name: ${profile.name}`);
-        }
-        profileNames.add(profile.name.toLowerCase());
-        for (const entry of profile.extensions) extensionIds.add(extractId(entry));
-    }
-    if (definitions.profiles.length !== 3) {
-        throw new Error(`Expected exactly 3 workstation profiles, found ${definitions.profiles.length}.`);
-    }
+    const extensionIds = new Set(definitions.extensions.map(extractId));
     for (const id of extensionIds) {
         if (FORBIDDEN_EXTENSIONS.has(id.toLowerCase())) {
-            throw new Error(`Forbidden extension in workstation profiles: ${id}`);
+            throw new Error(`Forbidden extension in preset extensions: ${id}`);
         }
     }
 
     const pkg = readJson(packagePath);
 
-    // Profile-specific tools are installed by SKC: Create or Update Workstation Profiles.
-    // A manifest extensionPack would install every ecosystem into every profile.
+    // Extensions are installed into the current (default) profile by SKC: Apply Presets.
+    // A manifest extensionPack would force every extension onto every install unconditionally.
     delete pkg.extensionDependencies;
     delete pkg.extensionPack;
     if (pkg.contributes) {
@@ -72,7 +57,7 @@ function main() {
     }
 
     fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`);
-    console.log(`Validated ${definitions.profiles.length} workstation profiles with ${extensionIds.size} unique extensions; package.json has no extensionPack.`);
+    console.log(`Validated ${extensionIds.size} preset extension(s) for the default profile; package.json has no extensionPack.`);
 }
 
 main();
