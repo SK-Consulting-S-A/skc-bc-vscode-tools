@@ -91,6 +91,9 @@
     "NAB.UseDTS": true,
     "NAB.LoadSymbols": true,
     "alCodeActions.findNewProcedureLocation": "Sort by type, access modifier, range",
+    "github.copilot.chat.backgroundAgent.enabled": true,
+    "github.copilot.chat.cli.isolationOption.enabled": true,
+    "github.copilot.chat.cli.branchSupport.enabled": true,
     "editor.inlineSuggest.enabled": true,
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
