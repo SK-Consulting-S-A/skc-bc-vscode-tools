@@ -5,6 +5,7 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ## [Unreleased]
 
 ### Added
+
 - Shared preset settings enabling Copilot CLI sessions, Workspace/Worktree isolation selection, and experimental branch support in supported VS Code builds.
 
 ## [3.3.0] - 2026-09-27

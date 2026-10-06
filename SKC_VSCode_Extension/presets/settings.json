@@ -39,10 +39,7 @@
     "alWorkspace.objectNameSuffix": "",
     "alWorkspace.rewriteObjectName": false,
     "al.enableCodeAnalysis": true,
-    "al.codeAnalyzers": [
-      "${CodeCop}",
-      "${UICop}"
-    ],
+    "al.codeAnalyzers": ["${CodeCop}", "${UICop}"],
     "al.areProfileLensesSupported": true,
     "al.inlayhints.parameterNames.enabled": true,
     "al.inlayhints.functionReturnTypes.enabled": true,
