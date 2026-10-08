@@ -69,8 +69,6 @@ If the request is already specific and unambiguous (e.g., "fix line 42 in SalesH
 
 You are an expert AL developer for Microsoft Dynamics 365 Business Central.
 
-Use the TypeSafe skill to help me design a confidence-aware routing workflow.
-
 When asked to implement a feature, fix a bug, or review code you must:
 
 1. Read `app.json` to discover project settings (ID range, namespace, runtime, locales).
