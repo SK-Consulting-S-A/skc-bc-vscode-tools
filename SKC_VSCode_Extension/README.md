@@ -13,6 +13,7 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 - **Office and document work** — `docx`, `pptx` and `xlsx` skills plus `mermaid-to-word`, `applying-brand-guidelines` and `frontend-slides` for reports, decks and workbooks.
 - **BCQuality reviews** — the official Microsoft BCQuality plugin snapshot is bundled offline and used additively by the reviewer/orchestrator. Live refresh is explicit or opt-in.
 - **Workspace presets** — AL settings, CodeCop and UICop, and MCP servers applied explicitly with **SKC: Apply Presets**.
+- **GitHub Copilot CLI** — the same MCP presets, agents, skills, and safety instructions available in terminal sessions.
 - **Four AL-tuned themes** — one family, four working situations, all structurally identical so switching never moves meaning:
   - **SKC Dark** — the daily driver, from the [skc.lu](https://www.skc.lu) dark design system (applied with presets).
   - **SKC Light** — daylight and bright-office work, from the skc.lu website palette.
@@ -67,6 +68,44 @@ Skills land in `~/.copilot/skills/`. Agents land in `~/.copilot/agents/`. Instru
 
 `skc-context-hygiene.instructions.md` tells agents to treat image files as opaque binaries and to open one only when you pointed at that specific image. Attaching a folder or an application root otherwise pulls images buried in the tree into the model's context as though you had shared them. VS Code has no setting that filters images out of context, so this has to be a rule the agent follows.
 
+### GitHub Copilot CLI
+
+1. [Install GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli) separately and sign in with `copilot login`. This is the `copilot` command, not the retired `gh copilot` extension.
+2. Run **SKC: Configure GitHub Copilot CLI** in VS Code to install the existing MCP preset, agents, skills, and safety instructions without installing Marketplace extensions or changing editor presets. **SKC: Apply Presets** also configures CLI support by default (`skc.writeCopilotCliMcpFile`).
+3. Restart existing CLI sessions, run `copilot` from your project folder, and use `/mcp` to check the servers. Use `/agent` to select an installed agent and `/skills` to inspect skills.
+
+CLI configuration is written to `~/.copilot/mcp-config.json` with a `mcpServers` object, independent of VS Code's `mcp.json`. Agents, skills, and instructions use `agents/`, `skills/`, and `instructions/` under the same directory. If you set `COPILOT_HOME`, start VS Code with that environment variable too so setup targets your CLI directory.
+
+The preset remains the source of truth: Playwright, Microsoft Learn Docs, BC intelligence, Microsoft's hosted Business Central server, Pandoc, and MarkItDown use the same versions and endpoints. Accessible private MCP overlay entries are included locally, never copied into the repository. Existing CLI servers, tool restrictions, and other configuration fields are preserved; delete an entry before running setup again if you want to restore its preset definition. Invalid existing JSON is left untouched. Updates are locked across SKC setup commands and replaced atomically; symlink targets are preserved. Config files are owner-readable/writable on Unix. After an interrupted setup, remove `mcp-config.json.skc-lock` only if no SKC setup is running, then retry. Configuration does not grant tool permissions: keep CLI approval prompts enabled.
+
+VS Code `${input:name}` and `${env:NAME}` references in environment values and HTTP headers become CLI `${name}` and `${NAME}` environment-variable references. Values are never read from VS Code secret storage or embedded by setup. For Business Central, set the following in the terminal **before** starting `copilot` (PowerShell example):
+
+```powershell
+$env:bcTenantId = "<your-tenant-guid>"
+$env:bcEnvironmentName = "<your-sandbox-name>"
+$env:bcCompany = "Contoso"
+copilot
+```
+
+Business Central still uses Microsoft Entra OAuth; environment variables supply routing headers, not authentication. Approve the server's sign-in when prompted. `ConfigurationName` stays empty for the preset's read-only default. Non-ASCII company names still require the encoding described in the MCP preset. Other custom input references need their corresponding environment variables. Unsupported editor variables such as `${workspaceFolder}` or `${command:...}`, and substitution outside environment/header values (for example, command arguments), cause that server to be skipped with a message in **Output → SKC Workstation Tools**; add a CLI-specific entry yourself.
+
+| Available in standalone Copilot CLI | Requires VS Code |
+|---|---|
+| MCP server tools, bundled agents and skills, safety instructions | Marketplace extensions, themes, translation sidebar, `@harold`, chat forking |
+
+#### Use the extension tools from CLI
+
+For the existing SKC XLF translation tools and AL Workspace Toolkit inspect/rename/reorganize tools:
+
+1. Open the target project in a **trusted** VS Code workspace with the relevant extensions active.
+2. Run **SKC: Start Copilot CLI Tool Bridge**, then restart `copilot` and inspect `/mcp show skc-vscode-tools`.
+3. Keep that VS Code window open. Tool inputs are validated and confirmation prompts remain in VS Code, including confirmations for file changes and Azure translation.
+4. Run **SKC: Stop Copilot CLI Tool Bridge** when finished; it stops the listener and removes its configuration entry.
+
+The opt-in bridge uses the existing MCP SDK, binds only to `127.0.0.1` on an available port, and requires a new random credential on each start. It exposes only registered tools declared by these two SKC extensions, rejects browser origins/unexpected hosts, and forwards cancellation. The credential is stored only in your local owner-readable/writable CLI config, never logged. Its eleven-minute tool-call budget accommodates the translation service's ten-minute timeout. Starting the bridge replaces only the reserved `skc-vscode-tools` entry; other CLI servers are unchanged. The listener stops when the extension is disposed. After reopening VS Code, start it again to replace any stale entry.
+
+Standalone CLI does not load VS Code extensions. `/ide` shares editor context and diagnostics; the opt-in bridge separately provides these SKC extension tools. Azure translation still uses the connected workspace's `skc.azureFunctionUrl`, and tools act on that window's workspace, not automatically on another CLI worktree. Other Marketplace extensions are not exported through this bridge.
+
 ## Workstation setup
 
 This extension does not declare an `extensionPack` or `extensionDependencies` in its manifest, so the Marketplace page does not auto-list installs. Instead, **SKC: Apply Presets** installs the following Marketplace extensions into your current (default) profile, from the `extensions` list in [`presets/settings.json`](presets/settings.json):
@@ -104,6 +143,7 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 | `skipInstalledExtensions` | `true` | Skip extensions that are already installed |
 | `presetFilePath` / `mcpFilePath` / `extensionsFilePath` | bundled presets | Override preset files (workspace or extension folder) |
 | `installSkillsOnApplyPresets` | `true` | Install Copilot skills when presets apply |
+| `writeCopilotCliMcpFile` | `true` | Also configure CLI MCP servers and, when skill installation is enabled, CLI safety instructions |
 | `azureFunctionUrl` | empty | Azure Translation Function endpoint |
 
 ## Commands
@@ -111,6 +151,8 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 | Command | Description |
 |---|---|
 | **SKC: Apply Presets** | Apply settings, the combined AL/Web/Python/Power Platform extension set, and MCP servers to the current profile |
+| **SKC: Configure GitHub Copilot CLI** | Install MCP presets, agents, skills, and safety instructions for terminal sessions |
+| **SKC: Start / Stop Copilot CLI Tool Bridge** | Enable / stop authenticated access to the active SKC extension tools from CLI |
 | **SKC: Install Copilot Skills** | Install bundled skills (`~/.copilot/skills/`) |
 | **SKC: Install Copilot Agents** | Install BC subagents (`~/.copilot/agents/`) |
 | **SKC: Update BCQuality Snapshot** | Refresh the bundled BCQuality snapshot offline or explicitly from official upstream |
@@ -122,7 +164,7 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 
 ## Copilot and language-model tools
 
-SKC Workstation Tools contributes the **@harold** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). It can also expose VS Code tools such as `al_build` through an MCP SSE bridge. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
+SKC Workstation Tools contributes the **@harold** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). These extension features run in VS Code; standalone Copilot CLI uses the shared MCP servers, agents, and skills described above. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
 
 ## Build and publish
 

@@ -15,7 +15,10 @@ import {
   Uri,
   Range,
   Selection,
-  TextEditorRevealType
+  TextEditorRevealType,
+  lm,
+  LanguageModelTextPart,
+  CancellationTokenSource
 } from "vscode";
 import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
 import { registerBcChatParticipant } from "./bcChatParticipant";
@@ -76,6 +79,110 @@ export async function activate(context: ExtensionContext): Promise<void> {
     void window.showInformationMessage("SKC agents installed.");
   });
   context.subscriptions.push(installAgentsCommand);
+
+  context.subscriptions.push(commands.registerCommand("skc.configureCopilotCli", async () => {
+    try {
+      const { getCopilotCliHome, writeCopilotCliMcpFile } = await import("./copilotCli");
+      const copilotHome = getCopilotCliHome();
+      const mcpPath = workspace.getConfiguration("skc").get<string>("mcpFilePath", "").trim();
+      const { servers } = await readMcpFile(mcpPath, context, channel);
+      if (!servers) {
+        throw new Error("No valid MCP preset found. Check skc.mcpFilePath.");
+      }
+      const overlay = await readPrivateMcpOverlay(channel);
+      const ids = new Set(servers.map(server => isRecord(server) ? server.id : undefined));
+      const merged = [...servers, ...overlay.servers.filter(server => isRecord(server) && !ids.has(server.id))];
+      await writeCopilotCliMcpFile(copilotHome, merged.filter(server => !hasUnusableUrl(server) && !usesRetiredPackage(server)), message => channel.appendLine(message));
+      await installSkills(context, channel, path.join(copilotHome, "skills"));
+      await installAgents(context, channel, path.join(copilotHome, "agents"));
+      await installInstructions(context, channel, path.join(copilotHome, "instructions"));
+      void window.showInformationMessage("SKC tools configured for GitHub Copilot CLI. Restart CLI sessions and use /mcp to check servers. Set environment variables for MCP inputs before starting copilot.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      channel.appendLine(`[SKC] Copilot CLI setup failed: ${message}`);
+      void window.showErrorMessage(`SKC Copilot CLI setup failed: ${message}`);
+    }
+  }));
+
+  let cliBridge: Awaited<ReturnType<typeof import("./copilotCliBridge").startCopilotCliBridge>> | undefined;
+  let bridgeHome: string | undefined;
+  let bridgeStarting = false;
+  let extensionDisposed = false;
+  context.subscriptions.push({ dispose: () => { extensionDisposed = true; void cliBridge?.dispose(); } });
+  context.subscriptions.push(commands.registerCommand("skc.startCopilotCliBridge", async () => {
+    if (cliBridge || bridgeStarting) return;
+    if (!workspace.isTrusted || !lm?.invokeTool) {
+      void window.showWarningMessage("The CLI tool bridge requires a trusted workspace and the VS Code language-model tools API.");
+      return;
+    }
+    bridgeStarting = true;
+    try {
+      const [{ startCopilotCliBridge }, { getCopilotCliHome, updateCopilotCliBridgeConfig }] = await Promise.all([
+        import("./copilotCliBridge"), import("./copilotCli")
+      ]);
+      const allowed = new Set<string>();
+      for (const extension of [context.extension, extensions.getExtension("SKConsultingSA.skc-al-workspace")]) {
+        for (const tool of extension?.packageJSON?.contributes?.languageModelTools ?? []) {
+          if (typeof tool.name === "string") allowed.add(tool.name);
+        }
+      }
+      cliBridge = await startCopilotCliBridge({
+        listTools: () => workspace.isTrusted ? lm.tools.filter(tool => allowed.has(tool.name)).map(tool => ({
+          name: tool.name, description: tool.description, inputSchema: { ...tool.inputSchema, type: "object" }
+        })) : [],
+        invokeTool: async (name, input, signal) => {
+          if (!workspace.isTrusted || signal.aborted) throw new Error("Workspace is untrusted or invocation was cancelled.");
+          const confirmation = await window.showWarningMessage(
+            `Allow Copilot CLI to run "${name}" with these inputs?\n\n${JSON.stringify(input, null, 2)}`,
+            { modal: true },
+            "Allow"
+          );
+          if (confirmation !== "Allow" || !workspace.isTrusted || signal.aborted) {
+            throw new Error("Tool invocation was not confirmed or was cancelled.");
+          }
+          const cancellation = new CancellationTokenSource();
+          const cancel = () => cancellation.cancel();
+          signal.addEventListener("abort", cancel, { once: true });
+          try {
+            const result = await lm.invokeTool(name, { input, toolInvocationToken: undefined }, cancellation.token);
+            return result.content.map(part => part instanceof LanguageModelTextPart ? part.value : "[Non-text tool result omitted]");
+          } finally {
+            signal.removeEventListener("abort", cancel);
+            cancellation.dispose();
+          }
+        }
+      });
+      if (extensionDisposed) {
+        await cliBridge.dispose();
+        cliBridge = undefined;
+        return;
+      }
+      bridgeHome = getCopilotCliHome();
+      await updateCopilotCliBridgeConfig(bridgeHome, cliBridge.url, cliBridge.token);
+      channel.appendLine(`[SKC] Authenticated Copilot CLI tool bridge started at ${cliBridge.url}.`);
+      void window.showInformationMessage("SKC VS Code tools enabled for CLI. Keep this workspace open; restart copilot and check /mcp.");
+    } catch {
+      await cliBridge?.dispose();
+      cliBridge = undefined;
+      void window.showErrorMessage("Could not start the CLI tool bridge. Check that your CLI MCP configuration is valid and writable.");
+    } finally {
+      bridgeStarting = false;
+    }
+  }));
+  context.subscriptions.push(commands.registerCommand("skc.stopCopilotCliBridge", async () => {
+    if (!cliBridge || !bridgeHome || bridgeStarting) return;
+    const bridge = cliBridge;
+    const home = bridgeHome;
+    cliBridge = undefined;
+    await bridge.dispose();
+    try {
+      const { updateCopilotCliBridgeConfig } = await import("./copilotCli");
+      await updateCopilotCliBridgeConfig(home, bridge.url);
+    } catch {
+      channel.appendLine("[SKC] Bridge stopped, but its CLI configuration entry could not be removed.");
+    }
+    void window.showInformationMessage("SKC Copilot CLI tool bridge stopped.");
+  }));
 
   const updateBcQualityCommand = commands.registerCommand("skc.updateBcQuality", async () => {
     const choice = await window.showQuickPick([
@@ -366,6 +473,24 @@ async function applyPresets(
   if (writeVSCodeMcpFile && mcpServersToApply !== undefined) {
     await writeVSCodeMcpFileIfNeeded(context, channel, mcpServersToApply, mcpInputs);
   }
+  if (cfg.get<boolean>("writeCopilotCliMcpFile", true) && mcpServers !== undefined) {
+    try {
+      const { getCopilotCliHome, writeCopilotCliMcpFile } = await import("./copilotCli");
+      const copilotHome = getCopilotCliHome();
+      await writeCopilotCliMcpFile(copilotHome, mcpServers.filter(server => !usesRetiredPackage(server)), message => channel.appendLine(message));
+      if (installSkillsOnApply) {
+        if (copilotHome !== path.join(os.homedir(), ".copilot")) {
+          await installSkills(context, channel, path.join(copilotHome, "skills"));
+          await installAgents(context, channel, path.join(copilotHome, "agents"));
+        }
+        await installInstructions(context, channel, path.join(copilotHome, "instructions"));
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      channel.appendLine(`[SKC] Copilot CLI setup failed: ${message}`);
+      if (!silent) void window.showWarningMessage(`SKC Copilot CLI setup failed: ${message}`);
+    }
+  }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
     await installAgents(context, channel);
@@ -571,12 +696,15 @@ async function applySettings(
   }
 }
 
-async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installSkills(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(os.homedir(), ".copilot", "skills")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
   const sourceRoot = path.join(context.extensionPath, "skills");
-  const targetRoot = path.join(os.homedir(), ".copilot", "skills");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Skills folder not found at ${sourceRoot}; skipping skill install.`);
@@ -615,12 +743,15 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
   channel.appendLine(`[SKC] Skills summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 }
 
-async function installAgents(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installAgents(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(os.homedir(), ".copilot", "agents")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
   const sourceRoot = path.join(context.extensionPath, "agents");
-  const targetRoot = path.join(os.homedir(), ".copilot", "agents");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Agents folder not found at ${sourceRoot}; skipping agent install.`);
@@ -671,7 +802,11 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
  *
  * Existing files are left alone unless skc.overwriteExistingSkills is set.
  */
-async function installInstructions(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installInstructions(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(path.resolve(context.globalStorageUri.fsPath, "..", ".."), "prompts")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
@@ -682,8 +817,6 @@ async function installInstructions(context: ExtensionContext, channel: OutputCha
   }
 
   // globalStorageUri is …/User/globalStorage/<extId>, so two levels up is the profile root.
-  const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
-  const targetRoot = path.join(userDir, "prompts");
   await fs.mkdir(targetRoot, { recursive: true });
 
   const entries = await fs.readdir(sourceRoot, { withFileTypes: true });
