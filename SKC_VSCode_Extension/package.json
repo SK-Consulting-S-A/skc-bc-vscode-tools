@@ -100,6 +100,14 @@
         "title": "SKC: Configure GitHub Copilot CLI"
       },
       {
+        "command": "skc.startCopilotCliBridge",
+        "title": "SKC: Start Copilot CLI Tool Bridge"
+      },
+      {
+        "command": "skc.stopCopilotCliBridge",
+        "title": "SKC: Stop Copilot CLI Tool Bridge"
+      },
+      {
         "command": "skc.installSkills",
         "title": "SKC: Install Copilot Skills"
       },

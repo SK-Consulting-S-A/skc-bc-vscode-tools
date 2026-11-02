@@ -15,7 +15,10 @@ import {
   Uri,
   Range,
   Selection,
-  TextEditorRevealType
+  TextEditorRevealType,
+  lm,
+  LanguageModelTextPart,
+  CancellationTokenSource
 } from "vscode";
 import type { SourceFileItem, TargetLanguageItem } from "./translationsView";
 import { registerBcChatParticipant } from "./bcChatParticipant";
@@ -99,6 +102,78 @@ export async function activate(context: ExtensionContext): Promise<void> {
       channel.appendLine(`[SKC] Copilot CLI setup failed: ${message}`);
       void window.showErrorMessage(`SKC Copilot CLI setup failed: ${message}`);
     }
+  }));
+
+  let cliBridge: Awaited<ReturnType<typeof import("./copilotCliBridge").startCopilotCliBridge>> | undefined;
+  let bridgeHome: string | undefined;
+  let bridgeStarting = false;
+  let extensionDisposed = false;
+  context.subscriptions.push({ dispose: () => { extensionDisposed = true; void cliBridge?.dispose(); } });
+  context.subscriptions.push(commands.registerCommand("skc.startCopilotCliBridge", async () => {
+    if (cliBridge || bridgeStarting) return;
+    if (!workspace.isTrusted || !lm?.invokeTool) {
+      void window.showWarningMessage("The CLI tool bridge requires a trusted workspace and the VS Code language-model tools API.");
+      return;
+    }
+    bridgeStarting = true;
+    try {
+      const [{ startCopilotCliBridge }, { getCopilotCliHome, updateCopilotCliBridgeConfig }] = await Promise.all([
+        import("./copilotCliBridge"), import("./copilotCli")
+      ]);
+      const allowed = new Set<string>();
+      for (const extension of [context.extension, extensions.getExtension("SKConsultingSA.skc-al-workspace")]) {
+        for (const tool of extension?.packageJSON?.contributes?.languageModelTools ?? []) {
+          if (typeof tool.name === "string") allowed.add(tool.name);
+        }
+      }
+      cliBridge = await startCopilotCliBridge({
+        listTools: () => workspace.isTrusted ? lm.tools.filter(tool => allowed.has(tool.name)).map(tool => ({
+          name: tool.name, description: tool.description, inputSchema: { ...tool.inputSchema, type: "object" }
+        })) : [],
+        invokeTool: async (name, input, signal) => {
+          if (!workspace.isTrusted || signal.aborted) throw new Error("Workspace is untrusted or invocation was cancelled.");
+          const cancellation = new CancellationTokenSource();
+          const cancel = () => cancellation.cancel();
+          signal.addEventListener("abort", cancel, { once: true });
+          try {
+            const result = await lm.invokeTool(name, { input, toolInvocationToken: undefined }, cancellation.token);
+            return result.content.map(part => part instanceof LanguageModelTextPart ? part.value : "[Non-text tool result omitted]");
+          } finally {
+            signal.removeEventListener("abort", cancel);
+            cancellation.dispose();
+          }
+        }
+      });
+      if (extensionDisposed) {
+        await cliBridge.dispose();
+        cliBridge = undefined;
+        return;
+      }
+      bridgeHome = getCopilotCliHome();
+      await updateCopilotCliBridgeConfig(bridgeHome, cliBridge.url, cliBridge.token);
+      channel.appendLine(`[SKC] Authenticated Copilot CLI tool bridge started at ${cliBridge.url}.`);
+      void window.showInformationMessage("SKC VS Code tools enabled for CLI. Keep this workspace open; restart copilot and check /mcp.");
+    } catch {
+      await cliBridge?.dispose();
+      cliBridge = undefined;
+      void window.showErrorMessage("Could not start the CLI tool bridge. Check that your CLI MCP configuration is valid and writable.");
+    } finally {
+      bridgeStarting = false;
+    }
+  }));
+  context.subscriptions.push(commands.registerCommand("skc.stopCopilotCliBridge", async () => {
+    if (!cliBridge || !bridgeHome || bridgeStarting) return;
+    const bridge = cliBridge;
+    const home = bridgeHome;
+    cliBridge = undefined;
+    await bridge.dispose();
+    try {
+      const { updateCopilotCliBridgeConfig } = await import("./copilotCli");
+      await updateCopilotCliBridgeConfig(home, bridge.url);
+    } catch {
+      channel.appendLine("[SKC] Bridge stopped, but its CLI configuration entry could not be removed.");
+    }
+    void window.showInformationMessage("SKC Copilot CLI tool bridge stopped.");
   }));
 
   const updateBcQualityCommand = commands.registerCommand("skc.updateBcQuality", async () => {
