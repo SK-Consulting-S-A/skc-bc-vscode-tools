@@ -66,7 +66,6 @@ export async function startCopilotCliBridge(adapter: CopilotCliBridgeAdapter) {
     const server = session?.server ?? new Server({ name: "skc-vscode-tools", version: "1.0.0" }, { capabilities: { tools: {} } });
     const transport: StreamableHTTPServerTransport = session?.transport ?? new StreamableHTTPServerTransport({
       sessionIdGenerator: randomUUID,
-      enableJsonResponse: true,
       onsessioninitialized: id => { sessions.set(id, state); }
     });
     const state: BridgeSession = session ?? { server, transport, lastActivity: Date.now(), activeCalls: 0, streams: 0, pending: new Map() };
@@ -92,7 +91,7 @@ export async function startCopilotCliBridge(adapter: CopilotCliBridgeAdapter) {
         }
         const pending = state.pending.get(extra.requestId);
         const cancelled = () => {
-          // Sending through the transport also settles its JSON-response promise and stream mappings.
+          // Sending through the transport also releases its request and stream mappings.
           void transport.send({
             jsonrpc: "2.0", id: extra.requestId, error: { code: -32800, message: "Tool invocation cancelled." }
           }).catch(() => { pending?.response.end(); });

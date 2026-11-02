@@ -242,7 +242,9 @@ async function main() {
             await client.notification({ method: "notifications/cancelled", params: { requestId: 999 } });
             const rawResponse = await rawPending;
             assert.equal(rawResponse.status, 200);
-            assert.deepEqual(await rawResponse.json(), { jsonrpc: "2.0", id: 999, error: { code: -32800, message: "Tool invocation cancelled." } });
+            assert.match(rawResponse.headers.get("content-type"), /text\/event-stream/);
+            const event = (await rawResponse.text()).split("\n").find(line => line.startsWith("data:"));
+            assert.deepEqual(JSON.parse(event.slice(5)), { jsonrpc: "2.0", id: 999, error: { code: -32800, message: "Tool invocation cancelled." } });
             await rawCancelled;
             for (let index = 0; index < 20; index++) {
                 const reconnect = new Client({ name: "skc-reconnect-test", version: "1.0.0" });
