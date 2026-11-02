@@ -210,7 +210,8 @@ async function main() {
             bridgeConfig = JSON.parse(await fs.readFile(path.join(bridgeHome, "mcp-config.json"), "utf8"));
             assert.deepEqual(bridgeConfig.mcpServers, converted);
 
-            await client.connect(new StreamableHTTPClientTransport(new URL(bridge.url), { requestInit: { headers } }));
+            const clientTransport = new StreamableHTTPClientTransport(new URL(bridge.url), { requestInit: { headers } });
+            await client.connect(clientTransport);
             assert.deepEqual((await client.listTools()).tools, tools);
             for (const tool of tools) {
                 const input = { sourceFilePath: "/tmp/Contoso.g.xlf", filePath: "/tmp/Contoso.al", targetLanguage: "fr-FR" };
@@ -230,6 +231,19 @@ async function main() {
                 await assert.rejects(pending);
                 await cancelled;
             }
+            const rawStarted = new Promise(resolve => { invocationStarted = resolve; });
+            const rawCancelled = new Promise(resolve => { invocationCancelled = resolve; });
+            const rawPending = fetch(bridge.url, {
+                method: "POST",
+                headers: { ...headers, "mcp-session-id": clientTransport.sessionId, "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+                body: JSON.stringify({ jsonrpc: "2.0", id: 999, method: "tools/call", params: { name: tools[0].name, arguments: { sourceFilePath: "cancel" } } })
+            });
+            await rawStarted;
+            await client.notification({ method: "notifications/cancelled", params: { requestId: 999 } });
+            const rawResponse = await rawPending;
+            assert.equal(rawResponse.status, 200);
+            assert.deepEqual(await rawResponse.json(), { jsonrpc: "2.0", id: 999, error: { code: -32800, message: "Tool invocation cancelled." } });
+            await rawCancelled;
             for (let index = 0; index < 20; index++) {
                 const reconnect = new Client({ name: "skc-reconnect-test", version: "1.0.0" });
                 try {

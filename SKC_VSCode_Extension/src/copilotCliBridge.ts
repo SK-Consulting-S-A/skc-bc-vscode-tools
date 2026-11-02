@@ -92,7 +92,10 @@ export async function startCopilotCliBridge(adapter: CopilotCliBridgeAdapter) {
         }
         const pending = state.pending.get(extra.requestId);
         const cancelled = () => {
-          if (pending && !pending.response.writableEnded) pending.response.writeHead(204).end();
+          // Sending through the transport also settles its JSON-response promise and stream mappings.
+          void transport.send({
+            jsonrpc: "2.0", id: extra.requestId, error: { code: -32800, message: "Tool invocation cancelled." }
+          }).catch(() => { pending?.response.end(); });
         };
         extra.signal.addEventListener("abort", cancelled, { once: true });
         state.activeCalls++;
