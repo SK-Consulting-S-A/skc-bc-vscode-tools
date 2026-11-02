@@ -7,6 +7,7 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 ### Added
 
 - Shared preset settings enabling Copilot CLI sessions, Workspace/Worktree isolation selection, and experimental branch support in supported VS Code builds.
+- **SKC: Configure GitHub Copilot CLI** installs the existing MCP presets, agents, skills, and safety instructions for terminal sessions. **SKC: Apply Presets** also writes CLI configuration by default, preserving user entries and converting VS Code input references to environment variables; `COPILOT_HOME` is supported.
 
 ## [3.3.0] - 2026-09-27
 

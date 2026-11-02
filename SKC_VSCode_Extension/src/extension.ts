@@ -77,6 +77,30 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   context.subscriptions.push(installAgentsCommand);
 
+  context.subscriptions.push(commands.registerCommand("skc.configureCopilotCli", async () => {
+    try {
+      const { getCopilotCliHome, writeCopilotCliMcpFile } = await import("./copilotCli");
+      const copilotHome = getCopilotCliHome();
+      const mcpPath = workspace.getConfiguration("skc").get<string>("mcpFilePath", "").trim();
+      const { servers } = await readMcpFile(mcpPath, context, channel);
+      if (!servers) {
+        throw new Error("No valid MCP preset found. Check skc.mcpFilePath.");
+      }
+      const overlay = await readPrivateMcpOverlay(channel);
+      const ids = new Set(servers.map(server => isRecord(server) ? server.id : undefined));
+      const merged = [...servers, ...overlay.servers.filter(server => isRecord(server) && !ids.has(server.id))];
+      await writeCopilotCliMcpFile(copilotHome, merged.filter(server => !hasUnusableUrl(server) && !usesRetiredPackage(server)), message => channel.appendLine(message));
+      await installSkills(context, channel, path.join(copilotHome, "skills"));
+      await installAgents(context, channel, path.join(copilotHome, "agents"));
+      await installInstructions(context, channel, path.join(copilotHome, "instructions"));
+      void window.showInformationMessage("SKC tools configured for GitHub Copilot CLI. Restart CLI sessions and use /mcp to check servers. Set environment variables for MCP inputs before starting copilot.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      channel.appendLine(`[SKC] Copilot CLI setup failed: ${message}`);
+      void window.showErrorMessage(`SKC Copilot CLI setup failed: ${message}`);
+    }
+  }));
+
   const updateBcQualityCommand = commands.registerCommand("skc.updateBcQuality", async () => {
     const choice = await window.showQuickPick([
       { label: "Update from official BCQuality main", description: "Download and validate the latest upstream plugin snapshot.", value: "live" },
@@ -366,6 +390,24 @@ async function applyPresets(
   if (writeVSCodeMcpFile && mcpServersToApply !== undefined) {
     await writeVSCodeMcpFileIfNeeded(context, channel, mcpServersToApply, mcpInputs);
   }
+  if (cfg.get<boolean>("writeCopilotCliMcpFile", true) && mcpServers !== undefined) {
+    try {
+      const { getCopilotCliHome, writeCopilotCliMcpFile } = await import("./copilotCli");
+      const copilotHome = getCopilotCliHome();
+      await writeCopilotCliMcpFile(copilotHome, mcpServers.filter(server => !usesRetiredPackage(server)), message => channel.appendLine(message));
+      if (installSkillsOnApply) {
+        if (copilotHome !== path.join(os.homedir(), ".copilot")) {
+          await installSkills(context, channel, path.join(copilotHome, "skills"));
+          await installAgents(context, channel, path.join(copilotHome, "agents"));
+        }
+        await installInstructions(context, channel, path.join(copilotHome, "instructions"));
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      channel.appendLine(`[SKC] Copilot CLI setup failed: ${message}`);
+      if (!silent) void window.showWarningMessage(`SKC Copilot CLI setup failed: ${message}`);
+    }
+  }
   if (installSkillsOnApply) {
     await installSkills(context, channel);
     await installAgents(context, channel);
@@ -571,12 +613,15 @@ async function applySettings(
   }
 }
 
-async function installSkills(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installSkills(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(os.homedir(), ".copilot", "skills")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
   const sourceRoot = path.join(context.extensionPath, "skills");
-  const targetRoot = path.join(os.homedir(), ".copilot", "skills");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Skills folder not found at ${sourceRoot}; skipping skill install.`);
@@ -615,12 +660,15 @@ async function installSkills(context: ExtensionContext, channel: OutputChannel):
   channel.appendLine(`[SKC] Skills summary: ${installedCount} installed/updated, ${skippedCount} skipped.`);
 }
 
-async function installAgents(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installAgents(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(os.homedir(), ".copilot", "agents")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
   const sourceRoot = path.join(context.extensionPath, "agents");
-  const targetRoot = path.join(os.homedir(), ".copilot", "agents");
 
   if (!(await pathExists(sourceRoot))) {
     channel.appendLine(`[SKC] Agents folder not found at ${sourceRoot}; skipping agent install.`);
@@ -671,7 +719,11 @@ async function installAgents(context: ExtensionContext, channel: OutputChannel):
  *
  * Existing files are left alone unless skc.overwriteExistingSkills is set.
  */
-async function installInstructions(context: ExtensionContext, channel: OutputChannel): Promise<void> {
+async function installInstructions(
+  context: ExtensionContext,
+  channel: OutputChannel,
+  targetRoot = path.join(path.resolve(context.globalStorageUri.fsPath, "..", ".."), "prompts")
+): Promise<void> {
   const cfg = workspace.getConfiguration("skc");
   const overwriteExisting = cfg.get<boolean>("overwriteExistingSkills", false);
 
@@ -682,8 +734,6 @@ async function installInstructions(context: ExtensionContext, channel: OutputCha
   }
 
   // globalStorageUri is …/User/globalStorage/<extId>, so two levels up is the profile root.
-  const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
-  const targetRoot = path.join(userDir, "prompts");
   await fs.mkdir(targetRoot, { recursive: true });
 
   const entries = await fs.readdir(sourceRoot, { withFileTypes: true });

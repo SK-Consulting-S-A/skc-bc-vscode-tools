@@ -96,6 +96,10 @@
         "title": "SKC: Apply Presets"
       },
       {
+        "command": "skc.configureCopilotCli",
+        "title": "SKC: Configure GitHub Copilot CLI"
+      },
+      {
         "command": "skc.installSkills",
         "title": "SKC: Install Copilot Skills"
       },
@@ -344,6 +348,11 @@
           "default": true,
           "description": "When applying presets, write MCP servers directly to the VS Code user mcp.json file (e.g. %APPDATA%\\Code - Insiders\\User\\mcp.json). This uses the VS Code object format (server name as key, no id field) and migrates any old numeric-key entries created by previous versions. Disable if you manage that file yourself."
         },
+        "skc.writeCopilotCliMcpFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "When applying presets, also configure GitHub Copilot CLI MCP servers in ~/.copilot/mcp-config.json (or COPILOT_HOME). Existing CLI entries are preserved. VS Code input and environment references become CLI environment-variable references; set those variables before starting copilot. Disable if you manage CLI configuration yourself."
+        },
         "skc.extensionsFilePath": {
           "type": "string",
           "default": "",
@@ -428,7 +437,7 @@
     "watch": "node scripts/build.js --watch",
     "typecheck": "tsc --noEmit",
     "lint": "set ESLINT_USE_FLAT_CONFIG=false&& eslint src --ext ts",
-    "test": "node scripts/test-xlf-status.js"
+    "test": "node scripts/test-xlf-status.js && node scripts/test-copilot-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
