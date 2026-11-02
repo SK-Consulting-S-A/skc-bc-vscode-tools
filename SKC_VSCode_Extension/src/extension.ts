@@ -132,6 +132,14 @@ export async function activate(context: ExtensionContext): Promise<void> {
         })) : [],
         invokeTool: async (name, input, signal) => {
           if (!workspace.isTrusted || signal.aborted) throw new Error("Workspace is untrusted or invocation was cancelled.");
+          const confirmation = await window.showWarningMessage(
+            `Allow Copilot CLI to run "${name}" with these inputs?\n\n${JSON.stringify(input, null, 2)}`,
+            { modal: true },
+            "Allow"
+          );
+          if (confirmation !== "Allow" || !workspace.isTrusted || signal.aborted) {
+            throw new Error("Tool invocation was not confirmed or was cancelled.");
+          }
           const cancellation = new CancellationTokenSource();
           const cancel = () => cancellation.cancel();
           signal.addEventListener("abort", cancel, { once: true });
