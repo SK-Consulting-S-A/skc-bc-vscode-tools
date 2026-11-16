@@ -177,8 +177,7 @@ function runKnowledgeIndexBuild(pluginRoot) {
 function createDefaultSourceCandidates(repoRoot) {
     return [
         process.env.SKC_BCQUALITY_SOURCE,
-        path.join(repoRoot, "skills", "bcquality"),
-        path.join(os.homedir(), ".vscode-insiders", "agent-plugins", "github.com", "microsoft", "BCQuality")
+        path.join(repoRoot, "skills", "bcquality")
     ].filter(Boolean).map((candidate) => path.resolve(candidate));
 }
 
