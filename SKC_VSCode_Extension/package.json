@@ -445,7 +445,7 @@
     "watch": "node scripts/build.js --watch",
     "typecheck": "tsc --noEmit",
     "lint": "set ESLINT_USE_FLAT_CONFIG=false&& eslint src --ext ts",
-    "test": "node scripts/test-xlf-status.js && node scripts/test-copilot-cli.js"
+    "test": "node scripts/test-xlf-status.js && node scripts/test-copilot-cli.js && node scripts/test-sync-bcquality.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

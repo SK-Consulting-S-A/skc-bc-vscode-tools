@@ -176,4 +176,4 @@ npx vsce package
 
 This is a **public** Marketplace listing. See [PUBLISHING.md](PUBLISHING.md).
 
-BCQuality live downloads are disabled by default. Set `skc.bcQualityUpdateOnApply` to `true` only when an online refresh during preset application is desired; otherwise the bundled snapshot and validated offline fallback are used.
+BCQuality live downloads are disabled by default. Set `skc.bcQualityUpdateOnApply` to `true` only when an online refresh during preset application is desired; otherwise the bundled snapshot and validated offline fallback are used. Build-time synchronization uses the bundled snapshot by default and never falls back to a plugin in the user's home directory.
