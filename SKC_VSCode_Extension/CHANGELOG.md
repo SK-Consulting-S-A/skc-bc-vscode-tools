@@ -14,6 +14,10 @@ All notable changes to the "SKC Workstation Tools" extension will be documented 
 
 - The `@harold` chat participant (`/docs`, `/object`, `/how`), now obsolete. Ask in regular Copilot Chat; the Microsoft Learn MCP server and the BC agents and skills cover the same lookups.
 
+### Fixed
+
+- Marketplace icon resized to 256×256 (92 KB). The Marketplace now rejects icons over 1 MB, which blocked publishing.
+
 ## [3.3.1] - 2026-10-06
 
 ### Added
