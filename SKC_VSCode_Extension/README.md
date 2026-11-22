@@ -6,7 +6,6 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 ## What you get
 
-- **@harold in Copilot Chat** — type `@harold how do I post a sales invoice?` (or `/docs`, `/object`, `/how`).
 - **Fork Copilot Chat** — focus any earlier request or response, then run **SKC: Fork Copilot Chat at Focused Message** to continue in a separate native chat session.
 - **Copilot AI for AL** — BC subagents (research, architecture, logic, UI, review, tests, translation, CAL conversion, control add-ins) and skills (`bc-orchestration`, `bc-agent-sdk`, `bc-migration`, `bc-word-layout`, `bc-control-addin`, `mermaid-to-word`).
 - **One workstation profile** — AL, Web/Python, and Power Platform/BI tooling, settings, MCP servers, skills, and agents all apply together to your default profile.
@@ -36,19 +35,9 @@ Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.co
 
 ## How to use
 
-### Ask Business Central questions (`@harold`)
+### Agents window
 
-1. Open Copilot Chat.
-2. Type `@harold` and your question. You do not need to pick an Agent or know skill names.
-
-Examples:
-
-- `@harold how do I post a sales invoice?`
-- `@harold /how warehouse shipment`
-- `@harold /object Customer`
-- `@harold /docs VAT posting groups`
-
-`@harold` looks up Microsoft Learn for that question. `/object` can also use local AL symbols when a project is open.
+The extension declares support for the VS Code **Agents** window, so the SKC themes, skills and language-model tools are available there too. Without this, the Agents window disables extensions that contain code, and a `workbench.colorTheme` such as `SKC Dark` falls back to the default theme. Workspace-only features (translation sidebar, AL presets) stay idle there because the Agents window does not open an AL project.
 
 ### Fork a Copilot Chat
 
@@ -91,7 +80,7 @@ Business Central still uses Microsoft Entra OAuth; environment variables supply 
 
 | Available in standalone Copilot CLI | Requires VS Code |
 |---|---|
-| MCP server tools, bundled agents and skills, safety instructions | Marketplace extensions, themes, translation sidebar, `@harold`, chat forking |
+| MCP server tools, bundled agents and skills, safety instructions | Marketplace extensions, themes, translation sidebar, chat forking |
 
 #### Use the extension tools from CLI
 
@@ -164,7 +153,7 @@ The preset does not register a Dataverse MCP server. To add one, put an entry in
 
 ## Copilot and language-model tools
 
-SKC Workstation Tools contributes the **@harold** chat participant, Copilot chat skills, and language-model tools (`#translateXlf`, `#listTranslations`). These extension features run in VS Code; standalone Copilot CLI uses the shared MCP servers, agents, and skills described above. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
+SKC Workstation Tools contributes Copilot chat skills and language-model tools (`#translateXlf`, `#listTranslations`). These extension features run in VS Code; standalone Copilot CLI uses the shared MCP servers, agents, and skills described above. VS Code may show a confirmation dialog (`Run 'Build AL Project'`). That prompt is a VS Code security feature: use **Always allow** to reduce repeats. It cannot be turned off from this extension.
 
 ## Build and publish
 

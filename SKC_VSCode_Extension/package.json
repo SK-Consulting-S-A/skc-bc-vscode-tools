@@ -2,7 +2,7 @@
   "name": "skc-vs-tools",
   "displayName": "SKC Workstation Tools",
   "description": "SKC workstation setup for Business Central AL, Web/Python, and Power Platform in a single profile, with Copilot agents, chat forking, MCP presets, XLF translation, and productivity themes.",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "publisher": "SKConsultingSA",
   "author": {
     "name": "SK Consulting S.A.",
@@ -55,9 +55,13 @@
     "workspaceContains:**/*.pcfproj",
     "workspaceContains:**/power.config.json",
     "workspaceContains:**/powerpages.config.json",
-    "workspaceContains:**/*.tmdl",
-    "onChatParticipant:skc.harold"
+    "workspaceContains:**/*.tmdl"
   ],
+  "capabilities": {
+    "agentsWindow": {
+      "supported": true
+    }
+  },
   "main": "./out/extension.js",
   "icon": "assets/Small_Logo.png",
   "contributes": {
@@ -276,29 +280,6 @@
             }
           }
         }
-      }
-    ],
-    "chatParticipants": [
-      {
-        "id": "skc.harold",
-        "name": "harold",
-        "fullName": "Harold",
-        "description": "Ask Harold how Business Central works. Try: how do I post a sales invoice?",
-        "isSticky": true,
-        "commands": [
-          {
-            "name": "docs",
-            "description": "Search Microsoft Learn for Business Central"
-          },
-          {
-            "name": "object",
-            "description": "Look up a table, page, or codeunit"
-          },
-          {
-            "name": "how",
-            "description": "Explain a Business Central process in plain language"
-          }
-        ]
       }
     ],
     "chatSkills": [
