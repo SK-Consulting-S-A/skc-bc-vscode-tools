@@ -6,6 +6,13 @@
 
 **SKC: Apply Presets** enables Copilot CLI sessions, the **Workspace / Worktree** isolation selector, and experimental branch support. Start a new **Copilot CLI** session in Chat, choose the target repository or folder, and select **Worktree** isolation to work on a separate branch without changing your main working folder. These controls are not part of regular local Agent chat. Older builds skip settings they do not recognize.
 
+### SKC themes in the Agents window
+
+The extension now runs in the VS Code **Agents** window, so **SKC Dark** and the other SKC themes, skills and tools work there as well. If you added `extensions.supportAgentsWindow` for this extension by hand, you can remove it.
+
+### Removed: @harold
+
+The `@harold` chat participant is gone. Ask Business Central questions in regular Copilot Chat; the Microsoft Learn MCP server and the BC agents and skills cover the same lookups.
 ## Version 3.3.0 - Latest Release
 
 ### Private MCP servers
