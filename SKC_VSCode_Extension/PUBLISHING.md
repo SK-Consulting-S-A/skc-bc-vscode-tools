@@ -29,6 +29,25 @@ BCQuality is bundled and validated offline; live upstream refresh is opt-in thro
 
 PAT: [Azure DevOps → User settings → Personal access tokens](https://dev.azure.com) — scope **Marketplace (Manage)**.
 
+### Icon quota: Marketplace updates blocked until about August 2027
+
+Since October 2026 the Marketplace ([microsoft/vsmarketplace#2216](https://github.com/microsoft/vsmarketplace/discussions/2216))
+rejects icons over 1 MB or 1024 × 1024, and allows only 3 icon changes per rolling year.
+Re-uploading the same icon does not count as a change.
+
+- The icon live on 3.3.1 is 1254 × 1254 and 1.6 MB. It can't be re-uploaded, so any
+  compliant icon counts as a change.
+- Three changes were already used in August and September 2026, so the quota is full until
+  the oldest one expires, around 27 August 2027. Marketplace support declined an exception.
+- `assets/Small_Logo.png` on `main` is the compliant 256 × 256 PNG. Don't change it again:
+  every new file uses up the quota.
+
+Until then, releases ship as a `.vsix` attached to a GitHub release (for example
+[v3.4.0](https://github.com/SK-Consulting-S-A/skc-bc-vscode-tools/releases/tag/v3.4.0)).
+Build it the way CI does (a `git archive` of HEAD with `vscode:prepublish` removed), so the
+package matches `main` exactly. Publishing a GitHub release also starts the publish workflow;
+cancel that run, because it can only fail on the icon quota.
+
 ### The publish gate
 
 `npm run check:publishable` runs in CI, on every pull request, and from `vscode:prepublish` and
